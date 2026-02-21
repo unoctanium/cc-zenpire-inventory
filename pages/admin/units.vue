@@ -124,7 +124,7 @@ async function commit(row: UiRow) {
   }
 }
 
-/** Delete via Nuxt UI modal (no window.confirm; works in Firefox Klar) */
+/** Delete via Nuxt UI modal (overlay only) */
 const isDeleteOpen = ref(false)
 const deletingRow = ref<UiRow | null>(null)
 
@@ -158,17 +158,162 @@ async function confirmDelete() {
     showError('Delete failed', e)
   }
 }
+
+/** ----------------------------
+ *  FILTER
+ * ---------------------------*/
+type FilterColumn = 'all' | 'code' | 'name' | 'unit_type'
+
+const filterText = ref('')
+const filterColumn = ref<FilterColumn>('all')
+
+const filterColumnOptions = [
+  { label: 'All', value: 'all' },
+  { label: 'Code', value: 'code' },
+  { label: 'Name', value: 'name' },
+  { label: 'Type', value: 'unit_type' },
+] as const
+
+function normalize(s: unknown) {
+  return String(s ?? '').toLowerCase()
+}
+
+function rowValue(row: UiRow, col: Exclude<FilterColumn, 'all'>) {
+  const src: any = row._mode === 'edit' && row._draft ? row._draft : row
+  return src[col]
+}
+
+function clearFilter() {
+  filterText.value = ''
+}
+
+const filteredRows = computed(() => {
+  const q = normalize(filterText.value).trim()
+  if (!q) return rows.value
+
+  const col = filterColumn.value
+  return rows.value.filter((r) => {
+    if (col === 'all') {
+      return (
+        normalize(rowValue(r, 'code')).includes(q) ||
+        normalize(rowValue(r, 'name')).includes(q) ||
+        normalize(rowValue(r, 'unit_type')).includes(q)
+      )
+    }
+    return normalize(rowValue(r, col)).includes(q)
+  })
+})
+
+/** ----------------------------
+ *  SORT
+ * ---------------------------*/
+type SortKey = 'code' | 'name' | 'unit_type'
+type SortDir = 'asc' | 'desc' | null
+
+const sortKey = ref<SortKey>('code')
+const sortDir = ref<SortDir>(null)
+
+function toggleSort(key: SortKey) {
+  if (sortKey.value !== key) {
+    sortKey.value = key
+    sortDir.value = 'asc'
+    return
+  }
+  // cycle: null -> asc -> desc -> null
+  if (sortDir.value === null) sortDir.value = 'asc'
+  else if (sortDir.value === 'asc') sortDir.value = 'desc'
+  else sortDir.value = null
+}
+
+function sortIcon(key: SortKey) {
+  if (sortKey.value !== key || sortDir.value === null) return 'i-heroicons-chevron-up-down'
+  return sortDir.value === 'asc' ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'
+}
+
+function compare(a: unknown, b: unknown) {
+  const aa = normalize(a)
+  const bb = normalize(b)
+  if (aa < bb) return -1
+  if (aa > bb) return 1
+  return 0
+}
+
+const visibleRows = computed(() => {
+  const base = filteredRows.value.slice()
+  if (!sortDir.value) return base
+
+  const key = sortKey.value
+  const dir = sortDir.value
+
+  base.sort((ra, rb) => {
+    const va = rowValue(ra, key)
+    const vb = rowValue(rb, key)
+    const c = compare(va, vb)
+    return dir === 'asc' ? c : -c
+  })
+
+  return base
+})
 </script>
 
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between gap-3">
+    <!-- Top bar -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-xl font-semibold">Units</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400">Admin-only CRUD (permission: unit.manage)</p>
       </div>
 
-      <UButton icon="i-heroicons-plus" @click="startAdd">Add unit</UButton>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <!-- Filter -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-stretch">
+            <input
+              v-model="filterText"
+              class="w-[240px] rounded-l-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900
+                     focus:outline-none focus:ring-2 focus:ring-gray-300
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
+              placeholder="Filter…"
+              autocomplete="off"
+              inputmode="search"
+            />
+
+            <button
+              type="button"
+              :disabled="!filterText"
+              @click="clearFilter"
+              class="flex items-center justify-center px-3
+                     border-t border-b border-r border-gray-300
+                     rounded-r-md
+                     bg-gray-100 text-gray-600
+                     hover:bg-gray-200
+                     disabled:opacity-40 disabled:cursor-not-allowed
+                     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              aria-label="Clear filter"
+            >
+              ✕
+            </button>
+          </div>
+
+          <select
+            v-model="filterColumn"
+            class="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm text-gray-900
+                   focus:outline-none focus:ring-2 focus:ring-gray-300
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
+          >
+            <option v-for="o in filterColumnOptions" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Refresh + Add -->
+        <div class="flex items-center gap-2">
+          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" @click="refresh()">Refresh</UButton>
+          <UButton icon="i-heroicons-plus" @click="startAdd">Add unit</UButton>
+        </div>
+      </div>
     </div>
 
     <div
@@ -195,21 +340,51 @@ async function confirmDelete() {
                      border-r border-gray-200 dark:border-gray-800
                      bg-white dark:bg-gray-950"
             >
-              Code
+              <div class="flex items-center justify-between gap-2">
+                <span>Code</span>
+                <button
+                  type="button"
+                  class="rounded p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  aria-label="Sort by code"
+                  @click="toggleSort('code')"
+                >
+                  <UIcon :name="sortIcon('code')" />
+                </button>
+              </div>
             </th>
 
             <th
               class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200
                      border-b border-gray-200 dark:border-gray-800"
             >
-              Name
+              <div class="flex items-center justify-between gap-2">
+                <span>Name</span>
+                <button
+                  type="button"
+                  class="rounded p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  aria-label="Sort by name"
+                  @click="toggleSort('name')"
+                >
+                  <UIcon :name="sortIcon('name')" />
+                </button>
+              </div>
             </th>
 
             <th
               class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200
                      border-b border-gray-200 dark:border-gray-800"
             >
-              Type
+              <div class="flex items-center justify-between gap-2">
+                <span>Type</span>
+                <button
+                  type="button"
+                  class="rounded p-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  aria-label="Sort by type"
+                  @click="toggleSort('unit_type')"
+                >
+                  <UIcon :name="sortIcon('unit_type')" />
+                </button>
+              </div>
             </th>
 
             <th
@@ -228,12 +403,12 @@ async function confirmDelete() {
             <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">Loading…</td>
           </tr>
 
-          <tr v-else-if="rows.length === 0">
+          <tr v-else-if="visibleRows.length === 0">
             <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">No data</td>
           </tr>
 
-          <tr v-for="row in rows" :key="row.id" class="border-b border-gray-100 dark:border-gray-900/60">
-            <!-- CODE (sticky + continuous right border) -->
+          <tr v-for="row in visibleRows" :key="row.id" class="border-b border-gray-100 dark:border-gray-900/60">
+            <!-- CODE -->
             <td
               class="sticky left-0 z-10 px-3 py-2 align-middle
                      bg-white dark:bg-gray-950
@@ -293,7 +468,7 @@ async function confirmDelete() {
               </template>
             </td>
 
-            <!-- ACTIONS (sticky + continuous left border) -->
+            <!-- ACTIONS -->
             <td
               class="sticky right-0 z-10 px-3 py-2 align-middle text-right
                      bg-white dark:bg-gray-950
@@ -301,45 +476,15 @@ async function confirmDelete() {
             >
               <div class="flex items-center justify-end gap-2">
                 <template v-if="row._mode === 'view'">
-                  <UButton
-                    size="xs"
-                    variant="soft"
-                    icon="i-heroicons-pencil"
-                    square
-                    aria-label="Edit"
-                    @click="startEdit(row)"
-                  />
+                  <UButton size="xs" variant="soft" icon="i-heroicons-pencil" square aria-label="Edit" @click="startEdit(row)" />
                 </template>
 
                 <template v-else>
-                  <UButton
-                    size="xs"
-                    variant="soft"
-                    icon="i-heroicons-check"
-                    square
-                    aria-label="Save"
-                    @click="commit(row)"
-                  />
-                  <UButton
-                    size="xs"
-                    variant="soft"
-                    color="gray"
-                    icon="i-heroicons-x-mark"
-                    square
-                    aria-label="Discard"
-                    @click="discard(row)"
-                  />
+                  <UButton size="xs" variant="soft" icon="i-heroicons-check" square aria-label="Save" @click="commit(row)" />
+                  <UButton size="xs" variant="soft" color="gray" icon="i-heroicons-x-mark" square aria-label="Discard" @click="discard(row)" />
                 </template>
 
-                <UButton
-                  size="xs"
-                  color="red"
-                  variant="soft"
-                  icon="i-heroicons-trash"
-                  square
-                  aria-label="Delete"
-                  @click="requestDelete(row)"
-                />
+                <UButton size="xs" color="red" variant="soft" icon="i-heroicons-trash" square aria-label="Delete" @click="requestDelete(row)" />
               </div>
             </td>
           </tr>
@@ -351,7 +496,7 @@ async function confirmDelete() {
       Note: Delete is enforced server-side (403 outside DEV_MODE). UI shows the button (MVP).
     </p>
 
-    <!-- Delete modal (overlay only) -->
+    <!-- Delete modal -->
     <UModal v-model:open="isDeleteOpen" title="Delete unit">
       <template #body>
         <p v-if="deletingRow?.id === '__new__'">Discard the new (unsaved) row?</p>
