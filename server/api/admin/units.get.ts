@@ -1,9 +1,10 @@
 import { createError } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
-import { requireUser } from '~/server/utils/require-user'
+import { requireAnyPermission } from '~/server/utils/require-any-permission'
 
 export default defineEventHandler(async (event) => {
-  await requireUser(event)
+  // unit.manage (RW) OR unit.read (RO)
+  await requireAnyPermission(event, ['unit.manage', 'unit.read'])
 
   const admin = supabaseAdmin()
   const { data, error } = await admin

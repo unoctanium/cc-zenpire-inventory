@@ -3,15 +3,8 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
+  // manage covers delete
   await requirePermission(event, 'unit.manage')
-
-  const config = useRuntimeConfig()
-  if (!config.devMode) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Unit deletion is disabled (DEV_MODE only)',
-    })
-  }
 
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
