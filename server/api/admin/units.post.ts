@@ -1,6 +1,6 @@
-import { readBody } from 'h3'
-import { requirePermission } from '~/server/utils/require-permission'
+import { createError, readBody } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
+import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'unit.manage')
@@ -15,11 +15,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const admin = supabaseAdmin()
-
   const { data, error } = await admin
     .from('unit')
     .insert({ code, name, unit_type })
-    .select('id, code, name, unit_type, created_at')
+    .select('id, code, name, unit_type')
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })
