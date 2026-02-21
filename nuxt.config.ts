@@ -14,7 +14,7 @@ export default defineNuxtConfig({
       public: {
           supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,
           supabasePublishableKey: process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-          iteUrl: process.env.NUXT_PUBLIC_SITE_URL,
+          siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
       },
     },
     vite: {
