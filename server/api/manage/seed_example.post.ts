@@ -1,4 +1,3 @@
-// server/api/dev/seed.post.ts
 import { requireAdminDev } from '~/server/utils/require-admin-dev'
 
 type U = { id: string; code: string }
@@ -7,16 +6,22 @@ export default defineEventHandler(async (event) => {
   const { admin, appUserId } = await requireAdminDev(event)
 
   // -----------------------
-  // Units
+  // Units — resolve IDs (seed_initial must have run first)
   // -----------------------
   const { data: units, error: uErr } = await admin.from('unit').select('id, code')
   if (uErr) throw createError({ statusCode: 500, statusMessage: uErr.message })
 
   const unitId = new Map<string, string>((units as U[]).map((u) => [u.code, u.id]))
-  const g = unitId.get('g')
-  const ml = unitId.get('ml')
+  const g   = unitId.get('g')
+  const ml  = unitId.get('ml')
   const pcs = unitId.get('pcs')
-  if (!g || !ml || !pcs) throw createError({ statusCode: 500, statusMessage: 'Missing units g/ml/pcs' })
+
+  if (!g || !ml || !pcs) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Required units g/ml/pcs not found — run Seed Initial first',
+    })
+  }
 
   // -----------------------
   // Suppliers
@@ -47,8 +52,8 @@ export default defineEventHandler(async (event) => {
   // Ingredients
   // -----------------------
   const ingredientDefs = [
-    { name: 'Rice', default_unit_id: g, kind: 'purchased' },
-    { name: 'Vinegar', default_unit_id: ml, kind: 'purchased' },
+    { name: 'Rice',      default_unit_id: g,   kind: 'purchased' },
+    { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased' },
     { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased' },
   ]
 
@@ -68,14 +73,18 @@ export default defineEventHandler(async (event) => {
   // Stock Targets
   // -----------------------
   const targets = [
-    { name: 'Rice', planned: 5000, green: 500, yellow: 1500, unit: g },
-    { name: 'Vinegar', planned: 6000, green: 600, yellow: 2000, unit: ml },
-    { name: 'Nori Leaf', planned: 240, green: 24, yellow: 80, unit: pcs },
+    { name: 'Rice',      planned: 5000, green: 500, yellow: 1500, unit: g   },
+    { name: 'Vinegar',   planned: 6000, green: 600, yellow: 2000, unit: ml  },
+    { name: 'Nori Leaf', planned: 240,  green: 24,  yellow: 80,   unit: pcs },
   ]
 
   for (const t of targets) {
     const ingredient_id = ingredientIds[t.name]
-    const { data: ex } = await admin.from('ingredient_stock').select('ingredient_id').eq('ingredient_id', ingredient_id).maybeSingle()
+    const { data: ex } = await admin
+      .from('ingredient_stock')
+      .select('ingredient_id')
+      .eq('ingredient_id', ingredient_id)
+      .maybeSingle()
 
     if (!ex) {
       await admin.from('ingredient_stock').insert({
@@ -109,7 +118,7 @@ export default defineEventHandler(async (event) => {
       pack_quantity: 1000,
       pack_unit_id: g,
       price_per_pack: 2.5,
-      ingredient: 'Rice'
+      ingredient: 'Rice',
     },
     {
       supplier: 'Supplier B',
@@ -118,7 +127,7 @@ export default defineEventHandler(async (event) => {
       pack_quantity: 5000,
       pack_unit_id: g,
       price_per_pack: 11.0,
-      ingredient: 'Rice'
+      ingredient: 'Rice',
     },
     {
       supplier: 'Supplier A',
@@ -127,7 +136,7 @@ export default defineEventHandler(async (event) => {
       pack_quantity: 6000,
       pack_unit_id: ml,
       price_per_pack: 10.0,
-      ingredient: 'Vinegar'
+      ingredient: 'Vinegar',
     },
     {
       supplier: 'Supplier B',
@@ -136,14 +145,14 @@ export default defineEventHandler(async (event) => {
       pack_quantity: 120,
       pack_unit_id: pcs,
       price_per_pack: 12.0,
-      ingredient: 'Nori Leaf'
+      ingredient: 'Nori Leaf',
     },
   ]
 
   const today = new Date().toISOString().slice(0, 10)
 
   for (const o of offers) {
-    const supplier_id = supplierIds[o.supplier]
+    const supplier_id   = supplierIds[o.supplier]
     const ingredient_id = ingredientIds[o.ingredient]
 
     const { data: ex } = await admin
@@ -201,12 +210,12 @@ export default defineEventHandler(async (event) => {
   }
 
   // -----------------------
-  // Initial Stock
+  // Initial Stock Adjustments
   // -----------------------
   const adjustments = [
-    { ingredient: 'Rice', qty: 2000, unit: g },
-    { ingredient: 'Vinegar', qty: 1000, unit: ml },
-    { ingredient: 'Nori Leaf', qty: 40, unit: pcs },
+    { ingredient: 'Rice',      qty: 2000, unit: g   },
+    { ingredient: 'Vinegar',   qty: 1000, unit: ml  },
+    { ingredient: 'Nori Leaf', qty: 40,   unit: pcs },
   ]
 
   for (const a of adjustments) {
@@ -218,7 +227,7 @@ export default defineEventHandler(async (event) => {
         occurred_at: null,
         unit_cost_snapshot: null,
         currency: 'EUR',
-        note: 'dev seed initial stock',
+        note: 'dev seed example data',
         created_by_user_id: appUserId,
       },
     })

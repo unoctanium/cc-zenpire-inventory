@@ -1,7 +1,5 @@
 <script setup lang="ts">
-type Mode = 'view' | 'edit'
-
-defineProps<{
+const props = defineProps<{
   mode: 'view' | 'edit'
   canEdit?: boolean
   canDelete?: boolean
@@ -16,12 +14,11 @@ const emit = defineEmits<{
   (e: 'discard'): void
   (e: 'delete'): void
 }>()
-
 </script>
 
 <template>
   <div class="flex items-center justify-end gap-2">
-    <template v-if="mode === 'view' and canEdit">
+    <template v-if="mode === 'view' && canEdit">
       <UButton
         size="xs"
         variant="soft"

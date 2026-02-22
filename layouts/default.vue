@@ -2,7 +2,6 @@
 const route = useRoute()
 const toast = useToast()
 
-// Client-side fetch so cookies/session are definitely included
 const { data: me, refresh: refreshMe } = await useFetch('/api/me', {
   retry: false,
   server: false,
@@ -10,37 +9,33 @@ const { data: me, refresh: refreshMe } = await useFetch('/api/me', {
 })
 
 const isAuthed = computed(() => Boolean((me.value as any)?.ok))
-const email = computed(() => String((me.value as any)?.email ?? ''))
+const email    = computed(() => String((me.value as any)?.email ?? ''))
 
 const nav = [
-  { label: 'Home', to: '/' },
-  { label: 'Units', to: '/admin/units' },
-  // placeholders for later:
-  { label: 'Ingredients', to: '/admin/ingredients' },
-  { label: 'Recipes', to: '/admin/recipes' },
-  { label: 'RBAC', to: '/admin/rbac' },
-  { label: 'Dev Tools', to: '/dev/tools' },
+  { label: 'Home',        to: '/'           },
+  { label: 'Units',       to: '/units'       },
+  { label: 'Ingredients', to: '/ingredients' },
+  { label: 'Recipes',     to: '/recipes'     },
+  { label: 'RBAC',        to: '/rbac'        },
+  { label: 'Dev Tools',   to: '/admin/tools'  },
 ]
 
 const visibleNav = computed(() => (isAuthed.value ? nav : [{ label: 'Home', to: '/' }]))
 
 function initialsFromEmail(e: string) {
   if (!e) return '?'
-  const local = e.split('@')[0] || e
-  const parts = local.split(/[.\-_]/).filter(Boolean)
-  const a = parts[0]?.[0] ?? local[0]
-  const b = parts[1]?.[0] ?? local[1]
+  const local  = e.split('@')[0] || e
+  const parts  = local.split(/[.\-_]/).filter(Boolean)
+  const a      = parts[0]?.[0] ?? local[0]
+  const b      = parts[1]?.[0] ?? local[1]
   return (a + (b ?? '')).toUpperCase()
 }
 
 const initials = computed(() => initialsFromEmail(email.value))
 
-// Optional: re-check session when route changes (login/logout redirects)
 watch(
   () => route.fullPath,
-  async () => {
-    await refreshMe()
-  }
+  async () => { await refreshMe() }
 )
 </script>
 
@@ -77,7 +72,6 @@ watch(
             <UButton v-if="isAuthed" to="/logout" color="gray" variant="soft" size="sm">
               Logout
             </UButton>
-
             <UButton v-else to="/login" color="primary" variant="solid" size="sm">
               Login
             </UButton>
@@ -105,7 +99,6 @@ watch(
       </main>
     </div>
 
-    <!-- Keep this in the layout (works in your project) -->
-    <UToaster/>
+    <UToaster />
   </UApp>
 </template>

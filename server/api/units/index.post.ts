@@ -6,8 +6,8 @@ export default defineEventHandler(async (event) => {
   await requirePermission(event, 'unit.manage')
 
   const body = await readBody(event)
-  const code = String(body?.code ?? '').trim()
-  const name = String(body?.name ?? '').trim()
+  const code      = String(body?.code      ?? '').trim()
+  const name      = String(body?.name      ?? '').trim()
   const unit_type = String(body?.unit_type ?? '').trim()
 
   if (!code || !name || !unit_type) {

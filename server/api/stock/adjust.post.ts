@@ -1,13 +1,13 @@
-import { getCookie } from 'h3'
-import { supabaseAdmin, supabasePublishable } from '../../utils/supabase'
+import { supabaseAdmin, supabaseServer } from '~/server/utils/supabase'
 
 export default defineEventHandler(async (event) => {
-  const access = getCookie(event, 'sb-access-token')
-  if (!access) throw createError({ statusCode: 401, statusMessage: 'UNAUTHENTICATED' })
+  // Use supabaseServer (SSR cookie-based) — consistent with all other routes
+  const sb = supabaseServer(event)
+  const { data: userData, error: userErr } = await sb.auth.getUser()
 
-  const sb = supabasePublishable()
-  const { data: userData } = await sb.auth.getUser(access)
-  if (!userData.user) throw createError({ statusCode: 401, statusMessage: 'UNAUTHENTICATED' })
+  if (userErr || !userData?.user) {
+    throw createError({ statusCode: 401, statusMessage: 'UNAUTHENTICATED' })
+  }
 
   const authUserId = userData.user.id
   const admin = supabaseAdmin()
@@ -19,10 +19,20 @@ export default defineEventHandler(async (event) => {
     .eq('auth_user_id', authUserId)
 
   const has = new Set((perms ?? []).map((p) => p.permission_code))
-  if (!has.has('stock.adjust.post')) throw createError({ statusCode: 403, statusMessage: 'FORBIDDEN' })
+  if (!has.has('stock.adjust.post')) {
+    throw createError({ statusCode: 403, statusMessage: 'FORBIDDEN' })
+  }
 
-  // Resolve app_user_id (same as /me, simplified)
-  const { data: au } = await admin.from('app_user').select('id').eq('auth_user_id', authUserId).single()
+  // Resolve app_user
+  const { data: au, error: auErr } = await admin
+    .from('app_user')
+    .select('id')
+    .eq('auth_user_id', authUserId)
+    .single()
+
+  if (auErr || !au) {
+    throw createError({ statusCode: 500, statusMessage: 'Could not resolve app_user' })
+  }
 
   const body = await readBody<any>(event)
   const payload = {

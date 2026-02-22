@@ -3,7 +3,6 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
-  // manage covers delete
   await requirePermission(event, 'unit.manage')
 
   const id = getRouterParam(event, 'id')

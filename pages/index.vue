@@ -10,7 +10,7 @@ const { data, pending, refresh } = await useFetch('/api/me')
         <p class="text-gray-500">MVP admin for units, recipes, ingredients, and RBAC.</p>
       </div>
 
-      <UButton color="gray" variant="soft" :loading="pending" @click="refresh">
+      <UButton color="gray" variant="soft" :loading="pending" @click="refresh()">
         Refresh session
       </UButton>
     </div>
@@ -52,11 +52,11 @@ const { data, pending, refresh } = await useFetch('/api/me')
       <template #header>Quick links</template>
 
       <div class="flex flex-wrap gap-2">
-        <UButton to="/admin/units">Units</UButton>
-        <UButton to="/admin/ingredients" color="gray" variant="soft">Ingredients (next)</UButton>
-        <UButton to="/admin/recipes" color="gray" variant="soft">Recipes (next)</UButton>
-        <UButton to="/admin/rbac" color="gray" variant="soft">RBAC (next)</UButton>
-        <UButton to="/dev/tools" color="gray" variant="soft">Dev Tools</UButton>
+        <UButton to="/units">Units</UButton>
+        <UButton to="/ingredients" color="gray" variant="soft">Ingredients (next)</UButton>
+        <UButton to="/recipes"     color="gray" variant="soft">Recipes (next)</UButton>
+        <UButton to="/rbac"        color="gray" variant="soft">RBAC (next)</UButton>
+        <UButton to="/admin/tools" color="gray" variant="soft">Dev Tools</UButton>
       </div>
     </UCard>
   </div>

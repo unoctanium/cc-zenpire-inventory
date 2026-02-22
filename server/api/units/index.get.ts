@@ -3,7 +3,6 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 
 export default defineEventHandler(async (event) => {
-  // unit.manage (RW) OR unit.read (RO)
   await requireAnyPermission(event, ['unit.manage', 'unit.read'])
 
   const admin = supabaseAdmin()
