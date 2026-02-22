@@ -1,5 +1,6 @@
 {
   "nav": {
+    "userSettings": "Benutzereinstellungen",
     "home": "Startseite",
     "units": "Einheiten",
     "ingredients": "Zutaten",
@@ -10,8 +11,12 @@
   "auth": {
     "login": "Anmelden",
     "logout": "Abmelden",
+    "logoutPrompt": "Klicken Sie hier, um Ihre Sitzung zu beenden.",
+    "signIn": "Einloggen",
+    "loginFailed": "Anmeldung fehlgeschlagen",
     "session": "Sitzung",
     "email": "E-Mail",
+    "password": "Passwort",
     "appUser": "App-Benutzer",
     "permissions": "Berechtigungen",
     "none": "Keine",
@@ -20,14 +25,20 @@
   "common": {
     "refresh": "Aktualisieren",
     "save": "Speichern",
+    "saveFailed": "Speichern fehlgeschlagen",
     "cancel": "Abbrechen",
     "delete": "Löschen",
+    "deleteFailed": "Löschen fehlgeschlagen",
     "edit": "Bearbeiten",
     "add": "Hinzufügen",
+    "all": "Alle",
     "search": "Suchen",
+    "clearFilter": "Filter löschen",
     "actions": "Aktionen",
     "loading": "Laden…",
+    "noData": "Keine Daten",
     "noResults": "Keine Ergebnisse",
+    "missingFields": "Fehlende Felder",
     "confirm": "Sind Sie sicher?"
   },
   "dashboard": {
@@ -38,15 +49,29 @@
   },
   "units": {
     "title": "Einheiten",
-    "subtitle": "Maßeinheiten verwalten.",
+    "subtitle": "Maßeinheiten verwalten (Berechtigung: unit.manage)",
     "add": "Einheit hinzufügen",
     "code": "Code",
     "name": "Name",
+    "type": "Typ",
     "baseUnit": "Basiseinheit",
     "factor": "Faktor",
     "decimals": "Dezimalstellen",
     "yes": "Ja",
-    "no": "Nein"
+    "no": "Nein",
+    "sortByCode": "Nach Code sortieren",
+    "sortByName": "Nach Name sortieren",
+    "sortByType": "Nach Typ sortieren",
+    "codeAndNameRequired": "Code und Name sind Pflichtfelder.",
+    "created": "Einheit erstellt",
+    "updated": "Einheit aktualisiert",
+    "deleted": "Einheit gelöscht",
+    "deleteTitle": "Einheit löschen",
+    "deleteConfirmNew": "Neue (nicht gespeicherte) Zeile verwerfen?",
+    "deleteConfirmExisting": "{code} ({name}) löschen?",
+    "usedByOthers": "Hinweis: Einheiten, die von Zutaten oder Rezepten verwendet werden, können nicht gelöscht werden.",
+    "loadError": "Einheiten konnten nicht geladen werden",
+    "noPermission": "Sie haben keine Berechtigung, Einheiten anzuzeigen."
   },
   "ingredients": {
     "title": "Zutaten",
@@ -56,5 +81,13 @@
     "unit": "Standardeinheit",
     "category": "Kategorie",
     "notes": "Notizen"
+  },
+  "devTools": {
+    "title": "Entwickler-Tools",
+    "subtitle": "Nur verfügbar wenn DEV_MODE=1",
+    "purge": "Löschen",
+    "seedInitial": "Initial befüllen",
+    "seedExample": "Beispieldaten laden",
+    "flow": "Typischer Ablauf: Löschen → Initial befüllen → Beispieldaten laden"
   }
 }

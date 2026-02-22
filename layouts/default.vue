@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const route = useRoute()
-const toast = useToast()
 const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
 
 const { data: me, refresh: refreshMe } = await useFetch('/api/auth/me', {
+  key: '/api/auth/me',
   retry: false,
   server: false,
   credentials: 'include',
@@ -11,29 +11,17 @@ const { data: me, refresh: refreshMe } = await useFetch('/api/auth/me', {
 
 const isAuthed = computed(() => Boolean((me.value as any)?.ok))
 const email    = computed(() => String((me.value as any)?.email ?? ''))
-
+const isAdmin  = computed(() => Boolean((me.value as any)?.is_admin))
 
 const nav = computed(() => [
-  { label: t('nav.home'),        to: '/' },
-  { label: t('nav.units'),       to: '/units' },
+  { label: t('nav.home'),        to: '/'           },
+  { label: t('nav.units'),       to: '/units'       },
   { label: t('nav.ingredients'), to: '/ingredients' },
-  { label: t('nav.recipes'),     to: '/recipes' },
-  { label: t('nav.rbac'),        to: '/rbac' },
-  { label: t('nav.devTools'),    to: '/admin/tools' },
+  { label: t('nav.recipes'),     to: '/recipes'     },
+  { label: t('nav.rbac'),        to: '/rbac'        },
 ])
 
-const visibleNav = computed(() => (isAuthed.value ? nav : [{ label: 'Home', to: '/' }]))
-
-function initialsFromEmail(e: string) {
-  if (!e) return '?'
-  const local  = e.split('@')[0] || e
-  const parts  = local.split(/[.\-_]/).filter(Boolean)
-  const a      = parts[0]?.[0] ?? local[0]
-  const b      = parts[1]?.[0] ?? local[1]
-  return (a + (b ?? '')).toUpperCase()
-}
-
-const initials = computed(() => initialsFromEmail(email.value))
+const visibleNav = computed(() => (isAuthed.value ? nav.value : [{ label: t('nav.home'), to: '/' }]))
 
 const langOptions = computed(() =>
   (locales.value as any[]).map(l => ({
@@ -41,6 +29,26 @@ const langOptions = computed(() =>
     onClick: () => setLocale(l.code),
   }))
 )
+
+const userMenuItems = computed(() => {
+  const group1: any[] = []
+  if (isAdmin.value) {
+    group1.push({ label: t('nav.devTools'), to: '/admin/tools' })
+  }
+  group1.push({ label: t('nav.userSettings'), to: '/settings' })
+  return [group1, [{ label: t('auth.logout'), to: '/logout' }]]
+})
+
+function initialsFromEmail(e: string) {
+  if (!e) return '?'
+  const local = e.split('@')[0] || e
+  const parts = local.split(/[.\-_]/).filter(Boolean)
+  const a     = parts[0]?.[0] ?? local[0]
+  const b     = parts[1]?.[0] ?? local[1]
+  return (a + (b ?? '')).toUpperCase()
+}
+
+const initials = computed(() => initialsFromEmail(email.value))
 
 watch(
   () => route.fullPath,
@@ -64,33 +72,30 @@ watch(
 
             <UDropdownMenu :items="[langOptions]">
               <UButton color="gray" variant="ghost" size="sm">
-              {{ (locales as any[]).find(l => l.code === locale)?.name }}
+                {{ (locales as any[]).find(l => l.code === locale)?.name }}
               </UButton>
             </UDropdownMenu>
 
-            <div
-              v-if="isAuthed"
-              class="flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-sm
-                     text-zinc-800 bg-white/70
-                     dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100"
-            >
+            <UDropdownMenu v-if="isAuthed" :items="userMenuItems">
               <div
-                class="flex h-7 w-7 items-center justify-center rounded-full
-                       bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900
-                       text-xs font-semibold"
-                aria-hidden="true"
+                class="flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-sm
+                       text-zinc-800 bg-white/70 cursor-pointer select-none
+                       hover:bg-zinc-50 transition-colors
+                       dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:hover:bg-zinc-800/80"
               >
-                {{ initials }}
+                <div
+                  class="flex h-7 w-7 items-center justify-center rounded-full
+                         bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900
+                         text-xs font-semibold"
+                  aria-hidden="true"
+                >
+                  {{ initials }}
+                </div>
+                <span class="max-w-[220px] truncate">{{ email }}</span>
+                <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 text-zinc-400" />
               </div>
-              <span class="max-w-[220px] truncate">{{ email }}</span>
-            </div>
+            </UDropdownMenu>
 
-            <UButton v-if="isAuthed" to="/logout" color="gray" variant="soft" size="sm">
-              {{ $t('auth.logout') }}
-            </UButton>
-            <UButton v-else to="/login" color="primary" variant="solid" size="sm">
-              {{ $t('auth.login') }}
-            </UButton>
           </div>
         </div>
 

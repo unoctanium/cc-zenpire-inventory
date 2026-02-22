@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const out = ref('')
 
 async function call(path: string) {
@@ -15,32 +16,23 @@ async function call(path: string) {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-xl font-semibold">Dev Tools</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Only available when DEV_MODE=1</p>
+      <h1 class="text-xl font-semibold">{{ $t('devTools.title') }}</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('devTools.subtitle') }}</p>
     </div>
-
     <div class="flex flex-wrap gap-3">
       <UButton color="red" variant="soft" @click="call('/api/manage/purge')">
-        Purge
+        {{ $t('devTools.purge') }}
       </UButton>
-
       <UButton color="gray" variant="soft" @click="call('/api/manage/seed_initial')">
-        Seed Initial
+        {{ $t('devTools.seedInitial') }}
       </UButton>
-
       <UButton color="gray" variant="soft" @click="call('/api/manage/seed_example')">
-        Seed Example
+        {{ $t('devTools.seedExample') }}
       </UButton>
     </div>
-
     <p class="text-xs text-gray-500 dark:text-gray-400">
-      Typical flow: <strong>Purge</strong> → <strong>Seed Initial</strong> → <strong>Seed Example</strong>
+      {{ $t('devTools.flow') }}
     </p>
-
-    <pre
-      v-if="out"
-      class="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900
-             p-4 text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap"
-    >{{ out }}</pre>
+    <pre v-if="out" class="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4 text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{{ out }}</pre>
   </div>
 </template>

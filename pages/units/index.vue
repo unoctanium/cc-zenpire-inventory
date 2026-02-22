@@ -1,4 +1,7 @@
 <script setup lang="ts">
+const { t } = useI18n()
+const toast = useToast()
+
 type UnitType = 'mass' | 'volume' | 'count'
 
 type UnitRow = {
@@ -18,8 +21,6 @@ type UiRow =
       _mode: 'edit'
       _draft: Pick<UnitRow, 'code' | 'name' | 'unit_type'>
     }
-
-const toast = useToast()
 
 const unitTypeOptions: { label: string; value: UnitType }[] = [
   { label: 'mass',   value: 'mass'   },
@@ -100,7 +101,7 @@ async function commit(row: UiRow) {
   if (!draft || !canManage.value) return
 
   if (!isDraftValid(draft)) {
-    toast.add({ title: 'Missing fields', description: 'Code and Name are required.', color: 'red' })
+    toast.add({ title: t('common.missingFields'), description: t('units.codeAndNameRequired'), color: 'red' })
     return
   }
 
@@ -111,7 +112,7 @@ async function commit(row: UiRow) {
         credentials: 'include',
         body: { code: draft.code.trim(), name: draft.name.trim(), unit_type: draft.unit_type },
       })
-      toast.add({ title: 'Unit created' })
+      toast.add({ title: t('units.created') })
       rows.value = rows.value.filter((r) => r.id !== '__new__')
       await refresh()
       return
@@ -122,12 +123,12 @@ async function commit(row: UiRow) {
       credentials: 'include',
       body: { code: draft.code.trim(), name: draft.name.trim(), unit_type: draft.unit_type },
     })
-    toast.add({ title: 'Unit updated' })
+    toast.add({ title: t('units.updated') })
     row._mode  = 'view'
     row._draft = undefined
     await refresh()
   } catch (e: any) {
-    showError('Save failed', e)
+    showError(t('common.saveFailed'), e)
   }
 }
 
@@ -154,12 +155,12 @@ async function confirmDelete() {
 
   try {
     await $fetch(`/api/units/${row.id}`, { method: 'DELETE', credentials: 'include' })
-    toast.add({ title: 'Unit deleted' })
+    toast.add({ title: t('units.deleted') })
     isDeleteOpen.value = false
     deletingRow.value  = null
     await refresh()
   } catch (e: any) {
-    showError('Delete failed', e)
+    showError(t('common.deleteFailed'), e)
   }
 }
 
@@ -168,12 +169,12 @@ type FilterColumn = 'all' | 'code' | 'name' | 'unit_type'
 const filterText   = ref('')
 const filterColumn = ref<FilterColumn>('all')
 
-const filterColumnOptions = [
-  { label: 'All',  value: 'all'       },
-  { label: 'Code', value: 'code'      },
-  { label: 'Name', value: 'name'      },
-  { label: 'Type', value: 'unit_type' },
-] as const
+const filterColumnOptions = computed(() => [
+  { label: t('common.all'),  value: 'all'       },
+  { label: t('units.code'),  value: 'code'      },
+  { label: t('units.name'),  value: 'name'      },
+  { label: t('units.type'),  value: 'unit_type' },
+])
 
 function normalize(s: unknown) {
   return String(s ?? '').toLowerCase()
@@ -189,7 +190,7 @@ function clearFilter() {
 }
 
 const filteredRows = computed(() => {
-  const q   = normalize(filterText.value).trim()
+  const q = normalize(filterText.value).trim()
   if (!q) return rows.value
   const col = filterColumn.value
   return rows.value.filter((r) => {
@@ -242,18 +243,18 @@ const visibleRows = computed(() => {
 })
 
 const errorText = computed(() =>
-  error.value ? `Failed to load units: ${error.value.message}` : null
+  error.value ? `${t('units.loadError')}: ${error.value.message}` : null
 )
 </script>
 
 <template>
   <div v-if="!canRead" class="p-6 text-red-600">
-    403 – You do not have permission to view Units.
+    403 – {{ $t('units.noPermission') }}
   </div>
 
   <AdminTableShell v-else :error-text="errorText">
-    <template #title>Units</template>
-    <template #subtitle>Manage units of measure (permission: unit.manage)</template>
+    <template #title>{{ $t('units.title') }}</template>
+    <template #subtitle>{{ $t('units.subtitle') }}</template>
 
     <template #toolbar>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -265,20 +266,20 @@ const errorText = computed(() =>
               class="w-[240px] rounded-l-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900
                      focus:outline-none focus:ring-2 focus:ring-gray-300
                      dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
-              placeholder="Filter…"
+              :placeholder="$t('common.search')"
               autocomplete="off"
               inputmode="search"
             />
             <button
               type="button"
               :disabled="!filterText"
-              @click="clearFilter"
+              :aria-label="$t('common.clearFilter')"
               class="flex items-center justify-center px-3
                      border-t border-b border-r border-gray-300 rounded-r-md
                      bg-gray-100 text-gray-600 hover:bg-gray-200
                      disabled:opacity-40 disabled:cursor-not-allowed
                      dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-              aria-label="Clear filter"
+              @click="clearFilter"
             >
               ✕
             </button>
@@ -299,10 +300,10 @@ const errorText = computed(() =>
         <!-- Refresh + Add -->
         <div class="flex items-center gap-2">
           <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" @click="refresh()">
-            Refresh
+            {{ $t('common.refresh') }}
           </UButton>
           <UButton v-if="canManage" icon="i-heroicons-plus" @click="startAdd">
-            Add unit
+            {{ $t('units.add') }}
           </UButton>
         </div>
       </div>
@@ -324,11 +325,11 @@ const errorText = computed(() =>
                        border-r border-gray-200 dark:border-gray-800
                        bg-white dark:bg-gray-950">
               <div class="flex items-center justify-between gap-2">
-                <span>Code</span>
+                <span>{{ $t('units.code') }}</span>
                 <AdminSortButton
                   :active="sortKey === 'code'"
                   :dir="sortKey === 'code' ? sortDir : null"
-                  aria-label="Sort by code"
+                  :aria-label="$t('units.sortByCode')"
                   @click="toggleSort('code')"
                 />
               </div>
@@ -337,11 +338,11 @@ const errorText = computed(() =>
             <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200
                        border-b border-gray-200 dark:border-gray-800">
               <div class="flex items-center justify-between gap-2">
-                <span>Name</span>
+                <span>{{ $t('units.name') }}</span>
                 <AdminSortButton
                   :active="sortKey === 'name'"
                   :dir="sortKey === 'name' ? sortDir : null"
-                  aria-label="Sort by name"
+                  :aria-label="$t('units.sortByName')"
                   @click="toggleSort('name')"
                 />
               </div>
@@ -350,11 +351,11 @@ const errorText = computed(() =>
             <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-200
                        border-b border-gray-200 dark:border-gray-800">
               <div class="flex items-center justify-between gap-2">
-                <span>Type</span>
+                <span>{{ $t('units.type') }}</span>
                 <AdminSortButton
                   :active="sortKey === 'unit_type'"
                   :dir="sortKey === 'unit_type' ? sortDir : null"
-                  aria-label="Sort by type"
+                  :aria-label="$t('units.sortByType')"
                   @click="toggleSort('unit_type')"
                 />
               </div>
@@ -364,18 +365,18 @@ const errorText = computed(() =>
                        border-b border-gray-200 dark:border-gray-800
                        border-l border-gray-200 dark:border-gray-800
                        bg-white dark:bg-gray-950">
-              Actions
+              {{ $t('common.actions') }}
             </th>
           </tr>
         </thead>
 
         <tbody>
           <tr v-if="pending">
-            <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">Loading…</td>
+            <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
           </tr>
 
           <tr v-else-if="visibleRows.length === 0">
-            <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">No data</td>
+            <td colspan="4" class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
           </tr>
 
           <tr
@@ -459,21 +460,20 @@ const errorText = computed(() =>
 
     <template #footer>
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        Note: Units used by ingredients or recipes cannot be deleted.
+        {{ $t('units.usedByOthers') }}
       </p>
 
-      <UModal v-model:open="isDeleteOpen" title="Delete unit">
+      <UModal v-model:open="isDeleteOpen" :title="$t('units.deleteTitle')">
         <template #body>
-          <p v-if="deletingRow?.id === '__new__'">Discard the new (unsaved) row?</p>
+          <p v-if="deletingRow?.id === '__new__'">{{ $t('units.deleteConfirmNew') }}</p>
           <p v-else>
-            Delete <strong>{{ (deletingRow as any)?.code }}</strong>
-            ({{ (deletingRow as any)?.name }})?
+            {{ $t('units.deleteConfirmExisting', { code: (deletingRow as any)?.code, name: (deletingRow as any)?.name }) }}
           </p>
         </template>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" @click="isDeleteOpen = false">Cancel</UButton>
-            <UButton color="red" @click="confirmDelete">Delete</UButton>
+            <UButton color="gray" variant="soft" @click="isDeleteOpen = false">{{ $t('common.cancel') }}</UButton>
+            <UButton color="red" @click="confirmDelete">{{ $t('common.delete') }}</UButton>
           </div>
         </template>
       </UModal>

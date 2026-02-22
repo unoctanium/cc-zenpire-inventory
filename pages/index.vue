@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { data, pending, refresh } = await useFetch('/api/auth/me')
 </script>
 
@@ -6,57 +7,46 @@ const { data, pending, refresh } = await useFetch('/api/auth/me')
   <div class="space-y-6">
     <div class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-semibold">Dashboard</h1>
-        <p class="text-gray-500">MVP admin for units, recipes, ingredients, and RBAC.</p>
+        <h1 class="text-2xl font-semibold">{{ $t('dashboard.title') }}</h1>
+        <p class="text-gray-500">{{ $t('dashboard.subtitle') }}</p>
       </div>
-
       <UButton color="gray" variant="soft" :loading="pending" @click="refresh()">
-        Refresh session
+        {{ $t('dashboard.refreshSession') }}
       </UButton>
     </div>
 
     <UCard>
-      <template #header>Session</template>
-
-      <div v-if="pending" class="text-gray-500">Loading…</div>
-
+      <template #header>{{ $t('auth.session') }}</template>
+      <div v-if="pending" class="text-gray-500">{{ $t('common.loading') }}</div>
       <div v-else class="space-y-2">
         <div class="flex flex-wrap gap-2 items-center">
-          <span class="text-gray-500">Email:</span>
+          <span class="text-gray-500">{{ $t('auth.email') }}:</span>
           <span class="font-medium">{{ (data as any)?.email ?? '-' }}</span>
         </div>
-
         <div class="flex flex-wrap gap-2 items-center">
-          <span class="text-gray-500">App user:</span>
+          <span class="text-gray-500">{{ $t('auth.appUser') }}:</span>
           <code class="text-xs">{{ (data as any)?.app_user_id ?? '-' }}</code>
         </div>
-
         <div class="space-y-2">
-          <div class="text-gray-500">Permissions:</div>
+          <div class="text-gray-500">{{ $t('auth.permissions') }}:</div>
           <div class="flex flex-wrap gap-2">
-            <UBadge
-              v-for="p in ((data as any)?.permissions ?? [])"
-              :key="p"
-              color="gray"
-              variant="soft"
-            >
+            <UBadge v-for="p in ((data as any)?.permissions ?? [])" :key="p" color="gray" variant="soft">
               {{ p }}
             </UBadge>
-            <span v-if="!((data as any)?.permissions?.length)" class="text-gray-400">None</span>
+            <span v-if="!((data as any)?.permissions?.length)" class="text-gray-400">{{ $t('auth.none') }}</span>
           </div>
         </div>
       </div>
     </UCard>
 
     <UCard>
-      <template #header>Quick links</template>
-
+      <template #header>{{ $t('dashboard.quickLinks') }}</template>
       <div class="flex flex-wrap gap-2">
-        <UButton to="/units">Units</UButton>
-        <UButton to="/ingredients" color="gray" variant="soft">Ingredients (next)</UButton>
-        <UButton to="/recipes"     color="gray" variant="soft">Recipes (next)</UButton>
-        <UButton to="/rbac"        color="gray" variant="soft">RBAC (next)</UButton>
-        <UButton to="/admin/tools" color="gray" variant="soft">Dev Tools</UButton>
+        <UButton to="/units">{{ $t('nav.units') }}</UButton>
+        <UButton to="/ingredients" color="gray" variant="soft">{{ $t('nav.ingredients') }}</UButton>
+        <UButton to="/recipes"     color="gray" variant="soft">{{ $t('nav.recipes') }}</UButton>
+        <UButton to="/rbac"        color="gray" variant="soft">{{ $t('nav.rbac') }}</UButton>
+        <UButton to="/admin/tools" color="gray" variant="soft">{{ $t('nav.devTools') }}</UButton>
       </div>
     </UCard>
   </div>

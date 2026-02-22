@@ -6,7 +6,6 @@ export async function requireAdminDev(event: any) {
     throw createError({ statusCode: 403, statusMessage: 'DEV_MODE disabled' })
   }
 
-  // Use supabaseServer (SSR cookie-based) — consistent with all other routes
   const sb = supabaseServer(event)
   const { data: userData, error: userErr } = await sb.auth.getUser()
 
@@ -16,7 +15,6 @@ export async function requireAdminDev(event: any) {
 
   const admin = supabaseAdmin()
 
-  // MVP gate: require stock.adjust.post as proxy for "admin"
   const { data: perms, error: permErr } = await admin
     .from('v_user_permissions')
     .select('permission_code')
@@ -25,7 +23,7 @@ export async function requireAdminDev(event: any) {
   if (permErr) throw createError({ statusCode: 500, statusMessage: permErr.message })
 
   const has = new Set((perms ?? []).map((p: any) => p.permission_code))
-  if (!has.has('stock.adjust.post')) {
+  if (!has.has('admin')) {
     throw createError({ statusCode: 403, statusMessage: 'FORBIDDEN' })
   }
 

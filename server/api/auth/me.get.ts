@@ -45,12 +45,17 @@ export default defineEventHandler(async (event) => {
     .select('permission_code')
     .eq('auth_user_id', authUserId)
 
+  const isAdmin = (perms ?? []).some((p) => p.permission_code === 'admin')   
+
   if (permErr) throw createError({ statusCode: 500, statusMessage: permErr.message })
+
 
   return {
     ok: true,
     email,
     app_user_id: appUserId,
     permissions: (perms ?? []).map((p) => p.permission_code).sort(),
+    is_admin: isAdmin,
   }
+
 })

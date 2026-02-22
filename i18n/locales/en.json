@@ -1,5 +1,6 @@
 {
   "nav": {
+    "userSettings": "User Settings",
     "home": "Home",
     "units": "Units",
     "ingredients": "Ingredients",
@@ -10,8 +11,12 @@
   "auth": {
     "login": "Login",
     "logout": "Logout",
+    "logoutPrompt": "Click to end your session.",
+    "signIn": "Sign in",
+    "loginFailed": "Login failed",
     "session": "Session",
     "email": "Email",
+    "password": "Password",
     "appUser": "App user",
     "permissions": "Permissions",
     "none": "None",
@@ -20,14 +25,20 @@
   "common": {
     "refresh": "Refresh",
     "save": "Save",
+    "saveFailed": "Save failed",
     "cancel": "Cancel",
     "delete": "Delete",
+    "deleteFailed": "Delete failed",
     "edit": "Edit",
     "add": "Add",
+    "all": "All",
     "search": "Search",
+    "clearFilter": "Clear filter",
     "actions": "Actions",
     "loading": "Loading…",
+    "noData": "No data",
     "noResults": "No results",
+    "missingFields": "Missing fields",
     "confirm": "Are you sure?"
   },
   "dashboard": {
@@ -38,15 +49,29 @@
   },
   "units": {
     "title": "Units",
-    "subtitle": "Manage measurement units used across ingredients and recipes.",
+    "subtitle": "Manage units of measure (permission: unit.manage)",
     "add": "Add unit",
     "code": "Code",
     "name": "Name",
+    "type": "Type",
     "baseUnit": "Base unit",
     "factor": "Factor",
     "decimals": "Decimals",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "sortByCode": "Sort by code",
+    "sortByName": "Sort by name",
+    "sortByType": "Sort by type",
+    "codeAndNameRequired": "Code and Name are required.",
+    "created": "Unit created",
+    "updated": "Unit updated",
+    "deleted": "Unit deleted",
+    "deleteTitle": "Delete unit",
+    "deleteConfirmNew": "Discard the new (unsaved) row?",
+    "deleteConfirmExisting": "Delete {code} ({name})?",
+    "usedByOthers": "Note: Units used by ingredients or recipes cannot be deleted.",
+    "loadError": "Failed to load units",
+    "noPermission": "You do not have permission to view Units."
   },
   "ingredients": {
     "title": "Ingredients",
@@ -56,5 +81,13 @@
     "unit": "Default unit",
     "category": "Category",
     "notes": "Notes"
+  },
+  "devTools": {
+    "title": "Dev Tools",
+    "subtitle": "Only available when DEV_MODE=1",
+    "purge": "Purge",
+    "seedInitial": "Seed Initial",
+    "seedExample": "Seed Example",
+    "flow": "Typical flow: Purge → Seed Initial → Seed Example"
   }
 }

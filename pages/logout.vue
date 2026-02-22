@@ -5,12 +5,10 @@ definePageMeta({ layout: 'default' })
 <template>
   <div class="space-y-3">
     <UCard>
-      <template #header>Logout</template>
-
-      <p class="text-gray-600">Click to end your session.</p>
-
+      <template #header>{{ $t('auth.logout') }}</template>
+      <p class="text-gray-600">{{ $t('auth.logoutPrompt') }}</p>
       <form method="post" action="/api/auth/logout" class="mt-4">
-        <UButton type="submit" color="gray" variant="soft">Logout</UButton>
+        <UButton type="submit" color="gray" variant="soft">{{ $t('auth.logout') }}</UButton>
       </form>
     </UCard>
   </div>

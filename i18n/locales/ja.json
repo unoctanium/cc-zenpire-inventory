@@ -1,5 +1,6 @@
 {
   "nav": {
+    "userSettings": "ユーザー設定",
     "home": "ホーム",
     "units": "単位",
     "ingredients": "食材",
@@ -10,8 +11,12 @@
   "auth": {
     "login": "ログイン",
     "logout": "ログアウト",
+    "logoutPrompt": "クリックしてセッションを終了してください。",
+    "signIn": "サインイン",
+    "loginFailed": "ログインに失敗しました",
     "session": "セッション",
     "email": "メール",
+    "password": "パスワード",
     "appUser": "アプリユーザー",
     "permissions": "権限",
     "none": "なし",
@@ -20,14 +25,20 @@
   "common": {
     "refresh": "更新",
     "save": "保存",
+    "saveFailed": "保存に失敗しました",
     "cancel": "キャンセル",
     "delete": "削除",
+    "deleteFailed": "削除に失敗しました",
     "edit": "編集",
     "add": "追加",
+    "all": "すべて",
     "search": "検索",
+    "clearFilter": "フィルターをクリア",
     "actions": "操作",
     "loading": "読込中…",
+    "noData": "データなし",
     "noResults": "結果なし",
+    "missingFields": "入力が不足しています",
     "confirm": "よろしいですか？"
   },
   "dashboard": {
@@ -38,15 +49,29 @@
   },
   "units": {
     "title": "単位",
-    "subtitle": "食材やレシピで使用する計量単位を管理します。",
+    "subtitle": "食材やレシピで使用する計量単位を管理します（権限: unit.manage）",
     "add": "単位を追加",
     "code": "コード",
     "name": "名前",
+    "type": "種類",
     "baseUnit": "基本単位",
     "factor": "係数",
     "decimals": "小数点以下桁数",
     "yes": "はい",
-    "no": "いいえ"
+    "no": "いいえ",
+    "sortByCode": "コードで並び替え",
+    "sortByName": "名前で並び替え",
+    "sortByType": "種類で並び替え",
+    "codeAndNameRequired": "コードと名前は必須です。",
+    "created": "単位を作成しました",
+    "updated": "単位を更新しました",
+    "deleted": "単位を削除しました",
+    "deleteTitle": "単位を削除",
+    "deleteConfirmNew": "新規（未保存）の行を破棄しますか？",
+    "deleteConfirmExisting": "{code}（{name}）を削除しますか？",
+    "usedByOthers": "注意: 食材またはレシピで使用中の単位は削除できません。",
+    "loadError": "単位の読み込みに失敗しました",
+    "noPermission": "単位を表示する権限がありません。"
   },
   "ingredients": {
     "title": "食材",
@@ -56,5 +81,13 @@
     "unit": "デフォルト単位",
     "category": "カテゴリ",
     "notes": "メモ"
+  },
+  "devTools": {
+    "title": "開発ツール",
+    "subtitle": "DEV_MODE=1 の場合のみ使用可能",
+    "purge": "全削除",
+    "seedInitial": "初期データ投入",
+    "seedExample": "サンプルデータ投入",
+    "flow": "標準手順: 全削除 → 初期データ投入 → サンプルデータ投入"
   }
 }
