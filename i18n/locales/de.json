@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "units": "Einheiten",
+    "ingredients": "Zutaten",
+    "recipes": "Rezepte",
+    "rbac": "Rollen",
+    "devTools": "Entwickler-Tools"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "session": "Sitzung",
+    "email": "E-Mail",
+    "appUser": "App-Benutzer",
+    "permissions": "Berechtigungen",
+    "none": "Keine",
+    "loading": "Laden…"
+  },
+  "common": {
+    "refresh": "Aktualisieren",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen",
+    "actions": "Aktionen",
+    "loading": "Laden…",
+    "noResults": "Keine Ergebnisse",
+    "confirm": "Sind Sie sicher?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "MVP-Verwaltung für Einheiten, Rezepte, Zutaten und Rollen.",
+    "quickLinks": "Schnellzugriff",
+    "refreshSession": "Sitzung aktualisieren"
+  },
+  "units": {
+    "title": "Einheiten",
+    "subtitle": "Maßeinheiten verwalten.",
+    "add": "Einheit hinzufügen",
+    "code": "Code",
+    "name": "Name",
+    "baseUnit": "Basiseinheit",
+    "factor": "Faktor",
+    "decimals": "Dezimalstellen",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "ingredients": {
+    "title": "Zutaten",
+    "subtitle": "Zutaten für Rezepte verwalten.",
+    "add": "Zutat hinzufügen",
+    "name": "Name",
+    "unit": "Standardeinheit",
+    "category": "Kategorie",
+    "notes": "Notizen"
+  }
+}

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 const route = useRoute()
 const toast = useToast()
+const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
 
-const { data: me, refresh: refreshMe } = await useFetch('/api/me', {
+const { data: me, refresh: refreshMe } = await useFetch('/api/auth/me', {
   retry: false,
   server: false,
   credentials: 'include',
@@ -11,14 +12,15 @@ const { data: me, refresh: refreshMe } = await useFetch('/api/me', {
 const isAuthed = computed(() => Boolean((me.value as any)?.ok))
 const email    = computed(() => String((me.value as any)?.email ?? ''))
 
-const nav = [
-  { label: 'Home',        to: '/'           },
-  { label: 'Units',       to: '/units'       },
-  { label: 'Ingredients', to: '/ingredients' },
-  { label: 'Recipes',     to: '/recipes'     },
-  { label: 'RBAC',        to: '/rbac'        },
-  { label: 'Dev Tools',   to: '/admin/tools'  },
-]
+
+const nav = computed(() => [
+  { label: t('nav.home'),        to: '/' },
+  { label: t('nav.units'),       to: '/units' },
+  { label: t('nav.ingredients'), to: '/ingredients' },
+  { label: t('nav.recipes'),     to: '/recipes' },
+  { label: t('nav.rbac'),        to: '/rbac' },
+  { label: t('nav.devTools'),    to: '/admin/tools' },
+])
 
 const visibleNav = computed(() => (isAuthed.value ? nav : [{ label: 'Home', to: '/' }]))
 
@@ -32,6 +34,13 @@ function initialsFromEmail(e: string) {
 }
 
 const initials = computed(() => initialsFromEmail(email.value))
+
+const langOptions = computed(() =>
+  (locales.value as any[]).map(l => ({
+    label: l.name,
+    onClick: () => setLocale(l.code),
+  }))
+)
 
 watch(
   () => route.fullPath,
@@ -52,6 +61,13 @@ watch(
           </div>
 
           <div class="flex items-center gap-2">
+
+            <UDropdownMenu :items="[langOptions]">
+              <UButton color="gray" variant="ghost" size="sm">
+              {{ (locales as any[]).find(l => l.code === locale)?.name }}
+              </UButton>
+            </UDropdownMenu>
+
             <div
               v-if="isAuthed"
               class="flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-sm
@@ -70,10 +86,10 @@ watch(
             </div>
 
             <UButton v-if="isAuthed" to="/logout" color="gray" variant="soft" size="sm">
-              Logout
+              {{ $t('auth.logout') }}
             </UButton>
             <UButton v-else to="/login" color="primary" variant="solid" size="sm">
-              Login
+              {{ $t('auth.login') }}
             </UButton>
           </div>
         </div>

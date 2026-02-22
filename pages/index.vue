@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { data, pending, refresh } = await useFetch('/api/me')
+const { data, pending, refresh } = await useFetch('/api/auth/me')
 </script>
 
 <template>

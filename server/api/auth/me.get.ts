@@ -2,7 +2,6 @@ import { createError } from 'h3'
 import { supabaseAdmin, supabaseServer } from '~/server/utils/supabase'
 
 export default defineEventHandler(async (event) => {
-  // ✅ session comes from Supabase SSR cookies
   const sb = supabaseServer(event)
   const { data: userData, error: userErr } = await sb.auth.getUser()
 
@@ -12,8 +11,6 @@ export default defineEventHandler(async (event) => {
 
   const authUserId = userData.user.id
   const email = userData.user.email ?? null
-
-  // ✅ DB work with service role
   const admin = supabaseAdmin()
 
   // ensure app_user exists
@@ -43,7 +40,6 @@ export default defineEventHandler(async (event) => {
     appUserId = created.id
   }
 
-  // permissions view
   const { data: perms, error: permErr } = await admin
     .from('v_user_permissions')
     .select('permission_code')

@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "home": "Home",
+    "units": "Units",
+    "ingredients": "Ingredients",
+    "recipes": "Recipes",
+    "rbac": "RBAC",
+    "devTools": "Dev Tools"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "session": "Session",
+    "email": "Email",
+    "appUser": "App user",
+    "permissions": "Permissions",
+    "none": "None",
+    "loading": "Loading…"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "actions": "Actions",
+    "loading": "Loading…",
+    "noResults": "No results",
+    "confirm": "Are you sure?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "MVP admin for units, recipes, ingredients, and RBAC.",
+    "quickLinks": "Quick links",
+    "refreshSession": "Refresh session"
+  },
+  "units": {
+    "title": "Units",
+    "subtitle": "Manage measurement units used across ingredients and recipes.",
+    "add": "Add unit",
+    "code": "Code",
+    "name": "Name",
+    "baseUnit": "Base unit",
+    "factor": "Factor",
+    "decimals": "Decimals",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "ingredients": {
+    "title": "Ingredients",
+    "subtitle": "Manage ingredients used in recipes.",
+    "add": "Add ingredient",
+    "name": "Name",
+    "unit": "Default unit",
+    "category": "Category",
+    "notes": "Notes"
+  }
+}

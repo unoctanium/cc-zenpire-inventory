@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "units": "単位",
+    "ingredients": "食材",
+    "recipes": "レシピ",
+    "rbac": "権限管理",
+    "devTools": "開発ツール"
+  },
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "session": "セッション",
+    "email": "メール",
+    "appUser": "アプリユーザー",
+    "permissions": "権限",
+    "none": "なし",
+    "loading": "読込中…"
+  },
+  "common": {
+    "refresh": "更新",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "search": "検索",
+    "actions": "操作",
+    "loading": "読込中…",
+    "noResults": "結果なし",
+    "confirm": "よろしいですか？"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "subtitle": "単位・レシピ・食材・権限管理のMVP管理画面。",
+    "quickLinks": "クイックリンク",
+    "refreshSession": "セッション更新"
+  },
+  "units": {
+    "title": "単位",
+    "subtitle": "食材やレシピで使用する計量単位を管理します。",
+    "add": "単位を追加",
+    "code": "コード",
+    "name": "名前",
+    "baseUnit": "基本単位",
+    "factor": "係数",
+    "decimals": "小数点以下桁数",
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "ingredients": {
+    "title": "食材",
+    "subtitle": "レシピで使用する食材を管理します。",
+    "add": "食材を追加",
+    "name": "名前",
+    "unit": "デフォルト単位",
+    "category": "カテゴリ",
+    "notes": "メモ"
+  }
+}

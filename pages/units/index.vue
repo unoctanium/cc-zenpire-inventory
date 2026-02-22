@@ -43,7 +43,7 @@ watchEffect(() => {
 })
 
 const { data: me } = await useFetch<{ ok: boolean; email: string; permissions: string[] }>(
-  '/api/me',
+  '/api/auth/me',
   { credentials: 'include', retry: 0 }
 )
 
