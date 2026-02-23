@@ -7,6 +7,12 @@ const password = ref('')
 const err      = ref('')
 const pending  = ref(false)
 
+
+const { data: me } = useNuxtData('/api/auth/me')
+if ((me.value as any)?.ok) {
+  await navigateTo('/')
+}
+
 async function submit() {
   err.value     = ''
   pending.value = true

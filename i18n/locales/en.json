@@ -23,6 +23,7 @@
     "loading": "Loading…"
   },
   "common": {
+    "cancel": "Cancel",
     "refresh": "Refresh",
     "save": "Save",
     "saveFailed": "Save failed",

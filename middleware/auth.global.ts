@@ -1,11 +1,21 @@
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/login') return
 
-  const { data } = useNuxtData('/api/auth/me')
+  const { data: cached } = useNuxtData('/api/auth/me')
 
-  // data.value is null = not yet loaded, don't redirect
-  // data.value exists but ok is false = definitely not authed, redirect
-  if (data.value !== null && !(data.value as any)?.ok) {
-    return navigateTo('/login')
+  if (cached.value !== null) {
+    // Cache warm — use it
+    if (!(cached.value as any)?.ok) return navigateTo('/login')
+    return
   }
+
+  // Cache cold (fresh page load) — fetch
+  const { data } = await useFetch('/api/auth/me', {
+    key: '/api/auth/me',
+    server: false,
+    credentials: 'include',
+    retry: false,
+  })
+
+  if (!(data.value as any)?.ok) return navigateTo('/login')
 })

@@ -23,6 +23,7 @@
     "loading": "読込中…"
   },
   "common": {
+    "cancel": "キャンセル",
     "refresh": "更新",
     "save": "保存",
     "saveFailed": "保存に失敗しました",

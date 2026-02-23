@@ -23,6 +23,7 @@
     "loading": "Laden…"
   },
   "common": {
+    "cancel": "Abbrechen",
     "refresh": "Aktualisieren",
     "save": "Speichern",
     "saveFailed": "Speichern fehlgeschlagen",

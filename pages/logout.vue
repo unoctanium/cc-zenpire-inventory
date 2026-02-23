@@ -1,15 +1,45 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
+
+const { t } = useI18n()
+useHead({ title: t('auth.logout') })
+
+const pending = ref(false)
+
+async function logout() {
+  pending.value = true
+  try {
+    await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+  } catch {
+    // sign-out errors are non-fatal — session is likely already gone
+  } finally {
+    pending.value = false
+  }
+  await refreshNuxtData('/api/auth/me')
+  await navigateTo('/login')
+}
 </script>
 
 <template>
-  <div class="space-y-3">
-    <UCard>
-      <template #header>{{ $t('auth.logout') }}</template>
-      <p class="text-gray-600">{{ $t('auth.logoutPrompt') }}</p>
-      <form method="post" action="/api/auth/logout" class="mt-4">
-        <UButton type="submit" color="gray" variant="soft">{{ $t('auth.logout') }}</UButton>
-      </form>
+  <div class="min-h-[70vh] flex items-center justify-center">
+    <UCard class="w-full max-w-md">
+      <template #header>
+        <div class="font-semibold">{{ $t('auth.logout') }}</div>
+      </template>
+
+      <div class="space-y-4">
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">
+          {{ $t('auth.logoutPrompt') }}
+        </p>
+        <div class="flex gap-2">
+          <UButton :loading="pending" color="gray" variant="soft" @click="logout">
+            {{ $t('auth.logout') }}
+          </UButton>
+          <UButton variant="ghost" to="/">
+            {{ $t('common.cancel') }}
+          </UButton>
+        </div>
+      </div>
     </UCard>
   </div>
 </template>
