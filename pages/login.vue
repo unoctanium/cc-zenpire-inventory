@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuth } from '~/composables/useAuth'
+
 const { t } = useI18n()
 useHead({ title: t('auth.login') })
 
@@ -7,11 +9,8 @@ const password = ref('')
 const err      = ref('')
 const pending  = ref(false)
 
-const auth = useAuth()
-if (auth.value?.ok) await navigateTo('/')
-
 async function submit() {
-  err.value = ''
+  err.value     = ''
   pending.value = true
   try {
     await $fetch('/api/auth/login', {
@@ -19,17 +18,14 @@ async function submit() {
       body: { email: email.value, password: password.value },
       credentials: 'include',
     })
-    await fetchAuth()          // repopulate useState
-    await navigateTo('/')
+    // Full page reload so the server gets the new cookie on the next request
+    window.location.href = '/'
   } catch (e: any) {
     err.value = e?.data?.statusMessage ?? e?.message ?? 'Login failed'
   } finally {
     pending.value = false
   }
 }
-
-
-
 </script>
 
 <template>

@@ -1,12 +1,27 @@
 <script setup lang="ts">
-const route = useRoute()
+import { useAuth } from '~/composables/useAuth'
+
+const route  = useRoute()
 const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
 
-const auth = useAuth()
+const auth     = useAuth()
 const isAuthed = computed(() => Boolean(auth.value?.ok))
 const email    = computed(() => auth.value?.email ?? '')
 const isAdmin  = computed(() => Boolean(auth.value?.is_admin))
 const initials = computed(() => initialsFromEmail(email.value))
+
+watch(
+  auth,
+  (val) => {
+    if ((val === null || !val.ok) && route.path !== '/login') {
+      navigateTo('/login')
+    }
+    if (val?.ok && route.path === '/login') {
+      navigateTo('/')
+    }
+  },
+  { immediate: true }
+)
 
 const nav = computed(() => [
   { label: t('nav.home'),        to: '/'           },
@@ -16,7 +31,9 @@ const nav = computed(() => [
   { label: t('nav.rbac'),        to: '/rbac'        },
 ])
 
-const visibleNav = computed(() => (isAuthed.value ? nav.value : [{ label: t('nav.home'), to: '/' }]))
+const visibleNav = computed(() =>
+  isAuthed.value ? nav.value : [{ label: t('nav.home'), to: '/' }]
+)
 
 const langOptions = computed(() =>
   (locales.value as any[]).map(l => ({
@@ -38,20 +55,16 @@ function initialsFromEmail(e: string) {
   if (!e) return '?'
   const local = e.split('@')[0] || e
   const parts = local.split(/[.\-_]/).filter(Boolean)
-  const a     = parts[0]?.[0] ?? local[0]
-  const b     = parts[1]?.[0] ?? local[1]
+  const a = parts[0]?.[0] ?? local[0]
+  const b = parts[1]?.[0] ?? local[1]
   return (a + (b ?? '')).toUpperCase()
 }
-
-
 </script>
 
 <template>
   <UApp>
     <div class="min-h-dvh bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <header
-        class="border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85"
-      >
+      <header class="border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85">
         <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div class="font-semibold tracking-tight">Zenpire Inventory</div>
@@ -59,7 +72,6 @@ function initialsFromEmail(e: string) {
           </div>
 
           <div class="flex items-center gap-2">
-
             <UDropdownMenu :items="[langOptions]">
               <UButton color="gray" variant="ghost" size="sm">
                 {{ (locales as any[]).find(l => l.code === locale)?.name }}
@@ -85,11 +97,10 @@ function initialsFromEmail(e: string) {
                 <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 text-zinc-400" />
               </div>
             </UDropdownMenu>
-
           </div>
         </div>
 
-        <div class="mx-auto max-w-6xl px-4 pb-3">
+        <div v-if="route.path !== '/login'" class="mx-auto max-w-6xl px-4 pb-3">
           <div class="flex flex-wrap gap-2">
             <UButton
               v-for="item in visibleNav"

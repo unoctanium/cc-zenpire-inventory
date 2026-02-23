@@ -12,12 +12,10 @@ async function logout() {
     await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
   } catch { /* non-fatal */ }
   finally { pending.value = false }
-  
-  const auth = useAuth()
-  auth.value = null             // clear state immediately
-  await navigateTo('/login')
-}
 
+  // Full page reload so server-side auth state is cleanly reset
+  window.location.href = '/login'
+}
 </script>
 
 <template>
