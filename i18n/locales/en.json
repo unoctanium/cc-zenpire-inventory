@@ -89,5 +89,32 @@
     "seedInitial": "Seed Initial",
     "seedExample": "Seed Example",
     "flow": "Typical flow: Purge → Seed Initial → Seed Example"
-  }
+  },
+  "ingredients": {
+  "title": "Ingredients",
+  "subtitle": "Manage ingredients used in recipes (permission: ingredient.manage)",
+  "add": "Add ingredient",
+  "name": "Name",
+  "kind": "Kind",
+  "unit": "Default unit",
+  "standardCost": "Std. cost",
+  "currency": "Currency",
+  "notes": "Notes",
+  "namePlaceholder": "e.g. Rice",
+  "costPlaceholder": "e.g. 0.005",
+  "sortByName": "Sort by name",
+  "sortByKind": "Sort by kind",
+  "sortByUnit": "Sort by unit",
+  "nameAndUnitRequired": "Name and default unit are required.",
+  "invalidCost": "Standard cost must be a valid number.",
+  "created": "Ingredient created",
+  "updated": "Ingredient updated",
+  "deleted": "Ingredient deleted",
+  "deleteTitle": "Delete ingredient",
+  "deleteConfirmNew": "Discard the new (unsaved) row?",
+  "deleteConfirmExisting": "Delete {name}?",
+  "producedReadOnly": "Note: Produced ingredients are read-only and managed via recipes.",
+  "loadError": "Failed to load ingredients",
+  "noPermission": "You do not have permission to view Ingredients."
+}
 }

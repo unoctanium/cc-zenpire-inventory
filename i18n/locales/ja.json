@@ -89,5 +89,32 @@
     "seedInitial": "初期データ投入",
     "seedExample": "サンプルデータ投入",
     "flow": "標準手順: 全削除 → 初期データ投入 → サンプルデータ投入"
-  }
+  },
+"ingredients": {
+  "title": "食材",
+  "subtitle": "レシピで使用する食材を管理します（権限: ingredient.manage）",
+  "add": "食材を追加",
+  "name": "名前",
+  "kind": "種別",
+  "unit": "デフォルト単位",
+  "standardCost": "標準単価",
+  "currency": "通貨",
+  "notes": "メモ",
+  "namePlaceholder": "例: 米",
+  "costPlaceholder": "例: 0.005",
+  "sortByName": "名前で並び替え",
+  "sortByKind": "種別で並び替え",
+  "sortByUnit": "単位で並び替え",
+  "nameAndUnitRequired": "名前とデフォルト単位は必須です。",
+  "invalidCost": "標準単価は有効な数値である必要があります。",
+  "created": "食材を作成しました",
+  "updated": "食材を更新しました",
+  "deleted": "食材を削除しました",
+  "deleteTitle": "食材を削除",
+  "deleteConfirmNew": "新規（未保存）の行を破棄しますか？",
+  "deleteConfirmExisting": "{name}を削除しますか？",
+  "producedReadOnly": "注意: 生産済み食材は読み取り専用で、レシピから管理します。",
+  "loadError": "食材の読み込みに失敗しました",
+  "noPermission": "食材を表示する権限がありません。"
+}
 }
