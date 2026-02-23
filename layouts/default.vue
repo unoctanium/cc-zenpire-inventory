@@ -2,16 +2,11 @@
 const route = useRoute()
 const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
 
-const { data: me, refresh: refreshMe } = await useFetch('/api/auth/me', {
-  key: '/api/auth/me',
-  retry: false,
-  server: false,
-  credentials: 'include',
-})
-
-const isAuthed = computed(() => Boolean((me.value as any)?.ok))
-const email    = computed(() => String((me.value as any)?.email ?? ''))
-const isAdmin  = computed(() => Boolean((me.value as any)?.is_admin))
+const auth = useAuth()
+const isAuthed = computed(() => Boolean(auth.value?.ok))
+const email    = computed(() => auth.value?.email ?? '')
+const isAdmin  = computed(() => Boolean(auth.value?.is_admin))
+const initials = computed(() => initialsFromEmail(email.value))
 
 const nav = computed(() => [
   { label: t('nav.home'),        to: '/'           },
@@ -48,12 +43,7 @@ function initialsFromEmail(e: string) {
   return (a + (b ?? '')).toUpperCase()
 }
 
-const initials = computed(() => initialsFromEmail(email.value))
 
-watch(
-  () => route.fullPath,
-  async () => { await refreshMe() }
-)
 </script>
 
 <template>

@@ -1,6 +1,16 @@
 <script setup lang="ts">
 const { t } = useI18n()
-const { data, pending, refresh } = await useFetch('/api/auth/me')
+
+const auth = useAuth()
+const pending = ref(false)
+async function refresh() {
+  pending.value = true
+  await fetchAuth()
+  pending.value = false
+}
+// use auth.value directly in template instead of (data as any)
+
+
 </script>
 
 <template>
@@ -21,19 +31,19 @@ const { data, pending, refresh } = await useFetch('/api/auth/me')
       <div v-else class="space-y-2">
         <div class="flex flex-wrap gap-2 items-center">
           <span class="text-gray-500">{{ $t('auth.email') }}:</span>
-          <span class="font-medium">{{ (data as any)?.email ?? '-' }}</span>
+          <span class="font-medium">{{ auth.value?.email ?? '-' }}</span>
         </div>
         <div class="flex flex-wrap gap-2 items-center">
           <span class="text-gray-500">{{ $t('auth.appUser') }}:</span>
-          <code class="text-xs">{{ (data as any)?.app_user_id ?? '-' }}</code>
+          <code class="text-xs">{{ auth.value?.app_user_id ?? '-' }}</code>
         </div>
         <div class="space-y-2">
           <div class="text-gray-500">{{ $t('auth.permissions') }}:</div>
           <div class="flex flex-wrap gap-2">
-            <UBadge v-for="p in ((data as any)?.permissions ?? [])" :key="p" color="gray" variant="soft">
+            <UBadge v-for="p in (auth.value?.permissions ?? [])" :key="p" color="gray" variant="soft">
               {{ p }}
             </UBadge>
-            <span v-if="!((data as any)?.permissions?.length)" class="text-gray-400">{{ $t('auth.none') }}</span>
+            <span v-if="!(auth.value?.permissions?.length)" class="text-gray-400">{{ $t('auth.none') }}</span>
           </div>
         </div>
       </div>

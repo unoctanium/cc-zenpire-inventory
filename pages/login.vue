@@ -7,14 +7,11 @@ const password = ref('')
 const err      = ref('')
 const pending  = ref(false)
 
-
-const { data: me } = useNuxtData('/api/auth/me')
-if ((me.value as any)?.ok) {
-  await navigateTo('/')
-}
+const auth = useAuth()
+if (auth.value?.ok) await navigateTo('/')
 
 async function submit() {
-  err.value     = ''
+  err.value = ''
   pending.value = true
   try {
     await $fetch('/api/auth/login', {
@@ -22,7 +19,7 @@ async function submit() {
       body: { email: email.value, password: password.value },
       credentials: 'include',
     })
-    await refreshNuxtData('/api/auth/me')
+    await fetchAuth()          // repopulate useState
     await navigateTo('/')
   } catch (e: any) {
     err.value = e?.data?.statusMessage ?? e?.message ?? 'Login failed'
@@ -30,6 +27,9 @@ async function submit() {
     pending.value = false
   }
 }
+
+
+
 </script>
 
 <template>

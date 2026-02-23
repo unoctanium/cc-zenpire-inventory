@@ -10,14 +10,14 @@ async function logout() {
   pending.value = true
   try {
     await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-  } catch {
-    // sign-out errors are non-fatal — session is likely already gone
-  } finally {
-    pending.value = false
-  }
-  await refreshNuxtData('/api/auth/me')
+  } catch { /* non-fatal */ }
+  finally { pending.value = false }
+  
+  const auth = useAuth()
+  auth.value = null             // clear state immediately
   await navigateTo('/login')
 }
+
 </script>
 
 <template>

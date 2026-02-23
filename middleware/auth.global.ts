@@ -1,21 +1,9 @@
-export default defineNuxtRouteMiddleware(async (to) => {
+import { useAuth } from '~/composables/useAuth'
+
+export default defineNuxtRouteMiddleware((to) => {
   if (to.path === '/login') return
-
-  const { data: cached } = useNuxtData('/api/auth/me')
-
-  if (cached.value !== null) {
-    // Cache warm — use it
-    if (!(cached.value as any)?.ok) return navigateTo('/login')
-    return
+  const auth = useAuth()
+  if (!auth.value?.ok) {
+    return navigateTo('/login')
   }
-
-  // Cache cold (fresh page load) — fetch
-  const { data } = await useFetch('/api/auth/me', {
-    key: '/api/auth/me',
-    server: false,
-    credentials: 'include',
-    retry: false,
-  })
-
-  if (!(data.value as any)?.ok) return navigateTo('/login')
 })
