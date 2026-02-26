@@ -4,11 +4,11 @@ export default defineEventHandler(async (event) => {
   const { admin } = await requireAdminDev(event)
 
   const baseUnits = [
-    { code: 'g',   name: 'Gram',       unit_type: 'mass'   },
-    { code: 'kg',  name: 'Kilogram',   unit_type: 'mass'   },
-    { code: 'ml',  name: 'Milliliter', unit_type: 'volume' },
-    { code: 'l',   name: 'Liter',      unit_type: 'volume' },
-    { code: 'pcs', name: 'Pieces',     unit_type: 'count'  },
+    { code: 'g',   name: 'Gram',       unit_type: 'mass',   factor: 1    },
+    { code: 'kg',  name: 'Kilogram',   unit_type: 'mass',   factor: 1000 },
+    { code: 'ml',  name: 'Milliliter', unit_type: 'volume', factor: 1    },
+    { code: 'l',   name: 'Liter',      unit_type: 'volume', factor: 1000 },
+    { code: 'pcs', name: 'Pieces',     unit_type: 'count',  factor: 1    },
   ]
 
   const { error } = await admin

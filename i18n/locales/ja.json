@@ -65,6 +65,7 @@
     "sortByName": "名前で並び替え",
     "sortByType": "種類で並び替え",
     "codeAndNameRequired": "コードと名前は必須です。",
+    "factorRequired": "係数は正の数値である必要があります。",
     "created": "単位を作成しました",
     "updated": "単位を更新しました",
     "deleted": "単位を削除しました",
@@ -77,7 +78,7 @@
   },
   "ingredients": {
     "title": "食材",
-    "subtitle": "レシピで使用する食材を管理します（権限: ingredient.manage）",
+    "subtitle": "レシピで使用する食材を管理します（権限: recipe.manage）",
     "add": "食材を追加",
     "name": "名前",
     "kind": "種別",
@@ -104,7 +105,7 @@
   },
   "recipes": {
     "title": "レシピ",
-    "subtitle": "レシピとその構成要素を管理します（権限: ingredient.manage）",
+    "subtitle": "レシピとその構成要素を管理します（権限: recipe.manage）",
     "add": "レシピを追加",
     "name": "名前",
     "description": "説明",
@@ -146,7 +147,12 @@
     "noComponents": "まだ構成要素がありません。",
     "noSteps": "まだ手順がありません。",
     "noMedia": "まだメディアがありません。",
-    "viewTitle": "レシピ詳細"
+    "viewTitle": "レシピ詳細",
+    "stdCost": "標準単価",
+    "stdCostPlaceholder": "例: 2.50",
+    "perOutputUnit": "出力単位あたり",
+    "cost": "コスト",
+    "totalCost": "合計コスト"
   },
   "devTools": {
     "title": "開発ツール",

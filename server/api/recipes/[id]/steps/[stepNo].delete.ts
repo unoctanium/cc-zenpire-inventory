@@ -3,7 +3,7 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'ingredient.manage')
+  await requirePermission(event, 'recipe.manage')
 
   const recipe_id = getRouterParam(event, 'id')
   const stepNoStr = getRouterParam(event, 'stepNo')

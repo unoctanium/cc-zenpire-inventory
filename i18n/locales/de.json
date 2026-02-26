@@ -65,6 +65,7 @@
     "sortByName": "Nach Name sortieren",
     "sortByType": "Nach Typ sortieren",
     "codeAndNameRequired": "Code und Name sind Pflichtfelder.",
+    "factorRequired": "Faktor muss eine positive Zahl sein.",
     "created": "Einheit erstellt",
     "updated": "Einheit aktualisiert",
     "deleted": "Einheit gelöscht",
@@ -77,7 +78,7 @@
   },
   "ingredients": {
     "title": "Zutaten",
-    "subtitle": "Zutaten für Rezepte verwalten (Berechtigung: ingredient.manage)",
+    "subtitle": "Zutaten für Rezepte verwalten (Berechtigung: recipe.manage)",
     "add": "Zutat hinzufügen",
     "name": "Name",
     "kind": "Art",
@@ -104,7 +105,7 @@
   },
   "recipes": {
     "title": "Rezepte",
-    "subtitle": "Rezepte und ihre Komponenten verwalten (Berechtigung: ingredient.manage)",
+    "subtitle": "Rezepte und ihre Komponenten verwalten (Berechtigung: recipe.manage)",
     "add": "Rezept hinzufügen",
     "name": "Name",
     "description": "Beschreibung",
@@ -146,7 +147,12 @@
     "noComponents": "Noch keine Komponenten.",
     "noSteps": "Noch keine Schritte.",
     "noMedia": "Noch keine Medien.",
-    "viewTitle": "Rezept"
+    "viewTitle": "Rezept",
+    "stdCost": "Std.-Kosten",
+    "stdCostPlaceholder": "z.B. 2.50",
+    "perOutputUnit": "pro Ausgabeeinheit",
+    "cost": "Kosten",
+    "totalCost": "Gesamtkosten"
   },
   "devTools": {
     "title": "Entwickler-Tools",

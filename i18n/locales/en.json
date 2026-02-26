@@ -65,6 +65,7 @@
     "sortByName": "Sort by name",
     "sortByType": "Sort by type",
     "codeAndNameRequired": "Code and Name are required.",
+    "factorRequired": "Factor must be a positive number.",
     "created": "Unit created",
     "updated": "Unit updated",
     "deleted": "Unit deleted",
@@ -77,7 +78,7 @@
   },
   "ingredients": {
     "title": "Ingredients",
-    "subtitle": "Manage ingredients used in recipes (permission: ingredient.manage)",
+    "subtitle": "Manage ingredients used in recipes (permission: recipe.manage)",
     "add": "Add ingredient",
     "name": "Name",
     "kind": "Kind",
@@ -104,7 +105,7 @@
   },
   "recipes": {
     "title": "Recipes",
-    "subtitle": "Manage recipes and their components (permission: ingredient.manage)",
+    "subtitle": "Manage recipes and their components (permission: recipe.manage)",
     "add": "Add recipe",
     "name": "Name",
     "description": "Description",
@@ -146,7 +147,12 @@
     "noComponents": "No components yet.",
     "noSteps": "No steps yet.",
     "noMedia": "No media yet.",
-    "viewTitle": "Recipe"
+    "viewTitle": "Recipe",
+    "stdCost": "Std. cost",
+    "stdCostPlaceholder": "e.g. 2.50",
+    "perOutputUnit": "per output unit",
+    "cost": "Cost",
+    "totalCost": "Total cost"
   },
   "devTools": {
     "title": "Dev Tools",

@@ -19,6 +19,7 @@
 type RecipeRow = {
   id: string; name: string; description: string
   output_quantity: number; output_unit_id: string; output_unit_code: string
+  standard_unit_cost: number | null
   is_active: boolean; is_pre_product: boolean
   component_count: number; created_at: string; updated_at: string
 }
@@ -31,6 +32,7 @@ type ComponentRow = {
   ingredient_id: string | null; sub_recipe_id: string | null
   quantity: number; unit_id: string; unit_code: string
   sort_order: number; type: 'ingredient' | 'sub_recipe'; name: string
+  std_cost: number | null; base_unit_factor: number | null; component_unit_factor: number | null
 }
 
 type StepRow = { recipe_id: string; step_no: number; instruction_text: string }
@@ -56,12 +58,13 @@ const toast  = useToast()
 // ─── basic fields ─────────────────────────────────────────────────────────────
 
 const draft = reactive({
-  name:            '',
-  description:     '',
-  output_quantity: '' as string | number,
-  output_unit_id:  '',
-  is_active:       true,
-  is_pre_product:  false,
+  name:               '',
+  description:        '',
+  output_quantity:    '' as string | number,
+  output_unit_id:     '',
+  standard_unit_cost: '' as string | number,
+  is_active:          true,
+  is_pre_product:     false,
 })
 
 const saving      = ref(false)
@@ -83,21 +86,23 @@ watch(() => props.open, async (v) => {
   media.value      = []
 
   if (props.recipe) {
-    draft.name            = props.recipe.name
-    draft.description     = props.recipe.description ?? ''
-    draft.output_quantity = props.recipe.output_quantity
-    draft.output_unit_id  = props.recipe.output_unit_id
-    draft.is_active       = props.recipe.is_active
-    draft.is_pre_product  = props.recipe.is_pre_product
-    savedId.value         = props.recipe.id
+    draft.name               = props.recipe.name
+    draft.description        = props.recipe.description ?? ''
+    draft.output_quantity    = props.recipe.output_quantity
+    draft.output_unit_id     = props.recipe.output_unit_id
+    draft.standard_unit_cost = props.recipe.standard_unit_cost ?? ''
+    draft.is_active          = props.recipe.is_active
+    draft.is_pre_product     = props.recipe.is_pre_product
+    savedId.value            = props.recipe.id
     await loadDetail(props.recipe.id)
   } else {
-    draft.name            = ''
-    draft.description     = ''
-    draft.output_quantity = ''
-    draft.output_unit_id  = props.units[0]?.id ?? ''
-    draft.is_active       = true
-    draft.is_pre_product  = false
+    draft.name               = ''
+    draft.description        = ''
+    draft.output_quantity    = ''
+    draft.output_unit_id     = props.units[0]?.id ?? ''
+    draft.standard_unit_cost = ''
+    draft.is_active          = true
+    draft.is_pre_product     = false
   }
 })
 
@@ -127,13 +132,15 @@ async function saveBasic() {
   }
   saving.value = true
   try {
+    const costRaw = String(draft.standard_unit_cost).trim()
     const body = {
-      name:            draft.name.trim(),
-      description:     draft.description.trim() || null,
-      output_quantity: qty,
-      output_unit_id:  draft.output_unit_id,
-      is_active:       draft.is_active,
-      is_pre_product:  draft.is_pre_product,
+      name:               draft.name.trim(),
+      description:        draft.description.trim() || null,
+      output_quantity:    qty,
+      output_unit_id:     draft.output_unit_id,
+      standard_unit_cost: costRaw === '' ? null : Number(costRaw),
+      is_active:          draft.is_active,
+      is_pre_product:     draft.is_pre_product,
     }
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
@@ -383,6 +390,25 @@ async function addStep() {
     toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
   }
 }
+
+// ─── cost helpers ─────────────────────────────────────────────────────────────
+
+function componentCost(comp: ComponentRow): number | null {
+  if (comp.std_cost == null || comp.base_unit_factor == null || comp.component_unit_factor == null) return null
+  if (comp.base_unit_factor === 0) return null
+  return comp.quantity * (comp.component_unit_factor / comp.base_unit_factor) * comp.std_cost
+}
+
+function formatCost(n: number | null): string {
+  if (n == null) return '—'
+  return `€ ${n.toFixed(4)}`
+}
+
+const totalCost = computed((): number | null => {
+  const costs = components.value.map(componentCost).filter((c): c is number => c !== null)
+  if (costs.length === 0) return null
+  return costs.reduce((a, b) => a + b, 0)
+})
 </script>
 
 <template>
@@ -426,6 +452,15 @@ async function addStep() {
             <div class="text-sm text-gray-900 dark:text-gray-100">
               {{ draft.output_quantity }}
               {{ units.find(u => u.id === draft.output_unit_id)?.code }}
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+              {{ $t('recipes.stdCost') }}
+              <span class="text-gray-400 font-normal normal-case tracking-normal ml-1">{{ $t('recipes.perOutputUnit') }}</span>
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null ? `€ ${draft.standard_unit_cost}` : '—' }}
             </div>
           </div>
           <div class="flex gap-4">
@@ -526,6 +561,22 @@ async function addStep() {
             </div>
           </div>
 
+          <!-- Std. cost -->
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+              {{ $t('recipes.stdCost') }}
+              <span class="text-gray-400 font-normal normal-case tracking-normal ml-1">{{ $t('recipes.perOutputUnit') }}</span>
+            </label>
+            <input
+              v-model="draft.standard_unit_cost"
+              type="number" min="0" step="any"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                     focus:outline-none focus:ring-1 focus:ring-gray-400
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              :placeholder="$t('recipes.stdCostPlaceholder')"
+            />
+          </div>
+
           <!-- Flags -->
           <div class="flex gap-6">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -563,12 +614,13 @@ async function addStep() {
                 <th class="text-left px-1 py-1 font-medium">{{ $t('recipes.name') }}</th>
                 <th class="text-left px-1 py-1 font-medium w-24">{{ $t('recipes.qty') }}</th>
                 <th class="text-left px-1 py-1 font-medium w-28">{{ $t('ingredients.unit') }}</th>
+                <th class="text-right px-1 py-1 font-medium w-28">{{ $t('recipes.cost') }}</th>
                 <th class="w-8"></th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="components.length === 0 && !pendingComp">
-                <td colspan="5" class="px-1 py-2 text-gray-400 dark:text-gray-600 text-xs">
+                <td colspan="6" class="px-1 py-2 text-gray-400 dark:text-gray-600 text-xs">
                   {{ $t('recipes.noComponents') }}
                 </td>
               </tr>
@@ -619,6 +671,10 @@ async function addStep() {
                     <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
                   </select>
                 </td>
+                <!-- cost -->
+                <td class="px-1 py-1 align-middle text-right text-xs text-gray-600 dark:text-gray-400">
+                  {{ formatCost(componentCost(comp)) }}
+                </td>
                 <!-- delete (edit mode only) -->
                 <td class="px-1 py-1 align-middle text-right">
                   <UButton v-if="!inViewMode" size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
@@ -667,6 +723,17 @@ async function addStep() {
                 </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="border-t border-gray-200 dark:border-gray-700">
+                <td colspan="4" class="px-1 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
+                  {{ $t('recipes.totalCost') }}
+                </td>
+                <td class="px-1 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 text-right">
+                  {{ formatCost(totalCost) }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
 
           <!-- Component error (edit mode only) -->

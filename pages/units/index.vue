@@ -10,13 +10,13 @@ const toast    = useToast()
 
 type UnitType = 'mass' | 'volume' | 'count'
 
-type UnitRow = { id: string; code: string; name: string; unit_type: UnitType }
+type UnitRow = { id: string; code: string; name: string; unit_type: UnitType; factor: number }
 
-type Draft = Pick<UnitRow, 'code' | 'name' | 'unit_type'>
+type Draft = Pick<UnitRow, 'code' | 'name' | 'unit_type' | 'factor'>
 
 type UiRow =
   | (UnitRow & { _mode: 'view' | 'edit'; _draft?: Draft })
-  | { id: '__new__'; code: ''; name: ''; unit_type: UnitType; _mode: 'edit'; _draft: Draft }
+  | { id: '__new__'; code: ''; name: ''; unit_type: UnitType; factor: number; _mode: 'edit'; _draft: Draft }
 
 const unitTypeOptions = [
   { label: 'mass',   value: 'mass'   as UnitType },
@@ -71,13 +71,13 @@ function showError(title: string, e: any) {
 
 function startAdd() {
   if (!canManage.value || rows.value.some(r => r.id === '__new__')) return
-  rows.value.unshift({ id: '__new__', code: '', name: '', unit_type: 'mass', _mode: 'edit', _draft: { code: '', name: '', unit_type: 'mass' } })
+  rows.value.unshift({ id: '__new__', code: '', name: '', unit_type: 'mass', factor: 1, _mode: 'edit', _draft: { code: '', name: '', unit_type: 'mass', factor: 1 } })
 }
 
 function startEdit(row: UiRow) {
   if (!canManage.value || row.id === '__new__') return
   row._mode  = 'edit'
-  row._draft = { code: row.code, name: row.name, unit_type: row.unit_type }
+  row._draft = { code: row.code, name: row.name, unit_type: row.unit_type, factor: row.factor }
 }
 
 function discard(row: UiRow) {
@@ -93,8 +93,13 @@ async function commit(row: UiRow) {
     toast.add({ title: t('common.missingFields'), description: t('units.codeAndNameRequired'), color: 'red' })
     return
   }
+  const factorVal = Number(d.factor)
+  if (!(factorVal > 0)) {
+    toast.add({ title: t('common.missingFields'), description: t('units.factorRequired'), color: 'red' })
+    return
+  }
   try {
-    const body = { code: d.code.trim(), name: d.name.trim(), unit_type: d.unit_type }
+    const body = { code: d.code.trim(), name: d.name.trim(), unit_type: d.unit_type, factor: factorVal }
     if (row.id === '__new__') {
       await $fetch('/api/units', { method: 'POST', credentials: 'include', body })
       toast.add({ title: t('units.created') })
@@ -146,6 +151,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     inner: [
       { header: t('units.name'),    candidates: rows.value.map(r => r.name) },
       { header: t('units.type'),    candidates: unitTypeOptions.map(o => o.label) },
+      { header: t('units.factor'),  candidates: rows.value.map(r => String(r.factor)) },
     ],
     last:  { header: '', candidates: [], minPx: 108 },
   }))
@@ -187,6 +193,7 @@ const errorText = computed(() =>
             <col :style="{ width: firstWidth + 'px' }" />
             <col :style="{ width: innerWidths[0] + 'px' }" />
             <col :style="{ width: innerWidths[1] + 'px' }" />
+            <col :style="{ width: innerWidths[2] + 'px' }" />
             <col :style="{ width: lastWidth + 'px' }" />
           </colgroup>
 
@@ -217,6 +224,10 @@ const errorText = computed(() =>
                     :aria-label="$t('units.sortByType')" @click="toggleSort('unit_type')" />
                 </div>
               </th>
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
+                         border-b border-gray-200 dark:border-gray-800">
+                {{ $t('units.factor') }}
+              </th>
               <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800 border-l border-gray-200 dark:border-gray-800
                          bg-white dark:bg-gray-950">
@@ -227,10 +238,10 @@ const errorText = computed(() =>
 
           <tbody>
             <tr v-if="pending">
-              <td colspan="4" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
+              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
             </tr>
             <tr v-else-if="visibleRows.length === 0">
-              <td colspan="4" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
+              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
@@ -263,6 +274,16 @@ const errorText = computed(() =>
                   <option v-for="o in unitTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
                 <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_type }}</span>
+              </td>
+              <!-- Factor -->
+              <td class="px-2 py-1.5 align-middle">
+                <input v-if="row._mode === 'edit'" v-model.number="row._draft!.factor"
+                  type="number" min="0.000001" step="any"
+                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-900
+                         focus:outline-none focus:ring-1 focus:ring-gray-300
+                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
+                  placeholder="1" />
+                <span v-else class="text-gray-800 dark:text-gray-200">{{ row.factor }}</span>
               </td>
               <!-- Actions — sticky right -->
               <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950

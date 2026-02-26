@@ -9,17 +9,18 @@ const toast  = useToast()
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type RecipeRow = {
-  id:               string
-  name:             string
-  description:      string
-  output_quantity:  number
-  output_unit_id:   string
-  output_unit_code: string
-  is_active:        boolean
-  is_pre_product:   boolean
-  component_count:  number
-  created_at:       string
-  updated_at:       string
+  id:                 string
+  name:               string
+  description:        string
+  output_quantity:    number
+  output_unit_id:     string
+  output_unit_code:   string
+  standard_unit_cost: number | null
+  is_active:          boolean
+  is_pre_product:     boolean
+  component_count:    number
+  created_at:         string
+  updated_at:         string
 }
 
 type UnitOption = { id: string; code: string; name: string }
@@ -27,7 +28,7 @@ type IngredientOption = { id: string; name: string; kind: string; default_unit_i
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
-const { canRead, canManage } = useTablePermissions('ingredient')
+const { canRead, canManage } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     inner: [
       { header: t('recipes.description'), candidates: rows.value.map(r => r.description.slice(0, 60)) },
       { header: t('recipes.output'),      candidates: rows.value.map(r => `${r.output_quantity} ${r.output_unit_code}`) },
+      { header: t('recipes.stdCost'),     candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost}` : '—') },
       { header: t('recipes.active'),      candidates: ['true', 'false'] },
       { header: t('recipes.preProduct'),  candidates: ['true', 'false'] },
       { header: t('recipes.components'),  candidates: rows.value.map(r => String(r.component_count)) },
@@ -186,6 +188,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
             <col :style="{ width: innerWidths[2] + 'px' }" />
             <col :style="{ width: innerWidths[3] + 'px' }" />
             <col :style="{ width: innerWidths[4] + 'px' }" />
+            <col :style="{ width: innerWidths[5] + 'px' }" />
             <col :style="{ width: lastWidth + 'px' }" />
           </colgroup>
 
@@ -210,6 +213,11 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.output') }}
+              </th>
+              <!-- Std. cost -->
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
+                         border-b border-gray-200 dark:border-gray-800">
+                {{ $t('recipes.stdCost') }}
               </th>
               <!-- Active -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
@@ -241,10 +249,10 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
 
           <tbody>
             <tr v-if="pending">
-              <td colspan="7" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
+              <td colspan="8" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
             </tr>
             <tr v-else-if="visibleRows.length === 0">
-              <td colspan="7" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
+              <td colspan="8" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
@@ -264,6 +272,12 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <!-- Output -->
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">{{ row.output_quantity }} {{ row.output_unit_code }}</span>
+              </td>
+              <!-- Std. cost -->
+              <td class="px-2 py-1.5 align-middle">
+                <span class="text-gray-800 dark:text-gray-200">
+                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost}` : '—' }}
+                </span>
               </td>
               <!-- Active -->
               <td class="px-2 py-1.5 align-middle">

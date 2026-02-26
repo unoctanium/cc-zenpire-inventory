@@ -1,0 +1,1 @@
+ALTER TABLE unit ADD COLUMN factor numeric(18,6) NOT NULL DEFAULT 1;

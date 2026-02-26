@@ -52,10 +52,10 @@ export default defineEventHandler(async (event) => {
   // Ingredients
   // -----------------------
   const ingredientDefs = [
-    { name: 'Rice',      default_unit_id: g,   kind: 'purchased' },
-    { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased' },
-    { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased' },
-    { name: 'Noodles',   default_unit_id: g,   kind: 'purchased' },
+    { name: 'Rice',      default_unit_id: g,   kind: 'purchased', standard_unit_cost: 0.002  },
+    { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased', standard_unit_cost: 0.003  },
+    { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased', standard_unit_cost: 0.08   },
+    { name: 'Noodles',   default_unit_id: g,   kind: 'purchased', standard_unit_cost: 0.003  },
   ]
 
   const ingredientIds: Record<string, string> = {}
@@ -223,6 +223,7 @@ export default defineEventHandler(async (event) => {
       description: 'Japanese soup stock',
       output_quantity: 1000,
       output_unit_id: ml,
+      standard_unit_cost: 0.0004,
       is_active: true,
       is_pre_product: true,
     }).eq('id', dashiId)
@@ -232,6 +233,7 @@ export default defineEventHandler(async (event) => {
       description: 'Japanese soup stock',
       output_quantity: 1000,
       output_unit_id: ml,
+      standard_unit_cost: 0.0004,
       is_active: true,
       is_pre_product: true,
     }).select('id').single()

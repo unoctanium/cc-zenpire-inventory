@@ -3,7 +3,7 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 
 export default defineEventHandler(async (event) => {
-  await requireAnyPermission(event, ['ingredient.manage', 'ingredient.read'])
+  await requireAnyPermission(event, ['recipe.manage', 'recipe.read'])
 
   const admin = supabaseAdmin()
   const { data, error } = await admin

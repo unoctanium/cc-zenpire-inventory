@@ -3,7 +3,7 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'ingredient.manage')
+  await requirePermission(event, 'recipe.manage')
 
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })

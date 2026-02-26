@@ -3,7 +3,7 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 
 export default defineEventHandler(async (event) => {
-  await requireAnyPermission(event, ['ingredient.manage', 'ingredient.read'])
+  await requireAnyPermission(event, ['recipe.manage', 'recipe.read'])
 
   const admin = supabaseAdmin()
   const { data, error } = await admin
@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
       description,
       output_quantity,
       output_unit_id,
+      standard_unit_cost,
       is_active,
       is_pre_product,
       created_at,
@@ -42,17 +43,18 @@ export default defineEventHandler(async (event) => {
   return {
     ok: true,
     recipes: (data ?? []).map((r: any) => ({
-      id:               r.id,
-      name:             r.name,
-      description:      r.description ?? '',
-      output_quantity:  r.output_quantity,
-      output_unit_id:   r.output_unit_id,
-      output_unit_code: r.unit?.code ?? '',
-      is_active:        r.is_active,
-      is_pre_product:   r.is_pre_product,
-      component_count:  countMap.get(r.id) ?? 0,
-      created_at:       r.created_at,
-      updated_at:       r.updated_at,
+      id:                 r.id,
+      name:               r.name,
+      description:        r.description ?? '',
+      output_quantity:    r.output_quantity,
+      output_unit_id:     r.output_unit_id,
+      output_unit_code:   r.unit?.code ?? '',
+      standard_unit_cost: r.standard_unit_cost ?? null,
+      is_active:          r.is_active,
+      is_pre_product:     r.is_pre_product,
+      component_count:    countMap.get(r.id) ?? 0,
+      created_at:         r.created_at,
+      updated_at:         r.updated_at,
     })),
   }
 })

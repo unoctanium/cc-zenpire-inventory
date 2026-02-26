@@ -3,7 +3,7 @@ import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'ingredient.manage')
+  await requirePermission(event, 'recipe.manage')
 
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
@@ -13,8 +13,9 @@ export default defineEventHandler(async (event) => {
   const description     = String(body?.description     ?? '').trim() || null
   const output_quantity = Number(body?.output_quantity)
   const output_unit_id  = String(body?.output_unit_id  ?? '').trim()
-  const is_active       = body?.is_active       !== false
-  const is_pre_product  = body?.is_pre_product  === true
+  const is_active          = body?.is_active          !== false
+  const is_pre_product     = body?.is_pre_product     === true
+  const standard_unit_cost = body?.standard_unit_cost != null ? Number(body.standard_unit_cost) : null
 
   if (!name || !output_unit_id || !(output_quantity > 0)) {
     throw createError({ statusCode: 400, statusMessage: 'Missing name, output_quantity or output_unit_id' })
@@ -23,9 +24,9 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('recipe')
-    .update({ name, description, output_quantity, output_unit_id, is_active, is_pre_product })
+    .update({ name, description, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product })
     .eq('id', id)
-    .select('id, name, description, output_quantity, output_unit_id, is_active, is_pre_product, created_at, updated_at')
+    .select('id, name, description, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product, created_at, updated_at')
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })

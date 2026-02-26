@@ -41,7 +41,7 @@ type UnitOption = { id: string; code: string; name: string }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
-const { canRead, canManage } = useTablePermissions('ingredient')
+const { canRead, canManage } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
@@ -135,8 +135,9 @@ async function commit(row: UiRow) {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.nameAndUnitRequired'), color: 'red' })
     return
   }
-  const costValue = d.standard_unit_cost.trim() === '' ? null : Number(d.standard_unit_cost)
-  if (d.standard_unit_cost.trim() !== '' && isNaN(costValue as number)) {
+  const costStr   = String(d.standard_unit_cost ?? '').trim()
+  const costValue = costStr === '' ? null : Number(costStr)
+  if (costStr !== '' && isNaN(costValue as number)) {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.invalidCost'), color: 'red' })
     return
   }
