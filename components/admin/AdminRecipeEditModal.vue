@@ -160,6 +160,7 @@ async function saveBasic() {
 
 // ─── components section ───────────────────────────────────────────────────────
 
+const compError     = ref('')
 const compSearch    = ref('')
 const compSearchEl  = ref<HTMLInputElement | null>(null)
 const showDropdown  = ref(false)
@@ -226,9 +227,10 @@ async function confirmAddComponent() {
   if (!pc || !savedId.value) return
   const qty = Number(pc.quantity)
   if (!(qty > 0)) {
-    toast.add({ title: t('common.missingFields'), description: t('recipes.nameRequired'), color: 'red' })
+    compError.value = t('recipes.nameRequired')
     return
   }
+  compError.value = ''
   try {
     await $fetch(`/api/recipes/${savedId.value}/components`, {
       method: 'POST',
@@ -243,16 +245,13 @@ async function confirmAddComponent() {
     pendingComp.value = null
     await loadDetail(savedId.value)
   } catch (e: any) {
-    toast.add({
-      title: t('common.saveFailed'),
-      description: e?.data?.statusMessage ?? e?.message ?? String(e),
-      color: 'red',
-    })
+    compError.value = e?.data?.statusMessage ?? e?.message ?? String(e)
   }
 }
 
 function cancelPendingComp() {
   pendingComp.value = null
+  compError.value   = ''
 }
 
 async function deleteComponent(comp: ComponentRow) {
@@ -658,6 +657,9 @@ async function addStep() {
               </tr>
             </tbody>
           </table>
+
+          <!-- Component error (edit mode only) -->
+          <p v-if="compError && !inViewMode" class="text-xs text-red-600 dark:text-red-400 px-1">{{ compError }}</p>
 
           <!-- Add component row: search + quick-add button (edit mode only) -->
           <div v-if="!inViewMode" class="relative flex gap-2 items-center">

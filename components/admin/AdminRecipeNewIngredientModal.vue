@@ -21,8 +21,7 @@ const emit = defineEmits<{
   (e: 'created', ingredient: { id: string; name: string; kind: string; default_unit_id: string }): void
 }>()
 
-const { t }  = useI18n()
-const toast  = useToast()
+const { t } = useI18n()
 
 const name              = ref('')
 const default_unit_id   = ref('')
@@ -42,14 +41,14 @@ watch(() => props.open, (v) => {
 
 async function save() {
   if (!name.value.trim() || !default_unit_id.value) {
-    toast.add({ title: t('ingredients.nameAndUnitRequired'), color: 'red' })
+    errorMsg.value = t('ingredients.nameAndUnitRequired')
     return
   }
   const costValue = standard_unit_cost.value.trim() === ''
     ? null
     : Number(standard_unit_cost.value)
   if (standard_unit_cost.value.trim() !== '' && isNaN(costValue as number)) {
-    toast.add({ title: t('ingredients.invalidCost'), color: 'red' })
+    errorMsg.value = t('ingredients.invalidCost')
     return
   }
   errorMsg.value = ''
