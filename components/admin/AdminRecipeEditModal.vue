@@ -165,6 +165,10 @@ const compSearch    = ref('')
 const compSearchEl  = ref<HTMLInputElement | null>(null)
 const showDropdown  = ref(false)
 
+// Local copy of ingredients so newly created ones appear immediately in search
+const localIngredients = ref<IngredientOption[]>([])
+watch(() => props.ingredients, (v) => { localIngredients.value = [...v] }, { immediate: true })
+
 type SearchResult = { id: string; name: string; group: 'ingredient' | 'sub_recipe' }
 
 const searchResults = computed((): SearchResult[] => {
@@ -174,7 +178,7 @@ const searchResults = computed((): SearchResult[] => {
 
   const matched: SearchResult[] = []
 
-  for (const ing of props.ingredients) {
+  for (const ing of localIngredients.value) {
     if (ing.name.toLowerCase().includes(q)) {
       matched.push({ id: ing.id, name: ing.name, group: 'ingredient' })
     }
@@ -299,7 +303,14 @@ async function saveComponent(comp: ComponentRow) {
 const isNewIngredientOpen = ref(false)
 
 function onIngredientCreated(ingredient: any) {
-  // Auto-select the new ingredient as pending component
+  // Add to local list so it appears in search immediately (no page reload needed)
+  localIngredients.value.push({
+    id:              ingredient.id,
+    name:            ingredient.name,
+    kind:            ingredient.kind ?? 'purchased',
+    default_unit_id: ingredient.default_unit_id ?? '',
+  })
+  // Auto-select as pending component
   pendingComp.value = {
     type:     'ingredient',
     ref_id:   ingredient.id,

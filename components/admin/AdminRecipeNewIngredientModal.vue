@@ -62,7 +62,6 @@ async function save() {
         standard_unit_cost: costValue,
       },
     })
-    toast.add({ title: t('ingredients.created') })
     emit('created', ingredient.ingredient)
     emit('update:open', false)
   } catch (e: any) {
