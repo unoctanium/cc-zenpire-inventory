@@ -55,15 +55,6 @@ async function refresh() {
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>{{ $t('dashboard.quickLinks') }}</template>
-      <div class="flex flex-wrap gap-2">
-        <UButton to="/units">{{ $t('nav.units') }}</UButton>
-        <UButton to="/ingredients" color="gray" variant="soft">{{ $t('nav.ingredients') }}</UButton>
-        <UButton to="/recipes"     color="gray" variant="soft">{{ $t('nav.recipes') }}</UButton>
-        <UButton to="/rbac"        color="gray" variant="soft">{{ $t('nav.rbac') }}</UButton>
-        <UButton to="/admin/tools" color="gray" variant="soft">{{ $t('nav.devTools') }}</UButton>
-      </div>
-    </UCard>
+
   </div>
 </template>

@@ -6,7 +6,8 @@
     "ingredients": "食材",
     "recipes": "レシピ",
     "rbac": "権限管理",
-    "devTools": "開発ツール"
+    "devTools": "開発ツール",
+    "adminSettings": "管理設定"
   },
   "auth": {
     "login": "ログイン",

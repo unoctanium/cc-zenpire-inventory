@@ -6,7 +6,8 @@
     "ingredients": "Ingredients",
     "recipes": "Recipes",
     "rbac": "RBAC",
-    "devTools": "Dev Tools"
+    "devTools": "Dev Tools",
+    "adminSettings": "Admin Settings"
   },
   "auth": {
     "login": "Login",

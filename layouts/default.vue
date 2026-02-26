@@ -25,10 +25,9 @@ watch(
 
 const nav = computed(() => [
   { label: t('nav.home'),        to: '/'           },
-  { label: t('nav.units'),       to: '/units'       },
-  { label: t('nav.ingredients'), to: '/ingredients' },
   { label: t('nav.recipes'),     to: '/recipes'     },
-  { label: t('nav.rbac'),        to: '/rbac'        },
+  { label: t('nav.ingredients'), to: '/ingredients' },
+  { label: t('nav.units'),       to: '/units'       },
 ])
 
 const visibleNav = computed(() =>
@@ -45,7 +44,7 @@ const langOptions = computed(() =>
 const userMenuItems = computed(() => {
   const group1: any[] = []
   if (isAdmin.value) {
-    group1.push({ label: t('nav.devTools'), to: '/admin/tools' })
+    group1.push({ label: t('nav.adminSettings'), to: '/admin/tools' })
   }
   group1.push({ label: t('nav.userSettings'), to: '/settings' })
   return [group1, [{ label: t('auth.logout'), to: '/logout' }]]

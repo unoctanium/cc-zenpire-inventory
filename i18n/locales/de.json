@@ -6,7 +6,8 @@
     "ingredients": "Zutaten",
     "recipes": "Rezepte",
     "rbac": "Rollen",
-    "devTools": "Entwickler-Tools"
+    "devTools": "Entwickler-Tools",
+    "adminSettings": "Admin-Einstellungen"
   },
   "auth": {
     "login": "Anmelden",

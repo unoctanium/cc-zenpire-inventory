@@ -29,6 +29,9 @@ async function call(path: string) {
       <UButton color="gray" variant="soft" @click="call('/api/manage/seed_example')">
         {{ $t('devTools.seedExample') }}
       </UButton>
+      <UButton color="gray" variant="soft" to="/rbac">
+        {{ $t('nav.rbac') }}
+      </UButton>
     </div>
     <p class="text-xs text-gray-500 dark:text-gray-400">
       {{ $t('devTools.flow') }}
