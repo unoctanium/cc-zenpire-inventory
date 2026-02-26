@@ -39,7 +39,8 @@
     "noData": "Keine Daten",
     "noResults": "Keine Ergebnisse",
     "missingFields": "Fehlende Felder",
-    "confirm": "Sind Sie sicher?"
+    "confirm": "Sind Sie sicher?",
+    "close": "Schließen"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -143,7 +144,8 @@
     "typeSubRecipe": "Teilrezept",
     "noComponents": "Noch keine Komponenten.",
     "noSteps": "Noch keine Schritte.",
-    "noMedia": "Noch keine Medien."
+    "noMedia": "Noch keine Medien.",
+    "viewTitle": "Rezept"
   },
   "devTools": {
     "title": "Entwickler-Tools",

@@ -39,7 +39,8 @@
     "noData": "No data",
     "noResults": "No results",
     "missingFields": "Missing fields",
-    "confirm": "Are you sure?"
+    "confirm": "Are you sure?",
+    "close": "Close"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -143,7 +144,8 @@
     "typeSubRecipe": "Sub-recipe",
     "noComponents": "No components yet.",
     "noSteps": "No steps yet.",
-    "noMedia": "No media yet."
+    "noMedia": "No media yet.",
+    "viewTitle": "Recipe"
   },
   "devTools": {
     "title": "Dev Tools",

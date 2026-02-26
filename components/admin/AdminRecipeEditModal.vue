@@ -42,6 +42,7 @@ const props = defineProps<{
   units:       UnitOption[]
   ingredients: IngredientOption[]
   allRecipes:  RecipeRow[]
+  viewMode?:   boolean
 }>()
 
 const emit = defineEmits<{
@@ -63,8 +64,9 @@ const draft = reactive({
   is_pre_product:  false,
 })
 
-const saving     = ref(false)
-const savedId    = ref<string | null>(null)   // id after first save (enables sections 2/3/4)
+const saving      = ref(false)
+const savedId     = ref<string | null>(null)   // id after first save (enables sections 2/3/4)
+const inViewMode  = ref(false)
 
 // Full detail fetched after save or when opening existing recipe
 const components = ref<ComponentRow[]>([])
@@ -74,7 +76,8 @@ const detailLoading = ref(false)
 
 watch(() => props.open, async (v) => {
   if (!v) return
-  savedId.value = null
+  savedId.value    = null
+  inViewMode.value = props.viewMode ?? false
   components.value = []
   steps.value      = []
   media.value      = []
@@ -376,8 +379,14 @@ async function addStep() {
   <UModal :open="open" size="xl" @update:open="emit('update:open', $event)">
     <template #header>
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        {{ recipe ? $t('recipes.editTitle') : $t('recipes.newTitle') }}
-        <span v-if="recipe" class="ml-1 text-gray-500 font-normal">— {{ recipe.name }}</span>
+        <template v-if="inViewMode">
+          {{ $t('recipes.viewTitle') }}
+          <span class="ml-1 text-gray-500 font-normal">— {{ recipe?.name }}</span>
+        </template>
+        <template v-else>
+          {{ recipe ? $t('recipes.editTitle') : $t('recipes.newTitle') }}
+          <span v-if="recipe" class="ml-1 text-gray-500 font-normal">— {{ recipe.name }}</span>
+        </template>
       </h2>
     </template>
 
@@ -385,7 +394,67 @@ async function addStep() {
       <div class="space-y-6">
 
         <!-- ── Section 1: Basic fields ──────────────────────────────────────── -->
-        <div class="space-y-3">
+
+        <!-- View mode: read-only display -->
+        <div v-if="inViewMode" class="space-y-3">
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+              {{ $t('recipes.name') }}
+            </div>
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ draft.name }}</div>
+          </div>
+          <div v-if="draft.description">
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+              {{ $t('recipes.description') }}
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ draft.description }}</div>
+          </div>
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+              {{ $t('recipes.output') }}
+            </div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">
+              {{ draft.output_quantity }}
+              {{ units.find(u => u.id === draft.output_unit_id)?.code }}
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div>
+              <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+                {{ $t('recipes.active') }}
+              </div>
+              <span
+                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                :class="draft.is_active
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'"
+              >
+                {{ draft.is_active ? $t('units.yes') : $t('units.no') }}
+              </span>
+            </div>
+            <div>
+              <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+                {{ $t('recipes.preProduct') }}
+              </div>
+              <span
+                v-if="draft.is_pre_product"
+                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                       bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+              >
+                {{ $t('units.yes') }}
+              </span>
+              <span v-else class="text-sm text-gray-400 dark:text-gray-600">–</span>
+            </div>
+          </div>
+          <div v-if="savedId && recipe" class="text-xs text-gray-400 dark:text-gray-600 space-y-0.5">
+            <div><span class="font-medium">{{ $t('recipes.id') }}:</span> {{ savedId }}</div>
+            <div><span class="font-medium">{{ $t('recipes.createdAt') }}:</span> {{ recipe.created_at }}</div>
+            <div><span class="font-medium">{{ $t('recipes.updatedAt') }}:</span> {{ recipe.updated_at }}</div>
+          </div>
+        </div>
+
+        <!-- Edit mode: editable inputs -->
+        <div v-else class="space-y-3">
 
           <!-- Name -->
           <div>
@@ -509,9 +578,11 @@ async function addStep() {
                 </td>
                 <!-- name -->
                 <td class="px-1 py-1 align-middle text-gray-800 dark:text-gray-200">{{ comp.name }}</td>
-                <!-- qty inline edit -->
+                <!-- qty: editable or read-only -->
                 <td class="px-1 py-1 align-middle">
+                  <span v-if="inViewMode" class="text-xs text-gray-800 dark:text-gray-200">{{ comp.quantity }}</span>
                   <input
+                    v-else
                     :value="compEdits[comp.id]?.quantity ?? comp.quantity"
                     type="number" min="0.001" step="any"
                     class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
@@ -522,9 +593,11 @@ async function addStep() {
                     @blur="saveComponent(comp)"
                   />
                 </td>
-                <!-- unit inline edit -->
+                <!-- unit: editable or read-only -->
                 <td class="px-1 py-1 align-middle">
+                  <span v-if="inViewMode" class="text-xs text-gray-800 dark:text-gray-200">{{ comp.unit_code }}</span>
                   <select
+                    v-else
                     :value="compEdits[comp.id]?.unit_id ?? comp.unit_id"
                     class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
                            focus:outline-none focus:ring-1 focus:ring-gray-400
@@ -536,15 +609,15 @@ async function addStep() {
                     <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
                   </select>
                 </td>
-                <!-- delete -->
+                <!-- delete (edit mode only) -->
                 <td class="px-1 py-1 align-middle text-right">
-                  <UButton size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
+                  <UButton v-if="!inViewMode" size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
                     @click="deleteComponent(comp)" />
                 </td>
               </tr>
 
-              <!-- Pending new component row -->
-              <tr v-if="pendingComp" class="bg-gray-50 dark:bg-gray-900/50">
+              <!-- Pending new component row (edit mode only) -->
+              <tr v-if="pendingComp && !inViewMode" class="bg-gray-50 dark:bg-gray-900/50">
                 <td class="px-1 py-1 align-middle">
                   <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium
                                bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
@@ -586,8 +659,8 @@ async function addStep() {
             </tbody>
           </table>
 
-          <!-- Add component row: search + quick-add button -->
-          <div class="relative flex gap-2 items-center">
+          <!-- Add component row: search + quick-add button (edit mode only) -->
+          <div v-if="!inViewMode" class="relative flex gap-2 items-center">
             <div class="relative flex-1">
               <input
                 ref="compSearchEl"
@@ -660,8 +733,8 @@ async function addStep() {
                   {{ su.instruction_text }}
                 </span>
               </div>
-              <!-- actions -->
-              <div class="flex items-center gap-1 shrink-0 pt-0.5">
+              <!-- actions (edit mode only) -->
+              <div v-if="!inViewMode" class="flex items-center gap-1 shrink-0 pt-0.5">
                 <template v-if="su._editing">
                   <UButton size="xs" color="green" variant="ghost" icon="i-heroicons-check"
                     @click="saveStep(su)" />
@@ -677,8 +750,8 @@ async function addStep() {
               </div>
             </div>
 
-            <!-- Add step row -->
-            <div v-if="addingStep" class="flex gap-2 items-start pt-1">
+            <!-- Add step row (edit mode only) -->
+            <div v-if="addingStep && !inViewMode" class="flex gap-2 items-start pt-1">
               <span class="shrink-0 text-xs text-gray-400 pt-1.5 w-6 text-right">
                 {{ stepsUi.length + 1 }}.
               </span>
@@ -700,7 +773,7 @@ async function addStep() {
             </div>
           </div>
 
-          <UButton v-if="!addingStep" size="sm" color="gray" variant="soft" icon="i-heroicons-plus"
+          <UButton v-if="!addingStep && !inViewMode" size="sm" color="gray" variant="soft" icon="i-heroicons-plus"
             @click="addingStep = true">
             {{ $t('recipes.addStep') }}
           </UButton>
@@ -723,7 +796,17 @@ async function addStep() {
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <!-- View mode footer: Close + Edit -->
+      <div v-if="inViewMode" class="flex justify-end gap-2">
+        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+          {{ $t('common.close') }}
+        </UButton>
+        <UButton @click="inViewMode = false">
+          {{ $t('common.edit') }}
+        </UButton>
+      </div>
+      <!-- Edit mode footer: Cancel + Save -->
+      <div v-else class="flex justify-end gap-2">
         <UButton color="gray" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.cancel') }}
         </UButton>

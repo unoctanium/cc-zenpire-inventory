@@ -28,6 +28,7 @@ const name              = ref('')
 const default_unit_id   = ref('')
 const standard_unit_cost = ref('')
 const saving            = ref(false)
+const errorMsg          = ref('')
 
 watch(() => props.open, (v) => {
   if (v) {
@@ -35,6 +36,7 @@ watch(() => props.open, (v) => {
     default_unit_id.value    = props.units[0]?.id ?? ''
     standard_unit_cost.value = ''
     saving.value             = false
+    errorMsg.value           = ''
   }
 })
 
@@ -50,6 +52,7 @@ async function save() {
     toast.add({ title: t('ingredients.invalidCost'), color: 'red' })
     return
   }
+  errorMsg.value = ''
   saving.value = true
   try {
     const ingredient = await $fetch<{ ok: boolean; ingredient: any }>('/api/ingredients', {
@@ -65,11 +68,7 @@ async function save() {
     emit('created', ingredient.ingredient)
     emit('update:open', false)
   } catch (e: any) {
-    toast.add({
-      title: t('common.saveFailed'),
-      description: e?.data?.statusMessage ?? e?.message ?? String(e),
-      color: 'red',
-    })
+    errorMsg.value = e?.data?.statusMessage ?? e?.message ?? String(e)
   } finally {
     saving.value = false
   }
@@ -128,13 +127,16 @@ async function save() {
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
-          {{ $t('common.cancel') }}
-        </UButton>
-        <UButton :loading="saving" @click="save">
-          {{ $t('common.save') }}
-        </UButton>
+      <div class="space-y-2">
+        <p v-if="errorMsg" class="text-sm text-red-600 dark:text-red-400">{{ errorMsg }}</p>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+            {{ $t('common.cancel') }}
+          </UButton>
+          <UButton :loading="saving" @click="save">
+            {{ $t('common.save') }}
+          </UButton>
+        </div>
       </div>
     </template>
   </UModal>

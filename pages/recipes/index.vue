@@ -81,17 +81,26 @@ const errorText = computed(() =>
 
 // ─── modal ───────────────────────────────────────────────────────────────────
 
-const isModalOpen  = ref(false)
+const isModalOpen   = ref(false)
 const editingRecipe = ref<RecipeRow | null>(null)
+const isViewMode    = ref(false)
 
 function openNew() {
   if (!canManage.value) return
   editingRecipe.value = null
+  isViewMode.value    = false
+  isModalOpen.value   = true
+}
+
+function openView(row: RecipeRow) {
+  editingRecipe.value = row
+  isViewMode.value    = true
   isModalOpen.value   = true
 }
 
 function openEdit(row: RecipeRow) {
   editingRecipe.value = row
+  isViewMode.value    = false
   isModalOpen.value   = true
 }
 
@@ -239,7 +248,8 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-900/60">
+                class="border-b border-gray-100 dark:border-gray-900/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40"
+                @click="openView(row)">
               <!-- Name — sticky left -->
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
                          border-r border-gray-200 dark:border-gray-800">
@@ -290,14 +300,14 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
                     size="xs" color="gray" variant="ghost"
                     :aria-label="$t('common.edit')"
                     icon="i-heroicons-pencil-square"
-                    @click="openEdit(row)"
+                    @click.stop="openEdit(row)"
                   />
                   <UButton
                     v-if="canManage"
                     size="xs" color="red" variant="ghost"
                     :aria-label="$t('common.delete')"
                     icon="i-heroicons-trash"
-                    @click="requestDelete(row)"
+                    @click.stop="requestDelete(row)"
                   />
                 </div>
               </td>
@@ -318,6 +328,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         :units="units"
         :ingredients="ingredients"
         :all-recipes="rows"
+        :view-mode="isViewMode"
         @saved="onSaved"
       />
     </template>

@@ -39,7 +39,8 @@
     "noData": "データなし",
     "noResults": "結果なし",
     "missingFields": "入力が不足しています",
-    "confirm": "よろしいですか？"
+    "confirm": "よろしいですか？",
+    "close": "閉じる"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -143,7 +144,8 @@
     "typeSubRecipe": "中間製品",
     "noComponents": "まだ構成要素がありません。",
     "noSteps": "まだ手順がありません。",
-    "noMedia": "まだメディアがありません。"
+    "noMedia": "まだメディアがありません。",
+    "viewTitle": "レシピ詳細"
   },
   "devTools": {
     "title": "開発ツール",
