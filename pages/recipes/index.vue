@@ -344,6 +344,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         :all-recipes="rows"
         :view-mode="isViewMode"
         @saved="onSaved"
+        @list-updated="refresh()"
       />
     </template>
   </AdminTableShell>

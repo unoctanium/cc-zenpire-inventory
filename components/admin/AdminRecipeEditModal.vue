@@ -50,6 +50,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:open', v: boolean): void
   (e: 'saved'): void
+  (e: 'listUpdated'): void
 }>()
 
 const { t }  = useI18n()
@@ -153,7 +154,7 @@ async function saveBasic() {
       toast.add({ title: t('recipes.created') })
       await loadDetail(res.recipe.id)
     }
-    emit('saved')
+    emit('listUpdated')
   } catch (e: any) {
     toast.add({
       title: t('common.saveFailed'),
@@ -885,10 +886,10 @@ const totalCost = computed((): number | null => {
           {{ $t('common.edit') }}
         </UButton>
       </div>
-      <!-- Edit mode footer: Cancel + Save -->
+      <!-- Edit mode footer: Cancel/Close + Save -->
       <div v-else class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
-          {{ $t('common.cancel') }}
+        <UButton color="gray" variant="soft" @click="emit('saved')">
+          {{ savedId ? $t('common.close') : $t('common.cancel') }}
         </UButton>
         <UButton :loading="saving" @click="saveBasic">
           {{ $t('common.save') }}
