@@ -735,7 +735,7 @@ async function addStep() {
   </UModal>
 
   <!-- Nested: quick ingredient creator -->
-  <RecipeNewIngredientModal
+  <AdminRecipeNewIngredientModal
     v-model:open="isNewIngredientOpen"
     :units="units"
     @created="onIngredientCreated"

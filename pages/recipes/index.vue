@@ -312,7 +312,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         <p>{{ $t('recipes.deleteConfirmExisting', { name: deletingRow?.name ?? '' }) }}</p>
       </AdminDeleteModal>
 
-      <RecipeEditModal
+      <AdminRecipeEditModal
         v-model:open="isModalOpen"
         :recipe="editingRecipe"
         :units="units"
