@@ -44,10 +44,9 @@ async function save() {
     errorMsg.value = t('ingredients.nameAndUnitRequired')
     return
   }
-  const costValue = standard_unit_cost.value.trim() === ''
-    ? null
-    : Number(standard_unit_cost.value)
-  if (standard_unit_cost.value.trim() !== '' && isNaN(costValue as number)) {
+  const costStr   = String(standard_unit_cost.value).trim()
+  const costValue = costStr === '' ? null : Number(costStr)
+  if (costStr !== '' && isNaN(costValue as number)) {
     errorMsg.value = t('ingredients.invalidCost')
     return
   }
