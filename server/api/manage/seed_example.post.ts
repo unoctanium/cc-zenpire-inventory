@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
     { name: 'Rice',      default_unit_id: g,   kind: 'purchased' },
     { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased' },
     { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased' },
+    { name: 'Noodles',   default_unit_id: g,   kind: 'purchased' },
   ]
 
   const ingredientIds: Record<string, string> = {}
@@ -206,6 +207,97 @@ export default defineEventHandler(async (event) => {
       valid_to: null,
       currency: 'EUR',
       price_per_pack: o.price_per_pack,
+    })
+  }
+
+  // -----------------------
+  // Recipes
+  // -----------------------
+
+  // Dashi — pre-product
+  let dashiId: string
+  const { data: exDashi } = await admin.from('recipe').select('id').eq('name', 'Dashi').maybeSingle()
+  if (exDashi?.id) {
+    dashiId = exDashi.id
+    await admin.from('recipe').update({
+      description: 'Japanese soup stock',
+      output_quantity: 1000,
+      output_unit_id: ml,
+      is_active: true,
+      is_pre_product: true,
+    }).eq('id', dashiId)
+  } else {
+    const { data: created } = await admin.from('recipe').insert({
+      name: 'Dashi',
+      description: 'Japanese soup stock',
+      output_quantity: 1000,
+      output_unit_id: ml,
+      is_active: true,
+      is_pre_product: true,
+    }).select('id').single()
+    dashiId = created!.id
+  }
+
+  // Dashi component: Nori Leaf × 5 pcs
+  const { data: exDashiComp } = await admin.from('recipe_component')
+    .select('id').eq('recipe_id', dashiId).eq('ingredient_id', ingredientIds['Nori Leaf']).maybeSingle()
+  if (!exDashiComp) {
+    await admin.from('recipe_component').insert({
+      recipe_id: dashiId,
+      ingredient_id: ingredientIds['Nori Leaf'],
+      quantity: 5,
+      unit_id: pcs,
+      sort_order: 1,
+    })
+  }
+
+  // Ramen — main recipe
+  let ramenId: string
+  const { data: exRamen } = await admin.from('recipe').select('id').eq('name', 'Ramen').maybeSingle()
+  if (exRamen?.id) {
+    ramenId = exRamen.id
+    await admin.from('recipe').update({
+      description: 'Classic Japanese ramen bowl',
+      output_quantity: 1,
+      output_unit_id: pcs,
+      is_active: true,
+      is_pre_product: false,
+    }).eq('id', ramenId)
+  } else {
+    const { data: created } = await admin.from('recipe').insert({
+      name: 'Ramen',
+      description: 'Classic Japanese ramen bowl',
+      output_quantity: 1,
+      output_unit_id: pcs,
+      is_active: true,
+      is_pre_product: false,
+    }).select('id').single()
+    ramenId = created!.id
+  }
+
+  // Ramen component: Dashi sub-recipe × 200 ml
+  const { data: exRamenDashi } = await admin.from('recipe_component')
+    .select('id').eq('recipe_id', ramenId).eq('sub_recipe_id', dashiId).maybeSingle()
+  if (!exRamenDashi) {
+    await admin.from('recipe_component').insert({
+      recipe_id: ramenId,
+      sub_recipe_id: dashiId,
+      quantity: 200,
+      unit_id: ml,
+      sort_order: 1,
+    })
+  }
+
+  // Ramen component: Noodles × 120 g
+  const { data: exRamenNoodles } = await admin.from('recipe_component')
+    .select('id').eq('recipe_id', ramenId).eq('ingredient_id', ingredientIds['Noodles']).maybeSingle()
+  if (!exRamenNoodles) {
+    await admin.from('recipe_component').insert({
+      recipe_id: ramenId,
+      ingredient_id: ingredientIds['Noodles'],
+      quantity: 120,
+      unit_id: g,
+      sort_order: 2,
     })
   }
 
