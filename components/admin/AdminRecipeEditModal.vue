@@ -278,27 +278,41 @@ async function deleteComponent(comp: ComponentRow) {
   }
 }
 
-// Auto-save component on blur
-const compEdits = ref<Record<string, { quantity: string; unit_id: string }>>({})
+// Per-row edit state for components
+type CompUi = ComponentRow & { _mode: 'view' | 'edit'; _draft?: { quantity: string; unit_id: string } }
+const compUiRows = ref<CompUi[]>([])
 
-function initCompEdit(comp: ComponentRow) {
-  if (!compEdits.value[comp.id]) {
-    compEdits.value[comp.id] = { quantity: String(comp.quantity), unit_id: comp.unit_id }
-  }
+watch(components, (v) => {
+  const prev = compUiRows.value
+  compUiRows.value = v.map(c => {
+    const existing = prev.find(r => r.id === c.id)
+    if (existing?._mode === 'edit') return { ...c, _mode: 'edit', _draft: existing._draft }
+    return { ...c, _mode: 'view' as const }
+  })
+}, { immediate: true })
+
+function startEditComp(row: CompUi) {
+  row._mode  = 'edit'
+  row._draft = { quantity: String(row.quantity), unit_id: row.unit_id }
 }
 
-async function saveComponent(comp: ComponentRow) {
-  if (!savedId.value) return
-  const edit = compEdits.value[comp.id]
-  if (!edit) return
-  const qty = Number(edit.quantity)
-  if (!(qty > 0)) return
-  if (qty === comp.quantity && edit.unit_id === comp.unit_id) return  // no change
+function discardComp(row: CompUi) {
+  row._mode  = 'view'
+  row._draft = undefined
+}
+
+async function saveComp(row: CompUi) {
+  if (!savedId.value || !row._draft) return
+  const qty = Number(row._draft.quantity)
+  if (!(qty > 0)) {
+    toast.add({ title: t('common.missingFields'), description: t('recipes.nameRequired'), color: 'red' })
+    return
+  }
   try {
-    await $fetch(`/api/recipes/${savedId.value}/components/${comp.id}`, {
+    await $fetch(`/api/recipes/${savedId.value}/components/${row.id}`, {
       method: 'PUT',
       credentials: 'include',
-      body: { quantity: qty, unit_id: edit.unit_id },
+      body: { quantity: qty, unit_id: row._draft.unit_id },
     })
     await loadDetail(savedId.value)
   } catch (e: any) {
@@ -608,136 +622,178 @@ const totalCost = computed((): number | null => {
 
           <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
 
-          <table v-else class="w-full text-sm border-separate border-spacing-0 mb-2">
-            <thead>
-              <tr class="text-xs text-gray-500 dark:text-gray-400">
-                <th class="text-left px-1 py-1 font-medium w-20">{{ $t('recipes.type') }}</th>
-                <th class="text-left px-1 py-1 font-medium">{{ $t('recipes.name') }}</th>
-                <th class="text-left px-1 py-1 font-medium w-24">{{ $t('recipes.qty') }}</th>
-                <th class="text-left px-1 py-1 font-medium w-28">{{ $t('ingredients.unit') }}</th>
-                <th class="text-right px-1 py-1 font-medium w-28">{{ $t('recipes.cost') }}</th>
-                <th class="w-8"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="components.length === 0 && !pendingComp">
-                <td colspan="6" class="px-1 py-2 text-gray-400 dark:text-gray-600 text-xs">
-                  {{ $t('recipes.noComponents') }}
-                </td>
-              </tr>
+          <div v-else class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2">
+            <table class="table-fixed border-separate border-spacing-0 text-xs"
+                   style="min-width: 520px; width: 100%">
+              <colgroup>
+                <col style="width: 160px" />
+                <col style="width: 80px" />
+                <col style="width: 90px" />
+                <col style="width: 90px" />
+                <col style="width: 100px" />
+              </colgroup>
+              <thead>
+                <tr class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-950">
+                  <th class="sticky left-0 z-20 text-left px-2 py-1 font-medium
+                             border-b border-gray-200 dark:border-gray-800
+                             border-r border-gray-200 dark:border-gray-800
+                             bg-white dark:bg-gray-950">
+                    {{ $t('recipes.name') }}
+                  </th>
+                  <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
+                    {{ $t('recipes.qty') }}
+                  </th>
+                  <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
+                    {{ $t('ingredients.unit') }}
+                  </th>
+                  <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
+                    {{ $t('recipes.cost') }}
+                  </th>
+                  <th class="sticky right-0 z-20 text-right px-2 py-1 font-medium
+                             border-b border-gray-200 dark:border-gray-800
+                             border-l border-gray-200 dark:border-gray-800
+                             bg-white dark:bg-gray-950">
+                    {{ $t('common.actions') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="compUiRows.length === 0 && !pendingComp">
+                  <td colspan="5" class="px-2 py-2 text-gray-400 dark:text-gray-600">
+                    {{ $t('recipes.noComponents') }}
+                  </td>
+                </tr>
 
-              <tr v-for="comp in components" :key="comp.id"
-                  class="border-b border-gray-100 dark:border-gray-800">
-                <!-- type badge -->
-                <td class="px-1 py-1 align-middle">
-                  <span
-                    class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium"
-                    :class="comp.type === 'ingredient'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                      : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'"
-                  >
-                    {{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
-                  </span>
-                </td>
-                <!-- name -->
-                <td class="px-1 py-1 align-middle text-gray-800 dark:text-gray-200">{{ comp.name }}</td>
-                <!-- qty: editable or read-only -->
-                <td class="px-1 py-1 align-middle">
-                  <span v-if="inViewMode" class="text-xs text-gray-800 dark:text-gray-200">{{ comp.quantity }}</span>
-                  <input
-                    v-else
-                    :value="compEdits[comp.id]?.quantity ?? comp.quantity"
-                    type="number" min="0.001" step="any"
-                    class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                    @focus="initCompEdit(comp)"
-                    @input="e => { initCompEdit(comp); compEdits[comp.id].quantity = (e.target as HTMLInputElement).value }"
-                    @blur="saveComponent(comp)"
-                  />
-                </td>
-                <!-- unit: editable or read-only -->
-                <td class="px-1 py-1 align-middle">
-                  <span v-if="inViewMode" class="text-xs text-gray-800 dark:text-gray-200">{{ comp.unit_code }}</span>
-                  <select
-                    v-else
-                    :value="compEdits[comp.id]?.unit_id ?? comp.unit_id"
-                    class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                    @focus="initCompEdit(comp)"
-                    @change="e => { initCompEdit(comp); compEdits[comp.id].unit_id = (e.target as HTMLSelectElement).value }"
-                    @blur="saveComponent(comp)"
-                  >
-                    <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
-                  </select>
-                </td>
-                <!-- cost -->
-                <td class="px-1 py-1 align-middle text-right text-xs text-gray-600 dark:text-gray-400">
-                  {{ formatCost(componentCost(comp)) }}
-                </td>
-                <!-- delete (edit mode only) -->
-                <td class="px-1 py-1 align-middle text-right">
-                  <UButton v-if="!inViewMode" size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
-                    @click="deleteComponent(comp)" />
-                </td>
-              </tr>
+                <tr v-for="row in compUiRows" :key="row.id"
+                    class="border-b border-gray-100 dark:border-gray-800">
+                  <!-- Name + type badge (sticky left) -->
+                  <td class="sticky left-0 z-10 px-2 py-1 align-middle
+                             border-r border-gray-200 dark:border-gray-800
+                             bg-white dark:bg-gray-950">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span
+                        class="shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium"
+                        :class="row.type === 'ingredient'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'"
+                      >
+                        {{ row.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
+                      </span>
+                      <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ row.name }}</span>
+                    </div>
+                  </td>
+                  <!-- Qty -->
+                  <td class="px-2 py-1 align-middle">
+                    <input
+                      v-if="!inViewMode && row._mode === 'edit'"
+                      v-model="row._draft!.quantity"
+                      type="number" min="0.001" step="any"
+                      class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
+                             focus:outline-none focus:ring-1 focus:ring-gray-400
+                             dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    />
+                    <span v-else class="text-gray-800 dark:text-gray-200">{{ row.quantity }}</span>
+                  </td>
+                  <!-- Unit -->
+                  <td class="px-2 py-1 align-middle">
+                    <select
+                      v-if="!inViewMode && row._mode === 'edit'"
+                      v-model="row._draft!.unit_id"
+                      class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
+                             focus:outline-none focus:ring-1 focus:ring-gray-400
+                             dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    >
+                      <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
+                    </select>
+                    <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
+                  </td>
+                  <!-- Cost -->
+                  <td class="px-2 py-1 align-middle text-right text-gray-600 dark:text-gray-400">
+                    {{ formatCost(componentCost(row)) }}
+                  </td>
+                  <!-- Actions (sticky right) -->
+                  <td class="sticky right-0 z-10 px-2 py-1 align-middle
+                             border-l border-gray-200 dark:border-gray-800
+                             bg-white dark:bg-gray-950">
+                    <AdminInlineRowActions v-if="!inViewMode"
+                      :mode="row._mode"
+                      :can-edit="true"
+                      :can-delete="true"
+                      @edit="startEditComp(row)"
+                      @save="saveComp(row)"
+                      @discard="discardComp(row)"
+                      @delete="deleteComponent(row)"
+                    />
+                  </td>
+                </tr>
 
-              <!-- Pending new component row (edit mode only) -->
-              <tr v-if="pendingComp && !inViewMode" class="bg-gray-50 dark:bg-gray-900/50">
-                <td class="px-1 py-1 align-middle">
-                  <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium
-                               bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                    {{ pendingComp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
-                  </span>
-                </td>
-                <td class="px-1 py-1 align-middle text-gray-800 dark:text-gray-200 text-sm">
-                  {{ pendingComp.name }}
-                </td>
-                <td class="px-1 py-1 align-middle">
-                  <input
-                    v-model="pendingComp.quantity"
-                    type="number" min="0.001" step="any"
-                    class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                    :placeholder="$t('recipes.outputQtyPlaceholder')"
-                  />
-                </td>
-                <td class="px-1 py-1 align-middle">
-                  <select
-                    v-model="pendingComp.unit_id"
-                    class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                  >
-                    <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
-                  </select>
-                </td>
-                <td class="px-1 py-1 align-middle text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <UButton size="xs" color="green" variant="ghost" icon="i-heroicons-check"
-                      @click="confirmAddComponent" />
-                    <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-x-mark"
-                      @click="cancelPendingComp" />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="border-t border-gray-200 dark:border-gray-700">
-                <td colspan="4" class="px-1 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
-                  {{ $t('recipes.totalCost') }}
-                </td>
-                <td class="px-1 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 text-right">
-                  {{ formatCost(totalCost) }}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+                <!-- Pending new component row — always in edit mode -->
+                <tr v-if="pendingComp && !inViewMode" class="bg-gray-50 dark:bg-gray-900/50">
+                  <!-- Name + type badge (sticky left) -->
+                  <td class="sticky left-0 z-10 px-2 py-1 align-middle
+                             border-r border-gray-200 dark:border-gray-800
+                             bg-gray-50 dark:bg-gray-900/50">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium
+                                   bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        {{ pendingComp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
+                      </span>
+                      <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ pendingComp.name }}</span>
+                    </div>
+                  </td>
+                  <!-- Qty -->
+                  <td class="px-2 py-1 align-middle">
+                    <input
+                      v-model="pendingComp.quantity"
+                      type="number" min="0.001" step="any"
+                      class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
+                             focus:outline-none focus:ring-1 focus:ring-gray-400
+                             dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                      :placeholder="$t('recipes.outputQtyPlaceholder')"
+                    />
+                  </td>
+                  <!-- Unit -->
+                  <td class="px-2 py-1 align-middle">
+                    <select
+                      v-model="pendingComp.unit_id"
+                      class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs
+                             focus:outline-none focus:ring-1 focus:ring-gray-400
+                             dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    >
+                      <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
+                    </select>
+                  </td>
+                  <!-- Cost (n/a for pending) -->
+                  <td class="px-2 py-1 align-middle text-right text-gray-400">—</td>
+                  <!-- Actions (sticky right) -->
+                  <td class="sticky right-0 z-10 px-2 py-1 align-middle
+                             border-l border-gray-200 dark:border-gray-800
+                             bg-gray-50 dark:bg-gray-900/50">
+                    <AdminInlineRowActions
+                      mode="edit"
+                      :can-edit="true"
+                      :can-delete="false"
+                      @save="confirmAddComponent"
+                      @discard="cancelPendingComp"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="border-t border-gray-200 dark:border-gray-700">
+                  <td colspan="3" class="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
+                    {{ $t('recipes.totalCost') }}
+                  </td>
+                  <td class="px-2 py-1 text-xs font-semibold text-gray-800 dark:text-gray-200 text-right">
+                    {{ formatCost(totalCost) }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-          <!-- Component error (edit mode only) -->
+          <!-- Component error -->
           <p v-if="compError && !inViewMode" class="text-xs text-red-600 dark:text-red-400 px-1">{{ compError }}</p>
 
           <!-- Add component row: search + quick-add button (edit mode only) -->
