@@ -314,6 +314,8 @@ async function saveComp(row: CompUi) {
       credentials: 'include',
       body: { quantity: qty, unit_id: row._draft.unit_id },
     })
+    row._mode  = 'view'   // exit edit mode before watcher fires on loadDetail
+    row._draft = undefined
     await loadDetail(savedId.value)
   } catch (e: any) {
     toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
@@ -772,9 +774,10 @@ const totalCost = computed((): number | null => {
                     <AdminInlineRowActions
                       mode="edit"
                       :can-edit="true"
-                      :can-delete="false"
+                      :can-delete="true"
                       @save="confirmAddComponent"
                       @discard="cancelPendingComp"
+                      @delete="cancelPendingComp"
                     />
                   </td>
                 </tr>
