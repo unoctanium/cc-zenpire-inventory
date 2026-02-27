@@ -87,11 +87,16 @@ function openNew() {
   isModalOpen.value       = true
 }
 
-function openRow(row: IngredientRow) {
+function openView(row: IngredientRow) {
   editingIngredient.value = row
-  // open in edit mode for purchased ingredients when user can manage; view mode otherwise
-  isViewMode.value = !canManage.value || row.kind === 'produced'
-  isModalOpen.value = true
+  isViewMode.value        = true
+  isModalOpen.value       = true
+}
+
+function openEdit(row: IngredientRow) {
+  editingIngredient.value = row
+  isViewMode.value        = false
+  isModalOpen.value       = true
 }
 
 function onSaved() {
@@ -134,7 +139,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
       { header: t('ingredients.unit'),         candidates: [...units.value.map(u => u.code), ...units.value.map(u => `${u.code} – ${u.name}`)] },
       { header: t('ingredients.standardCost'), candidates: [...rows.value.map(r => r.standard_unit_cost != null ? String(r.standard_unit_cost) : ''), '0.000001'] },
     ],
-    last: { header: '', candidates: [], minPx: 56 },
+    last: { header: '', candidates: [], minPx: 88 },
   }))
 )
 </script>
@@ -229,7 +234,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
             <tr v-for="row in visibleRows" :key="row.id"
                 class="border-b border-gray-100 dark:border-gray-900/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40"
                 :class="row.kind === 'produced' ? 'opacity-70' : ''"
-                @click="openRow(row)">
+                @click="openView(row)">
               <!-- Name — sticky left -->
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
                          border-r border-gray-200 dark:border-gray-800">
@@ -253,6 +258,13 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950
                          border-l border-gray-200 dark:border-gray-800">
                 <div class="flex items-center justify-end gap-1">
+                  <UButton
+                    v-if="canManage && row.kind !== 'produced'"
+                    size="xs" color="gray" variant="ghost"
+                    :aria-label="$t('common.edit')"
+                    icon="i-heroicons-pencil-square"
+                    @click.stop="openEdit(row)"
+                  />
                   <UButton
                     v-if="canManage"
                     size="xs" color="red" variant="ghost"
