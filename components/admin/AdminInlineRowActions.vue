@@ -18,14 +18,25 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex items-center justify-end gap-2">
-    <template v-if="mode === 'view' && canEdit">
+    <template v-if="mode === 'view'">
       <UButton
+        v-if="canEdit"
         size="xs"
         variant="soft"
         icon="i-heroicons-pencil"
         square
         aria-label="Edit"
         @click="emit('edit')"
+      />
+      <UButton
+        v-if="canDelete"
+        size="xs"
+        color="red"
+        variant="soft"
+        icon="i-heroicons-trash"
+        square
+        aria-label="Delete"
+        @click="emit('delete')"
       />
     </template>
 
@@ -48,16 +59,5 @@ const emit = defineEmits<{
         @click="emit('discard')"
       />
     </template>
-
-    <UButton
-      v-if="canDelete"
-      size="xs"
-      color="red"
-      variant="soft"
-      icon="i-heroicons-trash"
-      square
-      aria-label="Delete"
-      @click="emit('delete')"
-    />
   </div>
 </template>
