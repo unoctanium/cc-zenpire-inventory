@@ -2,9 +2,10 @@
   "nav": {
     "userSettings": "Benutzereinstellungen",
     "home": "Startseite",
-    "units": "Einheiten",
-    "ingredients": "Zutaten",
     "recipes": "Rezepte",
+    "ingredients": "Zutaten",
+    "allergens": "Allergene",
+    "units": "Einheiten",
     "rbac": "Rollen",
     "devTools": "Entwickler-Tools",
     "adminSettings": "Admin-Einstellungen"
@@ -85,9 +86,12 @@
     "unit": "Standardeinheit",
     "standardCost": "Std.-Kosten",
     "currency": "Währung",
+    "comment": "Kommentar",
+    "allergens": "Allergene",
     "notes": "Notizen",
     "namePlaceholder": "z.B. Reis",
     "costPlaceholder": "z.B. 0.005",
+    "commentPlaceholder": "Optionale Anmerkungen zur Zutat",
     "sortByName": "Nach Name sortieren",
     "sortByKind": "Nach Art sortieren",
     "sortByUnit": "Nach Einheit sortieren",
@@ -97,11 +101,14 @@
     "updated": "Zutat aktualisiert",
     "deleted": "Zutat gelöscht",
     "deleteTitle": "Zutat löschen",
-    "deleteConfirmNew": "Neue (nicht gespeicherte) Zeile verwerfen?",
     "deleteConfirmExisting": "{name} löschen?",
     "producedReadOnly": "Hinweis: Produzierte Zutaten sind schreibgeschützt und werden über Rezepte verwaltet.",
     "loadError": "Zutaten konnten nicht geladen werden",
-    "noPermission": "Sie haben keine Berechtigung, Zutaten anzuzeigen."
+    "noPermission": "Sie haben keine Berechtigung, Zutaten anzuzeigen.",
+    "viewTitle": "Zutat",
+    "editTitle": "Zutat bearbeiten",
+    "newTitle": "Neue Zutat",
+    "noAllergens": "Noch keine Allergene definiert."
   },
   "recipes": {
     "title": "Rezepte",
@@ -152,7 +159,27 @@
     "stdCostPlaceholder": "z.B. 2.50",
     "perOutputUnit": "pro Ausgabeeinheit",
     "cost": "Kosten",
-    "totalCost": "Gesamtkosten"
+    "totalCost": "Gesamtkosten",
+    "compCost": "Komp.-Kosten"
+  },
+  "allergens": {
+    "title": "Allergene",
+    "subtitle": "Allergene für die Kennzeichnung verwalten (Berechtigung: recipe.manage)",
+    "add": "Allergen hinzufügen",
+    "name": "Name",
+    "comment": "Kommentar",
+    "sortByName": "Nach Name sortieren",
+    "namePlaceholder": "z.B. Gluten",
+    "commentPlaceholder": "Optionale Beschreibung",
+    "nameRequired": "Name ist erforderlich.",
+    "created": "Allergen erstellt",
+    "updated": "Allergen aktualisiert",
+    "deleted": "Allergen gelöscht",
+    "deleteTitle": "Allergen löschen",
+    "deleteConfirmNew": "Neue (nicht gespeicherte) Zeile verwerfen?",
+    "deleteConfirmExisting": "{name} löschen?",
+    "loadError": "Allergene konnten nicht geladen werden",
+    "noPermission": "Sie haben keine Berechtigung, Allergene anzuzeigen."
   },
   "devTools": {
     "title": "Entwickler-Tools",

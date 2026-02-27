@@ -2,9 +2,10 @@
   "nav": {
     "userSettings": "User Settings",
     "home": "Home",
-    "units": "Units",
-    "ingredients": "Ingredients",
     "recipes": "Recipes",
+    "ingredients": "Ingredients",
+    "allergens": "Allergens",
+    "units": "Units",
     "rbac": "RBAC",
     "devTools": "Dev Tools",
     "adminSettings": "Admin Settings"
@@ -85,9 +86,12 @@
     "unit": "Default unit",
     "standardCost": "Std. cost",
     "currency": "Currency",
+    "comment": "Comment",
+    "allergens": "Allergens",
     "notes": "Notes",
     "namePlaceholder": "e.g. Rice",
     "costPlaceholder": "e.g. 0.005",
+    "commentPlaceholder": "Optional notes about this ingredient",
     "sortByName": "Sort by name",
     "sortByKind": "Sort by kind",
     "sortByUnit": "Sort by unit",
@@ -97,11 +101,14 @@
     "updated": "Ingredient updated",
     "deleted": "Ingredient deleted",
     "deleteTitle": "Delete ingredient",
-    "deleteConfirmNew": "Discard the new (unsaved) row?",
     "deleteConfirmExisting": "Delete {name}?",
     "producedReadOnly": "Note: Produced ingredients are read-only and managed via recipes.",
     "loadError": "Failed to load ingredients",
-    "noPermission": "You do not have permission to view Ingredients."
+    "noPermission": "You do not have permission to view Ingredients.",
+    "viewTitle": "Ingredient",
+    "editTitle": "Edit Ingredient",
+    "newTitle": "New Ingredient",
+    "noAllergens": "No allergens defined yet."
   },
   "recipes": {
     "title": "Recipes",
@@ -152,7 +159,27 @@
     "stdCostPlaceholder": "e.g. 2.50",
     "perOutputUnit": "per output unit",
     "cost": "Cost",
-    "totalCost": "Total cost"
+    "totalCost": "Total cost",
+    "compCost": "Comp. cost"
+  },
+  "allergens": {
+    "title": "Allergens",
+    "subtitle": "Manage allergens for labelling (permission: recipe.manage)",
+    "add": "Add allergen",
+    "name": "Name",
+    "comment": "Comment",
+    "sortByName": "Sort by name",
+    "namePlaceholder": "e.g. Gluten",
+    "commentPlaceholder": "Optional description",
+    "nameRequired": "Name is required.",
+    "created": "Allergen created",
+    "updated": "Allergen updated",
+    "deleted": "Allergen deleted",
+    "deleteTitle": "Delete allergen",
+    "deleteConfirmNew": "Discard the new (unsaved) row?",
+    "deleteConfirmExisting": "Delete {name}?",
+    "loadError": "Failed to load allergens",
+    "noPermission": "You do not have permission to view Allergens."
   },
   "devTools": {
     "title": "Dev Tools",

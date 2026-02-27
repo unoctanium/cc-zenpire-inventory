@@ -29,6 +29,8 @@ export default defineEventHandler(async (event) => {
   const ids = (data ?? []).map((r: any) => r.id)
   const countMap = new Map<string, number>()
 
+  const costMap = new Map<string, number | null>()
+
   if (ids.length > 0) {
     const { data: comps } = await admin
       .from('recipe_component')
@@ -37,6 +39,15 @@ export default defineEventHandler(async (event) => {
 
     for (const c of comps ?? []) {
       countMap.set(c.recipe_id, (countMap.get(c.recipe_id) ?? 0) + 1)
+    }
+
+    const { data: costs } = await admin
+      .from('v_recipe_comp_cost')
+      .select('recipe_id, comp_cost')
+      .in('recipe_id', ids)
+
+    for (const c of costs ?? []) {
+      costMap.set((c as any).recipe_id, (c as any).comp_cost ?? null)
     }
   }
 
@@ -53,6 +64,7 @@ export default defineEventHandler(async (event) => {
       is_active:          r.is_active,
       is_pre_product:     r.is_pre_product,
       component_count:    countMap.get(r.id) ?? 0,
+      comp_cost:          costMap.get(r.id) ?? null,
       created_at:         r.created_at,
       updated_at:         r.updated_at,
     })),

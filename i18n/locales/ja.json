@@ -2,9 +2,10 @@
   "nav": {
     "userSettings": "ユーザー設定",
     "home": "ホーム",
-    "units": "単位",
-    "ingredients": "食材",
     "recipes": "レシピ",
+    "ingredients": "食材",
+    "allergens": "アレルゲン",
+    "units": "単位",
     "rbac": "権限管理",
     "devTools": "開発ツール",
     "adminSettings": "管理設定"
@@ -85,9 +86,12 @@
     "unit": "デフォルト単位",
     "standardCost": "標準単価",
     "currency": "通貨",
+    "comment": "コメント",
+    "allergens": "アレルゲン",
     "notes": "メモ",
     "namePlaceholder": "例: 米",
     "costPlaceholder": "例: 0.005",
+    "commentPlaceholder": "食材に関するメモ（任意）",
     "sortByName": "名前で並び替え",
     "sortByKind": "種別で並び替え",
     "sortByUnit": "単位で並び替え",
@@ -97,11 +101,14 @@
     "updated": "食材を更新しました",
     "deleted": "食材を削除しました",
     "deleteTitle": "食材を削除",
-    "deleteConfirmNew": "新規（未保存）の行を破棄しますか？",
     "deleteConfirmExisting": "{name}を削除しますか？",
     "producedReadOnly": "注意: 生産済み食材は読み取り専用で、レシピから管理します。",
     "loadError": "食材の読み込みに失敗しました",
-    "noPermission": "食材を表示する権限がありません。"
+    "noPermission": "食材を表示する権限がありません。",
+    "viewTitle": "食材詳細",
+    "editTitle": "食材を編集",
+    "newTitle": "新規食材",
+    "noAllergens": "まだアレルゲンが定義されていません。"
   },
   "recipes": {
     "title": "レシピ",
@@ -152,7 +159,27 @@
     "stdCostPlaceholder": "例: 2.50",
     "perOutputUnit": "出力単位あたり",
     "cost": "コスト",
-    "totalCost": "合計コスト"
+    "totalCost": "合計コスト",
+    "compCost": "構成コスト"
+  },
+  "allergens": {
+    "title": "アレルゲン",
+    "subtitle": "アレルゲン表示のための管理（権限: recipe.manage）",
+    "add": "アレルゲンを追加",
+    "name": "名前",
+    "comment": "コメント",
+    "sortByName": "名前で並び替え",
+    "namePlaceholder": "例: グルテン",
+    "commentPlaceholder": "任意の説明",
+    "nameRequired": "名前は必須です。",
+    "created": "アレルゲンを作成しました",
+    "updated": "アレルゲンを更新しました",
+    "deleted": "アレルゲンを削除しました",
+    "deleteTitle": "アレルゲンを削除",
+    "deleteConfirmNew": "新規（未保存）の行を破棄しますか？",
+    "deleteConfirmExisting": "{name}を削除しますか？",
+    "loadError": "アレルゲンの読み込みに失敗しました",
+    "noPermission": "アレルゲンを表示する権限がありません。"
   },
   "devTools": {
     "title": "開発ツール",

@@ -24,9 +24,10 @@ watch(
 )
 
 const nav = computed(() => [
-  { label: t('nav.home'),        to: '/'           },
+  { label: t('nav.home'),        to: '/'            },
   { label: t('nav.recipes'),     to: '/recipes'     },
   { label: t('nav.ingredients'), to: '/ingredients' },
+  { label: t('nav.allergens'),   to: '/allergens'   },
   { label: t('nav.units'),       to: '/units'       },
 ])
 

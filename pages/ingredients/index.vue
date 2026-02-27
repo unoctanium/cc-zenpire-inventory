@@ -8,36 +8,20 @@ const toast  = useToast()
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
-type IngredientKind = 'purchased' | 'produced'
-
 type IngredientRow = {
-  id: string
-  name: string
-  kind: IngredientKind
-  default_unit_id: string
-  default_unit_code: string
-  standard_unit_cost: number | null
+  id:                     string
+  name:                   string
+  kind:                   string
+  default_unit_id:        string
+  default_unit_code:      string
+  standard_unit_cost:     number | null
   standard_cost_currency: string
-  produced_by_recipe_id: string | null
+  produced_by_recipe_id:  string | null
+  comment:                string | null
 }
 
-type Draft = {
-  name: string
-  kind: IngredientKind
-  default_unit_id: string
-  standard_unit_cost: string
-}
-
-type UiRow =
-  | (IngredientRow & { _mode: 'view' | 'edit'; _draft?: Draft })
-  | {
-      id: '__new__'; name: ''; kind: 'purchased'
-      default_unit_id: ''; default_unit_code: ''
-      standard_unit_cost: null; standard_cost_currency: 'EUR'
-      produced_by_recipe_id: null; _mode: 'edit'; _draft: Draft
-    }
-
-type UnitOption = { id: string; code: string; name: string }
+type UnitOption    = { id: string; code: string; name: string }
+type AllergenOption = { id: string; name: string; comment: string | null }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
@@ -53,27 +37,22 @@ const { data: unitData } = await useFetch<{ ok: boolean; units: UnitOption[] }>(
   '/api/units', { credentials: 'include' }
 )
 
-const units = computed(() => unitData.value?.units ?? [])
+const { data: allergenData } = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>(
+  '/api/allergens', { credentials: 'include' }
+)
 
-const rows = ref<UiRow[]>([])
+const units    = computed(() => unitData.value?.units ?? [])
+const allergens = computed(() => allergenData.value?.allergens ?? [])
+const rows     = ref<IngredientRow[]>([])
 
 watchEffect(() => {
-  const api    = ingredientData.value?.ingredients ?? []
-  const hasNew = rows.value.some(r => r.id === '__new__')
-  const mapped = api.map(i => ({ ...i, _mode: 'view' as const }))
-  rows.value   = hasNew
-    ? [rows.value.find(r => r.id === '__new__') as UiRow, ...mapped]
-    : mapped
+  rows.value = ingredientData.value?.ingredients ?? []
 })
-
-function unitCodeById(id: string) {
-  return units.value.find(u => u.id === id)?.code ?? id
-}
 
 // ─── sort + filter ────────────────────────────────────────────────────────────
 
 const { filterText, filterColumn, filterColumnOptions, clearFilter,
-        sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<UiRow>({
+        sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<IngredientRow>({
   rows,
   filterColumns: [
     { label: t('common.all'),       value: 'all'               },
@@ -82,87 +61,50 @@ const { filterText, filterColumn, filterColumnOptions, clearFilter,
     { label: t('ingredients.unit'), value: 'default_unit_code' },
   ],
   defaultSortKey: 'name',
-  getSearchValue: (row, col) => {
-    if (col === 'default_unit_code') {
-      return row._mode === 'edit' && row._draft
-        ? unitCodeById(row._draft.default_unit_id)
-        : row.default_unit_code
-    }
-    const src: any = row._mode === 'edit' && row._draft ? row._draft : row
-    return String(src[col] ?? '')
-  },
+  getSearchValue: (row, col) => String((row as any)[col] ?? ''),
 })
 
-// ─── inline edit ──────────────────────────────────────────────────────────────
+// ─── error ────────────────────────────────────────────────────────────────────
 
 function showError(title: string, e: any) {
   toast.add({ title, description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
 }
 
-function startAdd() {
-  if (!canManage.value || rows.value.some(r => r.id === '__new__')) return
-  const firstUnitId = units.value[0]?.id ?? ''
-  rows.value.unshift({
-    id: '__new__', name: '', kind: 'purchased',
-    default_unit_id: '', default_unit_code: '',
-    standard_unit_cost: null, standard_cost_currency: 'EUR',
-    produced_by_recipe_id: null, _mode: 'edit',
-    _draft: { name: '', kind: 'purchased', default_unit_id: firstUnitId, standard_unit_cost: '' },
-  })
+const errorText = computed(() =>
+  error.value ? `${t('ingredients.loadError')}: ${error.value.message}` : null
+)
+
+// ─── modal ────────────────────────────────────────────────────────────────────
+
+const isModalOpen       = ref(false)
+const editingIngredient = ref<IngredientRow | null>(null)
+const isViewMode        = ref(false)
+
+function openNew() {
+  if (!canManage.value) return
+  editingIngredient.value = null
+  isViewMode.value        = false
+  isModalOpen.value       = true
 }
 
-function startEdit(row: UiRow) {
-  if (!canManage.value || row.id === '__new__' || row.kind === 'produced') return
-  row._mode  = 'edit'
-  row._draft = {
-    name:               row.name,
-    kind:               row.kind,
-    default_unit_id:    row.default_unit_id,
-    standard_unit_cost: row.standard_unit_cost != null ? String(row.standard_unit_cost) : '',
-  }
+function openRow(row: IngredientRow) {
+  editingIngredient.value = row
+  // open in edit mode for purchased ingredients when user can manage; view mode otherwise
+  isViewMode.value = !canManage.value || row.kind === 'produced'
+  isModalOpen.value = true
 }
 
-function discard(row: UiRow) {
-  if (row.id === '__new__') { rows.value = rows.value.filter(r => r.id !== '__new__'); return }
-  row._mode  = 'view'
-  row._draft = undefined
-}
-
-async function commit(row: UiRow) {
-  const d = row._draft
-  if (!d || !canManage.value) return
-  if (!d.name.trim() || !d.default_unit_id) {
-    toast.add({ title: t('common.missingFields'), description: t('ingredients.nameAndUnitRequired'), color: 'red' })
-    return
-  }
-  const costStr   = String(d.standard_unit_cost ?? '').trim()
-  const costValue = costStr === '' ? null : Number(costStr)
-  if (costStr !== '' && isNaN(costValue as number)) {
-    toast.add({ title: t('common.missingFields'), description: t('ingredients.invalidCost'), color: 'red' })
-    return
-  }
-  try {
-    const body = { name: d.name.trim(), default_unit_id: d.default_unit_id, standard_unit_cost: costValue }
-    if (row.id === '__new__') {
-      await $fetch('/api/ingredients', { method: 'POST', credentials: 'include', body })
-      toast.add({ title: t('ingredients.created') })
-      rows.value = rows.value.filter(r => r.id !== '__new__')
-    } else {
-      await $fetch(`/api/ingredients/${row.id}`, { method: 'PUT', credentials: 'include', body })
-      toast.add({ title: t('ingredients.updated') })
-      row._mode  = 'view'
-      row._draft = undefined
-    }
-    await refresh()
-  } catch (e: any) { showError(t('common.saveFailed'), e) }
+function onSaved() {
+  isModalOpen.value = false
+  refresh()
 }
 
 // ─── delete ───────────────────────────────────────────────────────────────────
 
 const isDeleteOpen = ref(false)
-const deletingRow  = ref<UiRow | null>(null)
+const deletingRow  = ref<IngredientRow | null>(null)
 
-function requestDelete(row: UiRow) {
+function requestDelete(row: IngredientRow) {
   if (!canManage.value) return
   deletingRow.value  = row
   isDeleteOpen.value = true
@@ -171,10 +113,6 @@ function requestDelete(row: UiRow) {
 async function confirmDelete() {
   const row = deletingRow.value
   if (!row) return
-  if (row.id === '__new__') {
-    rows.value = rows.value.filter(r => r.id !== '__new__')
-    isDeleteOpen.value = false; deletingRow.value = null; return
-  }
   try {
     await $fetch(`/api/ingredients/${row.id}`, { method: 'DELETE', credentials: 'include' })
     toast.add({ title: t('ingredients.deleted') })
@@ -192,17 +130,12 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
   computed(() => ({
     first: { header: t('ingredients.name'), candidates: rows.value.map(r => r.name) },
     inner: [
-      { header: t('ingredients.kind'),         candidates: ['purchased', 'produced'] },
-      { header: t('ingredients.unit'),          candidates: [...units.value.map(u => u.code), ...units.value.map(u => `${u.code} – ${u.name}`)] },
-      { header: t('ingredients.standardCost'),  candidates: [...rows.value.map(r => r.standard_unit_cost != null ? String(r.standard_unit_cost) : ''), '0.000001'] },
-      { header: t('ingredients.currency'),      candidates: rows.value.map(r => r.standard_cost_currency) },
+      { header: t('ingredients.kind'),        candidates: ['purchased', 'produced'] },
+      { header: t('ingredients.unit'),         candidates: [...units.value.map(u => u.code), ...units.value.map(u => `${u.code} – ${u.name}`)] },
+      { header: t('ingredients.standardCost'), candidates: [...rows.value.map(r => r.standard_unit_cost != null ? String(r.standard_unit_cost) : ''), '0.000001'] },
     ],
-    last: { header: '', candidates: [], minPx: 108 },
+    last: { header: '', candidates: [], minPx: 56 },
   }))
-)
-
-const errorText = computed(() =>
-  error.value ? `${t('ingredients.loadError')}: ${error.value.message}` : null
 )
 </script>
 
@@ -223,7 +156,7 @@ const errorText = computed(() =>
         :can-add="canManage"
         :add-label="$t('ingredients.add')"
         @refresh="refresh()"
-        @add="startAdd"
+        @add="openNew"
       />
     </template>
 
@@ -238,7 +171,6 @@ const errorText = computed(() =>
             <col :style="{ width: innerWidths[0] + 'px' }" />
             <col :style="{ width: innerWidths[1] + 'px' }" />
             <col :style="{ width: innerWidths[2] + 'px' }" />
-            <col :style="{ width: innerWidths[3] + 'px' }" />
             <col :style="{ width: lastWidth + 'px' }" />
           </colgroup>
 
@@ -277,11 +209,6 @@ const errorText = computed(() =>
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('ingredients.standardCost') }}
               </th>
-              <!-- Currency -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('ingredients.currency') }}
-              </th>
               <!-- Actions — sticky right -->
               <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800 border-l border-gray-200 dark:border-gray-800
@@ -293,61 +220,47 @@ const errorText = computed(() =>
 
           <tbody>
             <tr v-if="pending">
-              <td colspan="6" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
+              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
             </tr>
             <tr v-else-if="visibleRows.length === 0">
-              <td colspan="6" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
+              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-900/60"
-                :class="row.kind === 'produced' ? 'opacity-70' : ''">
+                class="border-b border-gray-100 dark:border-gray-900/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40"
+                :class="row.kind === 'produced' ? 'opacity-70' : ''"
+                @click="openRow(row)">
               <!-- Name — sticky left -->
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
                          border-r border-gray-200 dark:border-gray-800">
-                <input v-if="row._mode === 'edit'" v-model="row._draft!.name"
-                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-300
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
-                  :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
-                <span v-else class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
               </td>
-              <!-- Kind — always read-only -->
+              <!-- Kind -->
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">{{ row.kind }}</span>
               </td>
               <!-- Unit -->
               <td class="px-2 py-1.5 align-middle">
-                <select v-if="row._mode === 'edit'" v-model="row._draft!.default_unit_id"
-                  class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-300
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700">
-                  <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
-                </select>
-                <span v-else class="text-gray-800 dark:text-gray-200">{{ row.default_unit_code }}</span>
+                <span class="text-gray-800 dark:text-gray-200">{{ row.default_unit_code }}</span>
               </td>
               <!-- Cost -->
               <td class="px-2 py-1.5 align-middle">
-                <input v-if="row._mode === 'edit'" v-model="row._draft!.standard_unit_cost"
-                  type="number" min="0" step="0.000001"
-                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-300
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
-                  :placeholder="$t('ingredients.costPlaceholder')" />
-                <span v-else class="text-gray-800 dark:text-gray-200">
-                  {{ row.standard_unit_cost != null ? row.standard_unit_cost : '–' }}
+                <span class="text-gray-800 dark:text-gray-200">
+                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost}` : '–' }}
                 </span>
-              </td>
-              <!-- Currency — always read-only -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-500 dark:text-gray-400">{{ row.standard_cost_currency }}</span>
               </td>
               <!-- Actions — sticky right -->
               <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950
                          border-l border-gray-200 dark:border-gray-800">
-                <AdminInlineRowActions :mode="row._mode" :can-edit="canManage && row.kind !== 'produced'"
-                  :can-delete="canManage" @edit="startEdit(row)" @save="commit(row)"
-                  @discard="discard(row)" @delete="requestDelete(row)" />
+                <div class="flex items-center justify-end gap-1">
+                  <UButton
+                    v-if="canManage"
+                    size="xs" color="red" variant="ghost"
+                    :aria-label="$t('common.delete')"
+                    icon="i-heroicons-trash"
+                    @click.stop="requestDelete(row)"
+                  />
+                </div>
               </td>
             </tr>
           </tbody>
@@ -359,9 +272,17 @@ const errorText = computed(() =>
       <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('ingredients.producedReadOnly') }}</p>
 
       <AdminDeleteModal v-model:open="isDeleteOpen" :title="$t('ingredients.deleteTitle')" @confirm="confirmDelete">
-        <p v-if="deletingRow?.id === '__new__'">{{ $t('ingredients.deleteConfirmNew') }}</p>
-        <p v-else>{{ $t('ingredients.deleteConfirmExisting', { name: (deletingRow as any)?.name }) }}</p>
+        <p>{{ $t('ingredients.deleteConfirmExisting', { name: deletingRow?.name ?? '' }) }}</p>
       </AdminDeleteModal>
+
+      <AdminIngredientEditModal
+        v-model:open="isModalOpen"
+        :ingredient="editingIngredient"
+        :units="units"
+        :allergens="allergens"
+        :view-mode="isViewMode"
+        @saved="onSaved"
+      />
     </template>
   </AdminTableShell>
 </template>

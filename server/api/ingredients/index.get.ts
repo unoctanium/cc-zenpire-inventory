@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
       standard_unit_cost,
       standard_cost_currency,
       produced_by_recipe_id,
+      comment,
       unit:default_unit_id ( code )
     `)
     .order('name', { ascending: true })
@@ -33,6 +34,7 @@ export default defineEventHandler(async (event) => {
       standard_unit_cost:    r.standard_unit_cost,
       standard_cost_currency: r.standard_cost_currency ?? 'EUR',
       produced_by_recipe_id: r.produced_by_recipe_id,
+      comment:               r.comment ?? null,
     })),
   }
 })
