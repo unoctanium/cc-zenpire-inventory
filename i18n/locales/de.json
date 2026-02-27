@@ -160,7 +160,11 @@
     "perOutputUnit": "pro Ausgabeeinheit",
     "cost": "Kosten",
     "totalCost": "Gesamtkosten",
-    "compCost": "Komp.-Kosten"
+    "compCost": "Komp.-Kosten",
+    "deleteComponentTitle": "Komponente entfernen",
+    "deleteComponentConfirm": "{name} aus diesem Rezept entfernen?",
+    "deleteStepTitle": "Schritt löschen",
+    "deleteStepConfirm": "Schritt {no} löschen?"
   },
   "allergens": {
     "title": "Allergene",

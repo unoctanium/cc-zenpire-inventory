@@ -160,7 +160,11 @@
     "perOutputUnit": "per output unit",
     "cost": "Cost",
     "totalCost": "Total cost",
-    "compCost": "Comp. cost"
+    "compCost": "Comp. cost",
+    "deleteComponentTitle": "Delete component",
+    "deleteComponentConfirm": "Remove {name} from this recipe?",
+    "deleteStepTitle": "Delete step",
+    "deleteStepConfirm": "Delete step {no}?"
   },
   "allergens": {
     "title": "Allergens",

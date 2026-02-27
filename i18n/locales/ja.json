@@ -160,7 +160,11 @@
     "perOutputUnit": "出力単位あたり",
     "cost": "コスト",
     "totalCost": "合計コスト",
-    "compCost": "構成コスト"
+    "compCost": "構成コスト",
+    "deleteComponentTitle": "構成要素を削除",
+    "deleteComponentConfirm": "{name} をこのレシピから削除しますか？",
+    "deleteStepTitle": "手順を削除",
+    "deleteStepConfirm": "手順 {no} を削除しますか？"
   },
   "allergens": {
     "title": "アレルゲン",

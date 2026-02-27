@@ -266,12 +266,23 @@ function cancelPendingComp() {
   compError.value   = ''
 }
 
-async function deleteComponent(comp: ComponentRow) {
-  if (!savedId.value) return
+const isDeleteCompOpen = ref(false)
+const deletingComp     = ref<ComponentRow | null>(null)
+
+function requestDeleteComp(comp: ComponentRow) {
+  deletingComp.value     = comp
+  isDeleteCompOpen.value = true
+}
+
+async function confirmDeleteComp() {
+  const comp = deletingComp.value
+  if (!comp || !savedId.value) return
   try {
     await $fetch(`/api/recipes/${savedId.value}/components/${comp.id}`, {
       method: 'DELETE', credentials: 'include',
     })
+    isDeleteCompOpen.value = false
+    deletingComp.value     = null
     await loadDetail(savedId.value)
   } catch (e: any) {
     toast.add({ title: t('common.deleteFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
@@ -380,12 +391,23 @@ async function saveStep(su: StepUi) {
   }
 }
 
-async function deleteStep(su: StepUi) {
-  if (!savedId.value) return
+const isDeleteStepOpen = ref(false)
+const deletingStep     = ref<StepUi | null>(null)
+
+function requestDeleteStep(su: StepUi) {
+  deletingStep.value     = su
+  isDeleteStepOpen.value = true
+}
+
+async function confirmDeleteStep() {
+  const su = deletingStep.value
+  if (!su || !savedId.value) return
   try {
     await $fetch(`/api/recipes/${savedId.value}/steps/${su.step_no}`, {
       method: 'DELETE', credentials: 'include',
     })
+    isDeleteStepOpen.value = false
+    deletingStep.value     = null
     await loadDetail(savedId.value)
   } catch (e: any) {
     toast.add({ title: t('common.deleteFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
@@ -724,7 +746,7 @@ const totalCost = computed((): number | null => {
                       @edit="startEditComp(row)"
                       @save="saveComp(row)"
                       @discard="discardComp(row)"
-                      @delete="deleteComponent(row)"
+                      @delete="requestDeleteComp(row)"
                     />
                   </td>
                 </tr>
@@ -885,7 +907,7 @@ const totalCost = computed((): number | null => {
                   <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-pencil-square"
                     @click="startEditStep(su)" />
                   <UButton size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
-                    @click="deleteStep(su)" />
+                    @click="requestDeleteStep(su)" />
                 </template>
               </div>
             </div>
@@ -956,6 +978,16 @@ const totalCost = computed((): number | null => {
       </div>
     </template>
   </UModal>
+
+  <!-- Delete confirmation: component -->
+  <AdminDeleteModal v-model:open="isDeleteCompOpen" :title="$t('recipes.deleteComponentTitle')" @confirm="confirmDeleteComp">
+    <p>{{ $t('recipes.deleteComponentConfirm', { name: deletingComp?.name ?? '' }) }}</p>
+  </AdminDeleteModal>
+
+  <!-- Delete confirmation: step -->
+  <AdminDeleteModal v-model:open="isDeleteStepOpen" :title="$t('recipes.deleteStepTitle')" @confirm="confirmDeleteStep">
+    <p>{{ $t('recipes.deleteStepConfirm', { no: deletingStep?.step_no ?? '' }) }}</p>
+  </AdminDeleteModal>
 
   <!-- Nested: quick ingredient creator -->
   <AdminRecipeNewIngredientModal
