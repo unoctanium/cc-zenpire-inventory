@@ -19,9 +19,9 @@ async function logout() {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-6 w-full px-4">
+  <div class="flex flex-col items-center gap-6 w-full max-w-md px-4">
     <img src="/logo.png" alt="Zenpire"
-      class="w-[10vw] min-w-20 max-w-40 object-contain invert mix-blend-screen" />
+      class="w-28 object-contain invert mix-blend-screen" />
 
     <UCard class="w-full max-w-md">
       <template #header>
