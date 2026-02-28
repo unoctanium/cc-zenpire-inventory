@@ -195,6 +195,19 @@
     "loadError": "Allergene konnten nicht geladen werden",
     "noPermission": "Sie haben keine Berechtigung, Allergene anzuzeigen."
   },
+  "rbac": {
+    "email":        "E-Mail",
+    "displayName":  "Anzeigename",
+    "roles":        "Rollen",
+    "active":       "Aktiv",
+    "inactive":     "Inaktiv",
+    "sortByEmail":  "Nach E-Mail sortieren",
+    "updated":      "Benutzer aktualisiert",
+    "updateFailed": "Aktualisierung fehlgeschlagen",
+    "noRoles":      "Keine Rollen",
+    "loadError":    "Benutzer konnten nicht geladen werden",
+    "noPermission": "Sie haben keine Berechtigung, Benutzer zu verwalten."
+  },
   "devTools": {
     "title": "Entwickler-Tools",
     "subtitle": "Nur verfügbar wenn DEV_MODE=1",

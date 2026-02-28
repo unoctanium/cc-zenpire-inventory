@@ -195,6 +195,19 @@
     "loadError": "Failed to load allergens",
     "noPermission": "You do not have permission to view Allergens."
   },
+  "rbac": {
+    "email":        "Email",
+    "displayName":  "Display name",
+    "roles":        "Roles",
+    "active":       "Active",
+    "inactive":     "Inactive",
+    "sortByEmail":  "Sort by email",
+    "updated":      "User updated",
+    "updateFailed": "Update failed",
+    "noRoles":      "No roles",
+    "loadError":    "Failed to load users",
+    "noPermission": "You do not have permission to manage users."
+  },
   "devTools": {
     "title": "Dev Tools",
     "subtitle": "Only available when DEV_MODE=1",

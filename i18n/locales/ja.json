@@ -195,6 +195,19 @@
     "loadError": "アレルゲンの読み込みに失敗しました",
     "noPermission": "アレルゲンを表示する権限がありません。"
   },
+  "rbac": {
+    "email":        "メール",
+    "displayName":  "表示名",
+    "roles":        "ロール",
+    "active":       "有効",
+    "inactive":     "無効",
+    "sortByEmail":  "メールで並び替え",
+    "updated":      "ユーザーを更新しました",
+    "updateFailed": "更新に失敗しました",
+    "noRoles":      "ロールなし",
+    "loadError":    "ユーザーの読み込みに失敗しました",
+    "noPermission": "ユーザーを管理する権限がありません。"
+  },
   "devTools": {
     "title": "開発ツール",
     "subtitle": "DEV_MODE=1 の場合のみ使用可能",
