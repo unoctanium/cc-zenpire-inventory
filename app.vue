@@ -1,31 +1,26 @@
 <script setup lang="ts">
-// Splash screen: rendered on SSR so it's visible immediately in the raw HTML,
-// before any JS loads. onMounted fires after Vue has hydrated and the auth
-// plugin has resolved auth state — at that point we fade the splash out.
+// Splash screen visible from first paint (SSR renders it) until 700ms after
+// Vue mounts. The auth plugin completes before onMounted fires, so by the
+// time the splash fades the correct page is already rendered beneath it.
 const splash = ref(true)
-onMounted(() => { splash.value = false })
+
+onMounted(() => {
+  setTimeout(() => { splash.value = false }, 700)
+})
 </script>
 
 <template>
-  <!-- Splash screen (covers everything during initial page load + hydration) -->
-  <Transition name="splash">
-    <div
-      v-if="splash"
-      style="position:fixed;inset:0;z-index:9999;background:#0082c9;
-             display:flex;flex-direction:column;align-items:center;justify-content:center;
-             gap:2rem;"
-    >
-      <div style="width:6rem;height:6rem;flex-shrink:0;border-radius:50%;
-                  overflow:hidden;border:2px solid rgba(255,255,255,0.9);">
-        <img
-          src="/logo.png"
-          alt="Zenpire"
-          style="width:100%;height:100%;object-fit:cover;filter:invert(1);mix-blend-mode:screen;"
-        />
-      </div>
-      <div class="splash-spinner" />
+  <!-- Splash overlay: always in DOM (no v-if) so SSR always includes it.
+       Fades out via CSS transition when splash becomes false. -->
+  <div
+    class="splash-screen"
+    :class="{ 'splash-screen--out': !splash }"
+  >
+    <div class="splash-logo">
+      <img src="/logo.png" alt="Zenpire" class="splash-logo-img" />
     </div>
-  </Transition>
+    <div class="splash-spinner" />
+  </div>
 
   <NuxtLayout>
     <NuxtRouteAnnouncer />
@@ -34,6 +29,43 @@ onMounted(() => { splash.value = false })
 </template>
 
 <style>
+/* ── Splash overlay ───────────────────────────────────────────────────── */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0082c9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  transition: opacity 0.35s ease;
+  opacity: 1;
+}
+.splash-screen--out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Logo ring ────────────────────────────────────────────────────────── */
+.splash-logo {
+  width: 6rem;
+  height: 6rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+.splash-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: invert(1);
+  mix-blend-mode: screen;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
 .splash-spinner {
   width: 36px;
   height: 36px;
@@ -42,15 +74,7 @@ onMounted(() => { splash.value = false })
   border-radius: 50%;
   animation: splash-spin 0.8s linear infinite;
 }
-
 @keyframes splash-spin {
   to { transform: rotate(360deg); }
-}
-
-.splash-leave-active {
-  transition: opacity 0.3s ease;
-}
-.splash-leave-to {
-  opacity: 0;
 }
 </style>
