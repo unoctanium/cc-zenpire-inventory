@@ -65,9 +65,8 @@ function isLinkActive(linkTo: string) {
 
         <!-- Logo: invert makes the black plant white; screen blend dissolves the background into the bar.
              Overlay ring traces the logo's natural circle boundary. -->
-        <div class="relative flex-none h-9 w-9">
-          <img src="/logo.png" alt="Zenpire" class="h-full w-full object-contain invert mix-blend-screen" />
-          <div class="absolute inset-0 rounded-full ring-2 ring-inset ring-white/80 pointer-events-none" />
+        <div class="flex-none h-9 w-9 rounded-full overflow-hidden border-2 border-white/90">
+          <img src="/logo.png" alt="Zenpire" class="h-full w-full object-cover invert mix-blend-screen" />
         </div>
 
         <!-- App switcher — always-visible icon + label -->

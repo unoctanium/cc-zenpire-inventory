@@ -29,9 +29,10 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-6 w-full max-w-md px-4">
-    <img src="/logo.png" alt="Zenpire"
-      class="w-28 object-contain invert mix-blend-screen" />
+  <div class="flex flex-col items-center gap-8 w-full max-w-sm px-4">
+    <div class="h-24 w-24 flex-none rounded-full overflow-hidden border-2 border-white/90">
+      <img src="/logo.png" alt="Zenpire" class="h-full w-full object-cover invert mix-blend-screen" />
+    </div>
 
     <UCard class="w-full max-w-md">
       <template #header>
