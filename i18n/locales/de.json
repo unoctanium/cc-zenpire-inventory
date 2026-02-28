@@ -52,7 +52,10 @@
     "noResults": "Keine Ergebnisse",
     "missingFields": "Fehlende Felder",
     "confirm": "Sind Sie sicher?",
-    "close": "Schließen"
+    "close": "Schließen",
+    "uploadImage":  "Bild hochladen",
+    "replaceImage": "Bild ersetzen",
+    "removeImage":  "Bild entfernen"
   },
   "dashboard": {
     "title": "Dashboard",

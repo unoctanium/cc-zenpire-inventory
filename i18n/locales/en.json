@@ -52,7 +52,10 @@
     "noResults": "No results",
     "missingFields": "Missing fields",
     "confirm": "Are you sure?",
-    "close": "Close"
+    "close": "Close",
+    "uploadImage":  "Upload image",
+    "replaceImage": "Replace image",
+    "removeImage":  "Remove image"
   },
   "dashboard": {
     "title": "Dashboard",

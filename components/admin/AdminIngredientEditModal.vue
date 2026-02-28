@@ -54,6 +54,8 @@ const selectedAllergenIds = ref<string[]>([])
 const saving              = ref(false)
 const loadingDetail       = ref(false)
 const inViewMode          = ref(false)
+const hasImage            = ref(false)
+const imageUploading      = ref(false)
 
 watch(() => props.open, async (v) => {
   if (!v) return
@@ -75,6 +77,7 @@ watch(() => props.open, async (v) => {
       )
       draft.comment             = detail.ingredient.comment ?? ''
       selectedAllergenIds.value = detail.ingredient.allergen_ids ?? []
+      hasImage.value            = detail.ingredient.has_image ?? false
     } catch { /* non-fatal */ } finally {
       loadingDetail.value = false
     }
@@ -83,8 +86,50 @@ watch(() => props.open, async (v) => {
     draft.default_unit_id    = props.units[0]?.id ?? ''
     draft.standard_unit_cost = ''
     draft.comment            = ''
+    hasImage.value           = false
   }
 })
+
+const imageUrl = computed(() =>
+  hasImage.value && props.ingredient?.id
+    ? `/api/ingredients/${props.ingredient.id}/image`
+    : null
+)
+
+async function uploadImage(file: File) {
+  if (!props.ingredient?.id) return
+  imageUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('image', file)
+    await $fetch(`/api/ingredients/${props.ingredient.id}/image`,
+      { method: 'PUT', credentials: 'include', body: fd })
+    hasImage.value = true
+  } catch (e: any) {
+    toast.add({
+      title:       t('common.saveFailed'),
+      description: e?.data?.statusMessage ?? e?.message ?? String(e),
+      color:       'red',
+    })
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+async function removeImage() {
+  if (!props.ingredient?.id) return
+  try {
+    await $fetch(`/api/ingredients/${props.ingredient.id}/image`,
+      { method: 'DELETE', credentials: 'include' })
+    hasImage.value = false
+  } catch (e: any) {
+    toast.add({
+      title:       t('common.deleteFailed'),
+      description: e?.data?.statusMessage ?? e?.message ?? String(e),
+      color:       'red',
+    })
+  }
+}
 
 function toggleAllergen(id: string) {
   const idx = selectedAllergenIds.value.indexOf(id)
@@ -150,6 +195,15 @@ async function save() {
 
     <template #body>
       <div class="space-y-4">
+
+        <!-- Image -->
+        <AdminImageUpload v-if="ingredient?.id"
+          :image-url="imageUrl"
+          :uploading="imageUploading"
+          :can-manage="canManage && ingredient?.kind !== 'produced'"
+          @upload="uploadImage"
+          @remove="removeImage"
+        />
 
         <!-- Name -->
         <div>

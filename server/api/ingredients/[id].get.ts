@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
     .select(`
       id, name, kind, default_unit_id, standard_unit_cost,
       standard_cost_currency, produced_by_recipe_id, comment,
+      image_data,
       unit:default_unit_id ( code ),
       ingredient_allergen ( allergen_id )
     `)
@@ -34,6 +35,7 @@ export default defineEventHandler(async (event) => {
       standard_cost_currency: data.standard_cost_currency ?? 'EUR',
       produced_by_recipe_id:  data.produced_by_recipe_id,
       comment:                data.comment ?? null,
+      has_image:              !!data.image_data,
       allergen_ids:           ((data as any).ingredient_allergen ?? []).map((ia: any) => ia.allergen_id),
     },
   }

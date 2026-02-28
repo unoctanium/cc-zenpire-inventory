@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     .select(`
       id, name, description, output_quantity, output_unit_id,
       standard_unit_cost, is_active, is_pre_product, created_at, updated_at,
+      image_data,
       unit:output_unit_id ( code )
     `)
     .eq('id', id)
@@ -50,19 +51,13 @@ export default defineEventHandler(async (event) => {
 
   if (sErr) throw createError({ statusCode: 500, statusMessage: sErr.message })
 
-  const { data: media, error: mErr } = await admin
-    .from('recipe_media')
-    .select('id, recipe_id, storage_path, sort_order')
-    .eq('recipe_id', id)
-    .order('sort_order', { ascending: true })
-
-  if (mErr) throw createError({ statusCode: 500, statusMessage: mErr.message })
-
   return {
     ok: true,
     recipe: {
       ...(recipe as any),
       output_unit_code: (recipe as any).unit?.code ?? '',
+      has_image:        !!(recipe as any).image_data,
+      image_data:       undefined,
     },
     components: (components ?? []).map((c: any) => ({
       id:                   c.id,
@@ -84,6 +79,5 @@ export default defineEventHandler(async (event) => {
       component_unit_factor: c.unit?.factor ?? null,
     })),
     steps: steps ?? [],
-    media: media ?? [],
   }
 })

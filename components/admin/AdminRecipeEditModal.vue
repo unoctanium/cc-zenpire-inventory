@@ -36,7 +36,6 @@ type ComponentRow = {
 }
 
 type StepRow = { recipe_id: string; step_no: number; instruction_text: string }
-type MediaRow = { id: string; recipe_id: string; storage_path: string; sort_order: number }
 
 const props = defineProps<{
   open:        boolean
@@ -69,14 +68,15 @@ const draft = reactive({
   is_pre_product:     false,
 })
 
-const saving      = ref(false)
-const savedId     = ref<string | null>(null)   // id after first save (enables sections 2/3/4)
-const inViewMode  = ref(false)
+const saving         = ref(false)
+const savedId        = ref<string | null>(null)   // id after first save (enables sections 2/3)
+const inViewMode     = ref(false)
+const hasImage       = ref(false)
+const imageUploading = ref(false)
 
 // Full detail fetched after save or when opening existing recipe
 const components = ref<ComponentRow[]>([])
 const steps      = ref<StepRow[]>([])
-const media      = ref<MediaRow[]>([])
 const detailLoading = ref(false)
 
 watch(() => props.open, async (v) => {
@@ -85,7 +85,7 @@ watch(() => props.open, async (v) => {
   inViewMode.value = props.viewMode ?? false
   components.value = []
   steps.value      = []
-  media.value      = []
+  hasImage.value   = false
 
   if (props.recipe) {
     draft.name               = props.recipe.name
@@ -111,16 +111,57 @@ watch(() => props.open, async (v) => {
 async function loadDetail(id: string) {
   detailLoading.value = true
   try {
-    const res = await $fetch<{ ok: boolean; recipe: any; components: ComponentRow[]; steps: StepRow[]; media: MediaRow[] }>(
+    const res = await $fetch<{ ok: boolean; recipe: any; components: ComponentRow[]; steps: StepRow[] }>(
       `/api/recipes/${id}`, { credentials: 'include' }
     )
     components.value = res.components
     steps.value      = res.steps
-    media.value      = res.media
+    hasImage.value   = res.recipe?.has_image ?? false
   } catch (e: any) {
     toast.add({ title: t('recipes.loadError'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
   } finally {
     detailLoading.value = false
+  }
+}
+
+const imageUrl = computed(() =>
+  hasImage.value && savedId.value
+    ? `/api/recipes/${savedId.value}/image`
+    : null
+)
+
+async function uploadImage(file: File) {
+  if (!savedId.value) return
+  imageUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('image', file)
+    await $fetch(`/api/recipes/${savedId.value}/image`,
+      { method: 'PUT', credentials: 'include', body: fd })
+    hasImage.value = true
+  } catch (e: any) {
+    toast.add({
+      title:       t('common.saveFailed'),
+      description: e?.data?.statusMessage ?? e?.message ?? String(e),
+      color:       'red',
+    })
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+async function removeImage() {
+  if (!savedId.value) return
+  try {
+    await $fetch(`/api/recipes/${savedId.value}/image`,
+      { method: 'DELETE', credentials: 'include' })
+    hasImage.value = false
+  } catch (e: any) {
+    toast.add({
+      title:       t('common.deleteFailed'),
+      description: e?.data?.statusMessage ?? e?.message ?? String(e),
+      color:       'red',
+    })
   }
 }
 
@@ -468,6 +509,15 @@ const totalCost = computed((): number | null => {
 
     <template #body>
       <div class="space-y-6">
+
+        <!-- ── Image ──────────────────────────────────────────────────────── -->
+        <AdminImageUpload v-if="savedId"
+          :image-url="imageUrl"
+          :uploading="imageUploading"
+          :can-manage="canManage && !inViewMode"
+          @upload="uploadImage"
+          @remove="removeImage"
+        />
 
         <!-- ── Section 1: Basic fields ──────────────────────────────────────── -->
 
@@ -931,18 +981,6 @@ const totalCost = computed((): number | null => {
           </UButton>
         </div>
 
-        <!-- ── Section 4: Media (edit mode, read-only list) ──────────────── -->
-        <div v-if="savedId && media.length > 0">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-            {{ $t('recipes.mediaSection') }}
-          </h3>
-          <div class="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-            <div v-for="m in media" :key="m.id" class="flex items-center gap-2">
-              <span class="truncate flex-1">{{ m.storage_path }}</span>
-              <span class="text-gray-400">{{ m.sort_order }}</span>
-            </div>
-          </div>
-        </div>
 
       </div>
     </template>

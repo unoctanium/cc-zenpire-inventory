@@ -52,7 +52,10 @@
     "noResults": "結果なし",
     "missingFields": "入力が不足しています",
     "confirm": "よろしいですか？",
-    "close": "閉じる"
+    "close": "閉じる",
+    "uploadImage":  "画像をアップロード",
+    "replaceImage": "画像を置き換え",
+    "removeImage":  "画像を削除"
   },
   "dashboard": {
     "title": "ダッシュボード",
