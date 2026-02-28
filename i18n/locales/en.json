@@ -112,7 +112,7 @@
     "deleted": "Ingredient deleted",
     "deleteTitle": "Delete ingredient",
     "deleteConfirmExisting": "Delete {name}?",
-    "producedReadOnly": "Note: Produced ingredients are read-only and managed via recipes.",
+    "producedReadOnly": "Note: Ingredients used by recipes cannot be deleted.",
     "loadError": "Failed to load ingredients",
     "noPermission": "You do not have permission to view Ingredients.",
     "viewTitle": "Ingredient",
@@ -198,9 +198,20 @@
   "devTools": {
     "title": "Dev Tools",
     "subtitle": "Only available when DEV_MODE=1",
+    "headingSeed": "DB seed actions",
+    "headingIo": "DB import / export actions",
     "purge": "Purge",
+    "purgeDesc": "Purge all tables. This deletes all content.",
     "seedInitial": "Seed Initial",
+    "seedInitialDesc": "Seed initially required values, like units.",
     "seedExample": "Seed Example",
-    "flow": "Typical flow: Purge → Seed Initial → Seed Example"
+    "seedExampleDesc": "Seed some example data in the DB to demo this app.",
+    "flow": "Typical flow: Purge → Seed Initial → Seed Example",
+    "dbExport": "DB Export",
+    "dbExportDesc": "Export all business data to a JSON file for download.",
+    "dbImport": "DB Import",
+    "dbImportDesc": "Import business data from a previously exported JSON file.",
+    "exportSuccess": "Export downloaded",
+    "exportFailed": "Export failed"
   }
 }

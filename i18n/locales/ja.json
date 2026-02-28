@@ -112,7 +112,7 @@
     "deleted": "食材を削除しました",
     "deleteTitle": "食材を削除",
     "deleteConfirmExisting": "{name}を削除しますか？",
-    "producedReadOnly": "注意: 生産済み食材は読み取り専用で、レシピから管理します。",
+    "producedReadOnly": "注意: レシピで使用中の食材は削除できません。",
     "loadError": "食材の読み込みに失敗しました",
     "noPermission": "食材を表示する権限がありません。",
     "viewTitle": "食材詳細",
@@ -198,9 +198,20 @@
   "devTools": {
     "title": "開発ツール",
     "subtitle": "DEV_MODE=1 の場合のみ使用可能",
+    "headingSeed": "DBシードアクション",
+    "headingIo": "DBインポート / エクスポート",
     "purge": "全削除",
+    "purgeDesc": "全テーブルを削除します。すべての内容が失われます。",
     "seedInitial": "初期データ投入",
+    "seedInitialDesc": "単位など初期に必要な値を投入します。",
     "seedExample": "サンプルデータ投入",
-    "flow": "標準手順: 全削除 → 初期データ投入 → サンプルデータ投入"
+    "seedExampleDesc": "このアプリのデモ用サンプルデータをDBに投入します。",
+    "flow": "標準手順: 全削除 → 初期データ投入 → サンプルデータ投入",
+    "dbExport": "DBエクスポート",
+    "dbExportDesc": "全業務データをJSONファイルとしてエクスポート・ダウンロードします。",
+    "dbImport": "DBインポート",
+    "dbImportDesc": "エクスポートしたJSONファイルから業務データをインポートします。",
+    "exportSuccess": "エクスポート完了",
+    "exportFailed": "エクスポート失敗"
   }
 }

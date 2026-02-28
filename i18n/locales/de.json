@@ -112,7 +112,7 @@
     "deleted": "Zutat gelöscht",
     "deleteTitle": "Zutat löschen",
     "deleteConfirmExisting": "{name} löschen?",
-    "producedReadOnly": "Hinweis: Produzierte Zutaten sind schreibgeschützt und werden über Rezepte verwaltet.",
+    "producedReadOnly": "Hinweis: Zutaten, die von Rezepten verwendet werden, können nicht gelöscht werden.",
     "loadError": "Zutaten konnten nicht geladen werden",
     "noPermission": "Sie haben keine Berechtigung, Zutaten anzuzeigen.",
     "viewTitle": "Zutat",
@@ -198,9 +198,20 @@
   "devTools": {
     "title": "Entwickler-Tools",
     "subtitle": "Nur verfügbar wenn DEV_MODE=1",
+    "headingSeed": "DB Seed-Aktionen",
+    "headingIo": "DB Import / Export",
     "purge": "Löschen",
+    "purgeDesc": "Alle Tabellen löschen. Dies entfernt alle Inhalte.",
     "seedInitial": "Initial befüllen",
+    "seedInitialDesc": "Initial benötigte Werte befüllen, z.B. Einheiten.",
     "seedExample": "Beispieldaten laden",
-    "flow": "Typischer Ablauf: Löschen → Initial befüllen → Beispieldaten laden"
+    "seedExampleDesc": "Beispieldaten in die DB laden, um die App zu demonstrieren.",
+    "flow": "Typischer Ablauf: Löschen → Initial befüllen → Beispieldaten laden",
+    "dbExport": "DB Export",
+    "dbExportDesc": "Alle Geschäftsdaten als JSON-Datei exportieren und herunterladen.",
+    "dbImport": "DB Import",
+    "dbImportDesc": "Geschäftsdaten aus einer zuvor exportierten JSON-Datei importieren.",
+    "exportSuccess": "Export heruntergeladen",
+    "exportFailed": "Export fehlgeschlagen"
   }
 }
