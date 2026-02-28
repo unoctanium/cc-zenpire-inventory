@@ -249,7 +249,7 @@ async function save() {
     <template #footer>
       <!-- View mode: Close + Edit (for purchased only) -->
       <div v-if="inViewMode" class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+        <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.close') }}
         </UButton>
         <UButton v-if="ingredient?.kind !== 'produced'" @click="inViewMode = false">
@@ -258,7 +258,7 @@ async function save() {
       </div>
       <!-- Edit mode: Cancel + Save -->
       <div v-else class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+        <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.cancel') }}
         </UButton>
         <UButton :loading="saving" @click="save">

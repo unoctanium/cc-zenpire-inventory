@@ -155,16 +155,12 @@ const errorText = computed(() =>
   </div>
 
   <AdminTableShell v-else :error-text="errorText">
-    <template #title>{{ $t('allergens.title') }}</template>
-    <template #subtitle>{{ $t('allergens.subtitle') }}</template>
-
     <template #toolbar>
       <AdminTableToolbar
         v-model:filter-text="filterText"
         v-model:filter-column="filterColumn"
         :filter-column-options="filterColumnOptions"
         :can-add="canManage"
-        :add-label="$t('allergens.add')"
         @refresh="refresh()"
         @add="startAdd"
       />

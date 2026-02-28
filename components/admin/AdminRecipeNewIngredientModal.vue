@@ -127,7 +127,7 @@ async function save() {
       <div class="space-y-2">
         <p v-if="errorMsg" class="text-sm text-red-600 dark:text-red-400">{{ errorMsg }}</p>
         <div class="flex justify-end gap-2">
-          <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+          <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
             {{ $t('common.cancel') }}
           </UButton>
           <UButton :loading="saving" @click="save">

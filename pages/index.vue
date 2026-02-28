@@ -19,8 +19,8 @@ async function refresh() {
         <h1 class="text-2xl font-semibold">{{ $t('dashboard.title') }}</h1>
         <p class="text-gray-500">{{ $t('dashboard.subtitle') }}</p>
       </div>
-      <UButton color="gray" variant="soft" :loading="pending" @click="refresh()">
-        {{ $t('dashboard.refreshSession') }}
+      <UButton icon="i-heroicons-arrow-path" color="neutral" variant="soft" :loading="pending" @click="refresh()">
+        {{ $t('common.refresh') }}
       </UButton>
     </div>
 
@@ -42,7 +42,7 @@ async function refresh() {
             <UBadge
               v-for="p in (auth?.permissions ?? [])"
               :key="p"
-              color="gray"
+              color="neutral"
               variant="soft"
             >
               {{ p }}

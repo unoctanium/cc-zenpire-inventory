@@ -31,7 +31,7 @@ const emit = defineEmits<{
       <UButton
         v-if="canDelete"
         size="xs"
-        color="red"
+        color="error"
         variant="soft"
         icon="i-heroicons-trash"
         square
@@ -52,7 +52,7 @@ const emit = defineEmits<{
       <UButton
         size="xs"
         variant="soft"
-        color="gray"
+        color="neutral"
         icon="i-heroicons-x-mark"
         square
         aria-label="Discard"

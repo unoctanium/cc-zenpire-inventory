@@ -6,9 +6,19 @@
     "ingredients": "食材",
     "allergens": "アレルゲン",
     "units": "単位",
+    "stock": "在庫",
     "rbac": "権限管理",
     "devTools": "開発ツール",
-    "adminSettings": "管理設定"
+    "adminSettings": "管理設定",
+    "dbTools": "DBツール",
+    "personalSettings": "個人設定",
+    "apps": {
+      "dashboard": "ダッシュボード",
+      "recipes": "レシピ",
+      "stock": "在庫",
+      "admin": "管理設定",
+      "settings": "ユーザー設定"
+    }
   },
   "auth": {
     "login": "ログイン",

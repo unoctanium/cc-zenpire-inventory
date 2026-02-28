@@ -1,20 +1,17 @@
 <template>
-  <div class="space-y-4">
-    <!-- Header + toolbar -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-xl font-semibold">
-          <slot name="title" />
-        </h1>
-        <p v-if="$slots.subtitle" class="text-sm text-gray-500 dark:text-gray-400">
-          <slot name="subtitle" />
-        </p>
-      </div>
-
-      <div>
-        <slot name="toolbar" />
-      </div>
+  <div class="space-y-3">
+    <!-- Header — only rendered when title slot is provided -->
+    <div v-if="$slots.title">
+      <h1 class="text-xl font-semibold">
+        <slot name="title" />
+      </h1>
+      <p v-if="$slots.subtitle" class="text-sm text-gray-500 dark:text-gray-400">
+        <slot name="subtitle" />
+      </p>
     </div>
+
+    <!-- Toolbar — full width -->
+    <slot name="toolbar" />
 
     <!-- Error -->
     <div

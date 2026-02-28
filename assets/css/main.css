@@ -1,2 +1,36 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Prevent pull-to-refresh and overscroll on iOS / mobile browsers.
+   The app uses its own internal scroll regions; body must not scroll. */
+html, body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  height: 100%;
+}
+
+:root {
+  /* ── App-shell chrome ──────────────────────────────────── */
+  --color-app-bar:        #0082c9;
+  --color-sidebar:        color-mix(in srgb, #0082c9 12%, white);
+  --color-sidebar-hover:  color-mix(in srgb, #0082c9 20%, white);
+  --color-sidebar-active: #0082c9;
+
+  /* ── Zenpire brand palette (used by NuxtUI as primary) ── */
+  --color-zenpire-50:  color-mix(in srgb, #0082c9  5%, white);
+  --color-zenpire-100: color-mix(in srgb, #0082c9 12%, white);
+  --color-zenpire-200: color-mix(in srgb, #0082c9 25%, white);
+  --color-zenpire-300: color-mix(in srgb, #0082c9 45%, white);
+  --color-zenpire-400: color-mix(in srgb, #0082c9 68%, white);
+  --color-zenpire-500: #0082c9;
+  --color-zenpire-600: color-mix(in srgb, #0082c9 82%, black);
+  --color-zenpire-700: color-mix(in srgb, #0082c9 65%, black);
+  --color-zenpire-800: color-mix(in srgb, #0082c9 48%, black);
+  --color-zenpire-900: color-mix(in srgb, #0082c9 32%, black);
+  --color-zenpire-950: color-mix(in srgb, #0082c9 18%, black);
+}
+
+.dark {
+  --color-sidebar: #0d1825;
+  --color-sidebar-hover: #162133;
+}

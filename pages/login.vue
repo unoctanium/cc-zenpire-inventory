@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAuth } from '~/composables/useAuth'
+definePageMeta({ layout: 'auth' })
 
 const { t } = useI18n()
 useHead({ title: t('auth.login') })
@@ -29,13 +29,14 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-[70vh] flex items-center justify-center">
+  <div class="flex flex-col items-center gap-6 w-full px-4">
+    <!-- Logo: invert + screen blend makes the dark plant white on the blue background -->
+    <img src="/logo.png" alt="Zenpire"
+      class="w-[10vw] min-w-20 max-w-40 object-contain invert mix-blend-screen" />
+
     <UCard class="w-full max-w-md">
       <template #header>
-        <div class="flex items-center justify-between">
-          <div class="font-semibold">{{ $t('auth.login') }}</div>
-          <UBadge color="gray" variant="soft" size="xs">MVP</UBadge>
-        </div>
+        <p class="text-2xl font-semibold text-center">{{ $t('auth.login') }}</p>
       </template>
 
       <div class="space-y-4">
@@ -53,7 +54,7 @@ async function submit() {
 
         <UAlert
           v-if="err"
-          color="red"
+          color="error"
           variant="soft"
           :title="$t('auth.loginFailed')"
           :description="err"

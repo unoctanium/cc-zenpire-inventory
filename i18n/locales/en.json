@@ -6,9 +6,19 @@
     "ingredients": "Ingredients",
     "allergens": "Allergens",
     "units": "Units",
+    "stock": "Stock",
     "rbac": "RBAC",
     "devTools": "Dev Tools",
-    "adminSettings": "Admin Settings"
+    "adminSettings": "Admin Settings",
+    "dbTools": "DB Tools",
+    "personalSettings": "Personal Settings",
+    "apps": {
+      "dashboard": "Dashboard",
+      "recipes": "Recipes",
+      "stock": "Stock",
+      "admin": "Admin Settings",
+      "settings": "User Settings"
+    }
   },
   "auth": {
     "login": "Login",

@@ -29,10 +29,10 @@ const emit   = defineEmits<{
     </template>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+        <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.cancel') }}
         </UButton>
-        <UButton color="red" @click="emit('confirm')">
+        <UButton color="error" @click="emit('confirm')">
           {{ $t('common.delete') }}
         </UButton>
       </div>

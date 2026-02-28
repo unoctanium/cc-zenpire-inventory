@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'auth' })
 
 const { t } = useI18n()
 useHead({ title: t('auth.logout') })
@@ -19,22 +19,25 @@ async function logout() {
 </script>
 
 <template>
-  <div class="min-h-[70vh] flex items-center justify-center">
+  <div class="flex flex-col items-center gap-6 w-full px-4">
+    <img src="/logo.png" alt="Zenpire"
+      class="w-[10vw] min-w-20 max-w-40 object-contain invert mix-blend-screen" />
+
     <UCard class="w-full max-w-md">
       <template #header>
-        <div class="font-semibold">{{ $t('auth.logout') }}</div>
+        <p class="text-2xl font-semibold text-center">{{ $t('auth.logout') }}</p>
       </template>
 
       <div class="space-y-4">
         <p class="text-sm text-zinc-600 dark:text-zinc-400">
           {{ $t('auth.logoutPrompt') }}
         </p>
-        <div class="flex gap-2">
-          <UButton :loading="pending" color="gray" variant="soft" @click="logout">
-            {{ $t('auth.logout') }}
-          </UButton>
+        <div class="flex justify-end gap-2">
           <UButton variant="ghost" to="/">
             {{ $t('common.cancel') }}
+          </UButton>
+          <UButton :loading="pending" @click="logout">
+            {{ $t('auth.logout') }}
           </UButton>
         </div>
       </div>

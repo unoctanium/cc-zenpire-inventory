@@ -857,7 +857,7 @@ const totalCost = computed((): number | null => {
               </div>
             </div>
             <!-- Quick create ingredient button -->
-            <UButton size="sm" color="gray" variant="soft" icon="i-heroicons-plus"
+            <UButton size="sm" color="neutral" variant="soft" icon="i-heroicons-plus"
               :title="$t('recipes.addIngredient')"
               @click="isNewIngredientOpen = true" />
           </div>
@@ -900,13 +900,13 @@ const totalCost = computed((): number | null => {
                 <template v-if="su._editing">
                   <UButton size="xs" color="green" variant="ghost" icon="i-heroicons-check"
                     @click="saveStep(su)" />
-                  <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-x-mark"
+                  <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark"
                     @click="discardEditStep(su)" />
                 </template>
                 <template v-else>
-                  <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-pencil-square"
+                  <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square"
                     @click="startEditStep(su)" />
-                  <UButton size="xs" color="red" variant="ghost" icon="i-heroicons-trash"
+                  <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash"
                     @click="requestDeleteStep(su)" />
                 </template>
               </div>
@@ -929,13 +929,13 @@ const totalCost = computed((): number | null => {
               <div class="flex items-center gap-1 pt-0.5">
                 <UButton size="xs" color="green" variant="ghost" icon="i-heroicons-check"
                   @click="addStep" />
-                <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-x-mark"
+                <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark"
                   @click="addingStep = false; newStepText = ''" />
               </div>
             </div>
           </div>
 
-          <UButton v-if="!addingStep && !inViewMode" size="sm" color="gray" variant="soft" icon="i-heroicons-plus"
+          <UButton v-if="!addingStep && !inViewMode" size="sm" color="neutral" variant="soft" icon="i-heroicons-plus"
             @click="addingStep = true">
             {{ $t('recipes.addStep') }}
           </UButton>
@@ -960,7 +960,7 @@ const totalCost = computed((): number | null => {
     <template #footer>
       <!-- View mode footer: Close + Edit -->
       <div v-if="inViewMode" class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('update:open', false)">
+        <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.close') }}
         </UButton>
         <UButton @click="inViewMode = false">
@@ -969,7 +969,7 @@ const totalCost = computed((): number | null => {
       </div>
       <!-- Edit mode footer: Cancel/Close + Save -->
       <div v-else class="flex justify-end gap-2">
-        <UButton color="gray" variant="soft" @click="emit('saved')">
+        <UButton color="neutral" variant="soft" @click="emit('saved')">
           {{ savedId ? $t('common.close') : $t('common.cancel') }}
         </UButton>
         <UButton :loading="saving" @click="saveBasic">

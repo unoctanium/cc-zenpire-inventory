@@ -162,16 +162,12 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
   </div>
 
   <AdminTableShell v-else :error-text="errorText">
-    <template #title>{{ $t('recipes.title') }}</template>
-    <template #subtitle>{{ $t('recipes.subtitle') }}</template>
-
     <template #toolbar>
       <AdminTableToolbar
         v-model:filter-text="filterText"
         v-model:filter-column="filterColumn"
         :filter-column-options="filterColumnOptions"
         :can-add="canManage"
-        :add-label="$t('recipes.add')"
         @refresh="refresh()"
         @add="openNew"
       />
@@ -330,14 +326,14 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
                 <div class="flex items-center justify-end gap-1">
                   <UButton
                     v-if="canManage"
-                    size="xs" color="gray" variant="ghost"
+                    size="xs" color="neutral" variant="ghost"
                     :aria-label="$t('common.edit')"
                     icon="i-heroicons-pencil-square"
                     @click.stop="openEdit(row)"
                   />
                   <UButton
                     v-if="canManage"
-                    size="xs" color="red" variant="ghost"
+                    size="xs" color="error" variant="ghost"
                     :aria-label="$t('common.delete')"
                     icon="i-heroicons-trash"
                     @click.stop="requestDelete(row)"
