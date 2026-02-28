@@ -1,14 +1,12 @@
 /**
  * Splash screen lifecycle manager (client-side).
  *
- * The CSS in main.css renders body::before as a full-screen blue overlay
- * from first paint — before any JS runs and regardless of what HTML the
- * browser shows (fresh or stale). This plugin removes that overlay once
- * the Nuxt app is mounted and ready.
+ * The CSS in main.css renders the splash (blue overlay + logo + spinner)
+ * via html::before, html::after, and body::before from first paint —
+ * before any JS runs. This plugin removes it once the app is mounted.
  *
- * The Nitro server plugin (server/plugins/inject-splash.ts) adds a logo +
- * spinner on top when the server has been restarted with the latest code.
- * We fade that out at the same time.
+ * The Nitro server plugin may also have injected #splash-screen (logo +
+ * spinner as real DOM elements); we fade that out at the same time.
  */
 export default defineNuxtPlugin((nuxtApp) => {
   let hidden = false
@@ -17,30 +15,29 @@ export default defineNuxtPlugin((nuxtApp) => {
     if (hidden) return
     hidden = true
 
-    // Start fade: CSS overlay (body::before via main.css)
-    document.body.classList.add('splash-fading')
+    // Fade: CSS pseudo-element splash (html::before/after, body::before)
+    document.documentElement.classList.add('splash-fading')
 
-    // Start fade: server-injected logo+spinner element (if present)
+    // Fade: server-injected DOM element if present
     const el = document.getElementById('splash-screen')
     if (el) {
       el.style.opacity = '0'
       el.style.pointerEvents = 'none'
     }
 
-    // After transition completes: remove both completely
+    // After fade transition: remove pseudo-elements and DOM element
     setTimeout(() => {
-      document.body.classList.remove('splash-fading')
-      document.body.classList.add('splash-done')
+      document.documentElement.classList.remove('splash-fading')
+      document.documentElement.classList.add('splash-done')
       el?.remove()
     }, 380)
   }
 
-  // Primary trigger: app mounted + one animation frame so the browser
-  // has painted the correct page content before we start fading.
+  // Primary: hide once app is mounted and browser has painted
   nuxtApp.hook('app:mounted', () => {
     requestAnimationFrame(() => setTimeout(hide, 200))
   })
 
-  // Hard fallback: never block the app for more than 4 s
+  // Hard fallback: never block for more than 4 s
   setTimeout(hide, 4000)
 })
