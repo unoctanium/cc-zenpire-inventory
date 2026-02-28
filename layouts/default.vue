@@ -46,8 +46,15 @@ function isLinkActive(linkTo: string) {
 
 <template>
   <UApp>
+    <!-- Blue screen guard: if this layout is briefly in the DOM while the user
+         is not yet confirmed as authenticated (e.g. during a route transition),
+         show the app-bar colour instead of the layout chrome so the user never
+         sees a flash of the top bar / sidebar. For authenticated users the SSR
+         state is already resolved, so isAuthed is true from the first render. -->
+    <div v-if="!isAuthed" style="position:fixed;inset:0;background-color:var(--color-app-bar)" />
+
     <!-- Outer shell: bg is the app-bar color, acts as the visible frame around the content container -->
-    <div class="h-dvh flex flex-col overflow-hidden bg-[var(--color-app-bar)]">
+    <div v-else class="h-dvh flex flex-col overflow-hidden bg-[var(--color-app-bar)]">
 
       <!-- TOP APP BAR -->
       <header class="flex-none h-14 flex items-center px-3 gap-3">
