@@ -55,7 +55,10 @@ body::before {
   transition: opacity 0.35s ease;
 }
 
-/* Logo circle — inverted + screen blend renders the logo white on blue */
+/* Logo circle — inverted + screen blend renders the logo white on blue.
+   Border must be black here: filter:invert(1) flips black→white, and
+   mix-blend-mode:screen then keeps it white against the blue background.
+   Using white as the border colour would invert to black → invisible. */
 html::before {
   content: '';
   position: fixed;
@@ -65,7 +68,7 @@ html::before {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid black;
   background-image: url('/logo.png');
   background-size: cover;
   background-position: center;
@@ -110,4 +113,24 @@ html.splash-done::before,
 html.splash-done::after {
   content: none;
   display: none;
+}
+
+/* ── App data tables: taller rows (≈150%) + subtle row dividers ────────────
+   Targets all our tables (table-fixed text-sm for page tables,
+   table-fixed text-xs for modal sub-tables). Outside @layer so these
+   rules take precedence over Tailwind utility classes.
+   ──────────────────────────────────────────────────────────────────────── */
+table.table-fixed.text-sm > tbody > tr > td {
+  padding-top:    0.625rem;  /* 10px ≈ 167% of py-1.5 (6px) */
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid rgb(229 231 235); /* gray-200 */
+}
+table.table-fixed.text-xs > tbody > tr > td {
+  padding-top:    0.375rem;  /* 6px = 150% of py-1 (4px) */
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid rgb(229 231 235);
+}
+.dark table.table-fixed.text-sm > tbody > tr > td,
+.dark table.table-fixed.text-xs > tbody > tr > td {
+  border-bottom-color: rgb(75 85 99 / 0.3); /* gray-600/30 */
 }

@@ -4,6 +4,18 @@ export default defineNuxtConfig({
     compatibilityDate: '2026-01-01',
     
     devtools: { enabled: true },
+
+    app: {
+      head: {
+        link: [
+          { rel: 'icon', type: 'image/png', href: '/logo.png' },
+          { rel: 'apple-touch-icon', href: '/logo.png' },
+        ],
+        meta: [
+          { name: 'theme-color', content: '#0082c9' },
+        ],
+      },
+    },
         
     modules: [
       '@nuxt/ui',

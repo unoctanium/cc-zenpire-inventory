@@ -531,11 +531,6 @@ const totalCost = computed((): number | null => {
               <span v-else class="text-sm text-gray-400 dark:text-gray-600">–</span>
             </div>
           </div>
-          <div v-if="savedId && recipe" class="text-xs text-gray-400 dark:text-gray-600 space-y-0.5">
-            <div><span class="font-medium">{{ $t('recipes.id') }}:</span> {{ savedId }}</div>
-            <div><span class="font-medium">{{ $t('recipes.createdAt') }}:</span> {{ recipe.created_at }}</div>
-            <div><span class="font-medium">{{ $t('recipes.updatedAt') }}:</span> {{ recipe.updated_at }}</div>
-          </div>
         </div>
 
         <!-- Edit mode: editable inputs -->
@@ -631,12 +626,6 @@ const totalCost = computed((): number | null => {
             </label>
           </div>
 
-          <!-- Metadata (edit mode only) -->
-          <div v-if="savedId && recipe" class="text-xs text-gray-400 dark:text-gray-600 space-y-0.5">
-            <div><span class="font-medium">{{ $t('recipes.id') }}:</span> {{ savedId }}</div>
-            <div><span class="font-medium">{{ $t('recipes.createdAt') }}:</span> {{ recipe.created_at }}</div>
-            <div><span class="font-medium">{{ $t('recipes.updatedAt') }}:</span> {{ recipe.updated_at }}</div>
-          </div>
         </div>
 
         <!-- ── Section 2: Components (edit mode only) ────────────────────── -->
