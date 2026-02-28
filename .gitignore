@@ -61,4 +61,4 @@ Thumbs.db
 # DATABASE DUMPS (if created)
 # =========================
 *.sql.dump
-*.bak
+*.bakdwl/
