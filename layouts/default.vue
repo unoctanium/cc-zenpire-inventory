@@ -12,18 +12,7 @@ const initials = computed(() => initialsFromEmail(email.value))
 
 const { barApps, activeApp, sidebarOpen, setApp } = useAppNav()
 
-watch(
-  auth,
-  (val) => {
-    if ((val === null || !val.ok) && route.path !== '/login') {
-      navigateTo('/login')
-    }
-    if (val?.ok && route.path === '/login') {
-      navigateTo('/')
-    }
-  },
-  { immediate: true }
-)
+// Auth redirect is handled by middleware/auth.global.ts (runs before layouts mount).
 
 const langOptions = computed(() =>
   (locales.value as any[]).map(l => ({
