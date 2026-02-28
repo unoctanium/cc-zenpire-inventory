@@ -2,7 +2,7 @@
 definePageMeta({ layout: false })
 
 const { t } = useI18n()
-useHead({ title: t('auth.logout') })
+useHead({ title: t('auth.logout'), bodyAttrs: { style: 'background-color:#0082c9' } })
 
 const pending = ref(false)
 

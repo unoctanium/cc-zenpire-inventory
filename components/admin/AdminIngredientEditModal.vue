@@ -32,6 +32,7 @@ const props = defineProps<{
   units:      UnitOption[]
   allergens:  AllergenOption[]
   viewMode?:  boolean
+  canManage?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -247,17 +248,17 @@ async function save() {
     </template>
 
     <template #footer>
-      <!-- View mode: Close + Edit (for purchased only) -->
-      <div v-if="inViewMode" class="flex justify-end gap-2">
+      <!-- View mode: Close + Edit (for purchased only, and only when canManage) -->
+      <div v-if="inViewMode" class="flex justify-end gap-2 w-full">
         <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.close') }}
         </UButton>
-        <UButton v-if="ingredient?.kind !== 'produced'" @click="inViewMode = false">
+        <UButton v-if="canManage && ingredient?.kind !== 'produced'" @click="inViewMode = false">
           {{ $t('common.edit') }}
         </UButton>
       </div>
       <!-- Edit mode: Cancel + Save -->
-      <div v-else class="flex justify-end gap-2">
+      <div v-else class="flex justify-end gap-2 w-full">
         <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.cancel') }}
         </UButton>

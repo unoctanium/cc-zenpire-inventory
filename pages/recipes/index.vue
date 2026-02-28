@@ -358,6 +358,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         :ingredients="ingredients"
         :all-recipes="rows"
         :view-mode="isViewMode"
+        :can-manage="canManage"
         @saved="onSaved"
         @list-updated="refresh()"
       />

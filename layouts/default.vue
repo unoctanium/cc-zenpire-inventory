@@ -51,7 +51,7 @@ function isLinkActive(linkTo: string) {
          show the app-bar colour instead of the layout chrome so the user never
          sees a flash of the top bar / sidebar. For authenticated users the SSR
          state is already resolved, so isAuthed is true from the first render. -->
-    <div v-if="!isAuthed" style="position:fixed;inset:0;background-color:var(--color-app-bar)" />
+    <div v-if="!isAuthed" style="position:fixed;inset:0;background-color:#0082c9" />
 
     <!-- Outer shell: bg is the app-bar color, acts as the visible frame around the content container -->
     <div v-else class="h-dvh flex flex-col overflow-hidden bg-[var(--color-app-bar)]">

@@ -289,6 +289,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         :units="units"
         :allergens="allergens"
         :view-mode="isViewMode"
+        :can-manage="canManage"
         @saved="onSaved"
       />
     </template>

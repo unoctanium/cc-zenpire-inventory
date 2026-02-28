@@ -45,6 +45,7 @@ const props = defineProps<{
   ingredients: IngredientOption[]
   allRecipes:  RecipeRow[]
   viewMode?:   boolean
+  canManage?:  boolean
 }>()
 
 const emit = defineEmits<{
@@ -958,17 +959,17 @@ const totalCost = computed((): number | null => {
     </template>
 
     <template #footer>
-      <!-- View mode footer: Close + Edit -->
-      <div v-if="inViewMode" class="flex justify-end gap-2">
+      <!-- View mode footer: Close + Edit (edit only when canManage) -->
+      <div v-if="inViewMode" class="flex justify-end gap-2 w-full">
         <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
           {{ $t('common.close') }}
         </UButton>
-        <UButton @click="inViewMode = false">
+        <UButton v-if="canManage" @click="inViewMode = false">
           {{ $t('common.edit') }}
         </UButton>
       </div>
       <!-- Edit mode footer: Cancel/Close + Save -->
-      <div v-else class="flex justify-end gap-2">
+      <div v-else class="flex justify-end gap-2 w-full">
         <UButton color="neutral" variant="soft" @click="emit('saved')">
           {{ savedId ? $t('common.close') : $t('common.cancel') }}
         </UButton>

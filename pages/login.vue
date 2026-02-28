@@ -2,7 +2,7 @@
 definePageMeta({ layout: false })
 
 const { t } = useI18n()
-useHead({ title: t('auth.login') })
+useHead({ title: t('auth.login'), bodyAttrs: { style: 'background-color:#0082c9' } })
 
 const email    = ref('')
 const password = ref('')
