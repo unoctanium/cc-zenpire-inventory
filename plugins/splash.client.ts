@@ -1,62 +1,46 @@
 /**
  * Splash screen lifecycle manager (client-side).
  *
- * Finds the #splash-screen injected by the Nitro server plugin.
- * If it isn't there (old cached HTML without the injection),
- * creates it via DOM so the old content is covered immediately.
+ * The CSS in main.css renders body::before as a full-screen blue overlay
+ * from first paint — before any JS runs and regardless of what HTML the
+ * browser shows (fresh or stale). This plugin removes that overlay once
+ * the Nuxt app is mounted and ready.
  *
- * Fades the splash out 700 ms after the Nuxt app has fully mounted
- * (auth plugin has already resolved at that point).
+ * The Nitro server plugin (server/plugins/inject-splash.ts) adds a logo +
+ * spinner on top when the server has been restarted with the latest code.
+ * We fade that out at the same time.
  */
 export default defineNuxtPlugin((nuxtApp) => {
-  let splash = document.getElementById('splash-screen')
+  let hidden = false
 
-  if (!splash) {
-    // Old cached HTML: create the splash via JS to cover stale content.
-    const style = document.createElement('style')
-    style.textContent = `
-      #splash-screen {
-        position: fixed; inset: 0; z-index: 9999;
-        background: #0082c9;
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
-        gap: 2rem; transition: opacity 0.35s ease;
-      }
-      #splash-screen .sp-logo {
-        width: 6rem; height: 6rem; flex-shrink: 0;
-        border-radius: 50%; overflow: hidden;
-        border: 2px solid rgba(255,255,255,0.9);
-      }
-      #splash-screen .sp-logo img {
-        width: 100%; height: 100%;
-        object-fit: cover; filter: invert(1); mix-blend-mode: screen;
-      }
-      #splash-screen .sp-spinner {
-        width: 36px; height: 36px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top-color: #fff; border-radius: 50%;
-        animation: sp-spin 0.8s linear infinite;
-      }
-      @keyframes sp-spin { to { transform: rotate(360deg); } }
-    `
-    document.head.appendChild(style)
+  const hide = () => {
+    if (hidden) return
+    hidden = true
 
-    splash = document.createElement('div')
-    splash.id = 'splash-screen'
-    splash.innerHTML = `
-      <div class="sp-logo"><img src="/logo.png" alt="Zenpire" /></div>
-      <div class="sp-spinner"></div>
-    `
-    document.body.insertBefore(splash, document.body.firstChild)
-  }
+    // Start fade: CSS overlay (body::before via main.css)
+    document.body.classList.add('splash-fading')
 
-  const el = splash
-
-  nuxtApp.hook('app:mounted', () => {
-    setTimeout(() => {
+    // Start fade: server-injected logo+spinner element (if present)
+    const el = document.getElementById('splash-screen')
+    if (el) {
       el.style.opacity = '0'
       el.style.pointerEvents = 'none'
-      setTimeout(() => el.remove(), 400)
-    }, 700)
+    }
+
+    // After transition completes: remove both completely
+    setTimeout(() => {
+      document.body.classList.remove('splash-fading')
+      document.body.classList.add('splash-done')
+      el?.remove()
+    }, 380)
+  }
+
+  // Primary trigger: app mounted + one animation frame so the browser
+  // has painted the correct page content before we start fading.
+  nuxtApp.hook('app:mounted', () => {
+    requestAnimationFrame(() => setTimeout(hide, 200))
   })
+
+  // Hard fallback: never block the app for more than 4 s
+  setTimeout(hide, 4000)
 })

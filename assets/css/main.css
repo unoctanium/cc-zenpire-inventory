@@ -34,3 +34,25 @@ html, body {
   --color-sidebar: #0d1825;
   --color-sidebar-hover: #162133;
 }
+
+/* ── App loading splash (CSS layer) ────────────────────────────────────────
+   body::before creates a full-viewport blue overlay rendered at first paint,
+   before any JavaScript executes. This covers any HTML content (old or new)
+   while the app initialises. The client plugin removes it via body classes.
+   ──────────────────────────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: #0082c9;
+  pointer-events: all;
+  transition: opacity 0.35s ease;
+}
+body.splash-fading::before {
+  opacity: 0;
+  pointer-events: none;
+}
+body.splash-done::before {
+  content: none;
+}
