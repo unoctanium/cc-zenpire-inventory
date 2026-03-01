@@ -231,5 +231,6 @@ For any new CRUD module, the pattern is:
 3. Is the server route doing more than orchestration? → Move logic to Postgres
 4. Is the seed still valid after this change? → Update if needed
 5. Are new permissions needed? → Add to v_user_permissions and document here
+6. Does this change the data model (add/remove columns or tables)? → Update both export and import logic in `server/api/manage/export.get.ts`, `export-plain.get.ts`, and `import.post.ts`.
 
 ---

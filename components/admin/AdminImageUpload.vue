@@ -96,7 +96,7 @@ function onFileChange(e: Event) {
   <Teleport to="body">
     <div
       v-if="lightboxOpen && imageUrl"
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 pointer-events-auto"
       @click.self="lightboxOpen = false"
     >
       <!-- X button -->

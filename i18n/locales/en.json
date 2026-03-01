@@ -231,6 +231,12 @@
     "dbImport": "DB Import",
     "dbImportDesc": "Import business data from a previously exported JSON file.",
     "exportSuccess": "Export downloaded",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "importSuccess": "Import completed",
+    "importFailed": "Import failed",
+    "importConfirmTitle": "Replace all data?",
+    "importConfirmDesc": "This will delete all current business data and replace it with the imported file. This cannot be undone.",
+    "importConfirm": "Import",
+    "importSummaryLabel": "The file contains:"
   }
 }

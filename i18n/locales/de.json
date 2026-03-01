@@ -231,6 +231,12 @@
     "dbImport": "DB Import",
     "dbImportDesc": "Geschäftsdaten aus einer zuvor exportierten JSON-Datei importieren.",
     "exportSuccess": "Export heruntergeladen",
-    "exportFailed": "Export fehlgeschlagen"
+    "exportFailed": "Export fehlgeschlagen",
+    "importSuccess": "Import abgeschlossen",
+    "importFailed": "Import fehlgeschlagen",
+    "importConfirmTitle": "Alle Daten ersetzen?",
+    "importConfirmDesc": "Alle aktuellen Geschäftsdaten werden gelöscht und durch die importierte Datei ersetzt. Dies kann nicht rückgängig gemacht werden.",
+    "importConfirm": "Importieren",
+    "importSummaryLabel": "Die Datei enthält:"
   }
 }

@@ -231,6 +231,12 @@
     "dbImport": "DBインポート",
     "dbImportDesc": "エクスポートしたJSONファイルから業務データをインポートします。",
     "exportSuccess": "エクスポート完了",
-    "exportFailed": "エクスポート失敗"
+    "exportFailed": "エクスポート失敗",
+    "importSuccess": "インポート完了",
+    "importFailed": "インポート失敗",
+    "importConfirmTitle": "すべてのデータを置き換えますか？",
+    "importConfirmDesc": "現在の全業務データが削除され、インポートしたファイルの内容に置き換えられます。この操作は取り消せません。",
+    "importConfirm": "インポート",
+    "importSummaryLabel": "ファイルの内容:"
   }
 }
