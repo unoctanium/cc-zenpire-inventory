@@ -500,7 +500,7 @@ function esc(s: string | null | undefined): string {
 
 function buildPrintHtml(): string {
   const outputUnitCode = props.units.find(u => u.id === draft.output_unit_id)?.code ?? ''
-  const imgSrc         = imageUrl.value ? imageUrl.value.split('?')[0] : null
+  const imgSrc         = imageUrl.value ? window.location.origin + imageUrl.value.split('?')[0] : null
 
   const imgTag = imgSrc
     ? `<img src="${imgSrc}" style="width:140px;height:140px;object-fit:cover;border-radius:8px;float:right;margin:0 0 16px 20px" onerror="this.style.display='none'">`
@@ -595,14 +595,16 @@ ${steps.value.length > 0 ? `
 
 function printRecipe() {
   if (!savedId.value) return
-  const win = window.open('', '_blank')
+  const blob    = new Blob([buildPrintHtml()], { type: 'text/html;charset=utf-8' })
+  const blobUrl = URL.createObjectURL(blob)
+  const win     = window.open(blobUrl, '_blank')
   if (!win) {
+    URL.revokeObjectURL(blobUrl)
     toast.add({ title: 'Print blocked', description: 'Please allow pop-ups for this site.', color: 'error' })
     return
   }
-  win.document.write(buildPrintHtml())
-  win.document.close()
-  win.focus()
+  // revoke after a short delay so the browser has time to load the blob
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000)
 }
 </script>
 
