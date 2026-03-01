@@ -145,8 +145,9 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     inner: [
       { header: t('recipes.description'), candidates: rows.value.map(r => r.description.slice(0, 60)) },
       { header: t('recipes.output'),      candidates: rows.value.map(r => `${r.output_quantity} ${r.output_unit_code}`) },
-      { header: t('recipes.stdCost'),     candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost}` : '—') },
-      { header: t('recipes.compCost'),    candidates: rows.value.map(r => r.comp_cost != null ? `€ ${r.comp_cost.toFixed(4)}` : '—') },
+      { header: t('recipes.batchCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * r.output_quantity).toFixed(2)}` : '—') },
+      { header: t('recipes.compCost'),  candidates: rows.value.map(r => r.comp_cost != null ? `€ ${r.comp_cost.toFixed(2)}` : '—') },
+      { header: t('recipes.unitCost'),  candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : '—') },
       { header: t('recipes.active'),      candidates: ['true', 'false'] },
       { header: t('recipes.preProduct'),  candidates: ['true', 'false'] },
       { header: t('recipes.components'),  candidates: rows.value.map(r => String(r.component_count)) },
@@ -188,6 +189,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
             <col :style="{ width: innerWidths[4] + 'px' }" />
             <col :style="{ width: innerWidths[5] + 'px' }" />
             <col :style="{ width: innerWidths[6] + 'px' }" />
+            <col :style="{ width: innerWidths[7] + 'px' }" />
             <col :style="{ width: lastWidth + 'px' }" />
           </colgroup>
 
@@ -208,20 +210,25 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.description') }}
               </th>
-              <!-- Output -->
+              <!-- Batch Amount -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.output') }}
               </th>
-              <!-- Std. cost -->
+              <!-- Batch Cost -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
-                {{ $t('recipes.stdCost') }}
+                {{ $t('recipes.batchCost') }}
               </th>
-              <!-- Comp. cost -->
+              <!-- Comp. Cost -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.compCost') }}
+              </th>
+              <!-- Unit Cost -->
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
+                         border-b border-gray-200 dark:border-gray-800">
+                {{ $t('recipes.unitCost') }}
               </th>
               <!-- Active -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
@@ -253,10 +260,10 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
 
           <tbody>
             <tr v-if="pending">
-              <td colspan="9" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
+              <td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
             </tr>
             <tr v-else-if="visibleRows.length === 0">
-              <td colspan="9" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
+              <td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
@@ -277,21 +284,28 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">{{ row.output_quantity }} {{ row.output_unit_code }}</span>
               </td>
-              <!-- Std. cost -->
+              <!-- Batch Cost (standard_unit_cost × output_quantity), red if < comp_cost -->
               <td class="px-2 py-1.5 align-middle">
                 <span
                   class="text-gray-800 dark:text-gray-200"
-                  :class="row.comp_cost != null && row.standard_unit_cost != null && row.comp_cost > row.standard_unit_cost
+                  :class="row.comp_cost != null && row.standard_unit_cost != null
+                    && row.comp_cost > row.standard_unit_cost * row.output_quantity
                     ? 'rounded px-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     : ''"
                 >
-                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost}` : '—' }}
+                  {{ row.standard_unit_cost != null ? `€ ${(row.standard_unit_cost * row.output_quantity).toFixed(2)}` : '—' }}
                 </span>
               </td>
-              <!-- Comp. cost -->
+              <!-- Comp. Cost (component sum) -->
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.comp_cost != null ? `€ ${row.comp_cost.toFixed(4)}` : '—' }}
+                  {{ row.comp_cost != null ? `€ ${row.comp_cost.toFixed(2)}` : '—' }}
+                </span>
+              </td>
+              <!-- Unit Cost (per-unit standard cost) -->
+              <td class="px-2 py-1.5 align-middle">
+                <span class="text-gray-800 dark:text-gray-200">
+                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '—' }}
                 </span>
               </td>
               <!-- Active -->

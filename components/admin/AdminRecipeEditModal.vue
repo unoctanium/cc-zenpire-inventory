@@ -97,11 +97,14 @@ watch(() => props.open, async (v) => {
   hasImage.value   = false
 
   if (props.recipe) {
+    const loadQty = Number(props.recipe.output_quantity) || 1
     draft.name               = props.recipe.name
     draft.description        = props.recipe.description ?? ''
     draft.output_quantity    = props.recipe.output_quantity
     draft.output_unit_id     = props.recipe.output_unit_id
-    draft.standard_unit_cost = props.recipe.standard_unit_cost ?? ''
+    draft.standard_unit_cost = props.recipe.standard_unit_cost != null
+      ? props.recipe.standard_unit_cost * loadQty
+      : ''
     draft.is_active          = props.recipe.is_active
     draft.is_pre_product     = props.recipe.is_pre_product
     savedId.value            = props.recipe.id
@@ -191,7 +194,7 @@ async function saveBasic() {
       description:        draft.description.trim() || null,
       output_quantity:    qty,
       output_unit_id:     draft.output_unit_id,
-      standard_unit_cost: costRaw === '' ? null : Number(costRaw),
+      standard_unit_cost: costRaw === '' ? null : Number(costRaw) / qty,
       is_active:          draft.is_active,
       is_pre_product:     draft.is_pre_product,
     }
@@ -492,7 +495,7 @@ function componentCost(comp: ComponentRow): number | null {
 
 function formatCost(n: number | null): string {
   if (n == null) return '—'
-  return `€ ${n.toFixed(4)}`
+  return `€ ${n.toFixed(2)}`
 }
 
 const totalCost = computed((): number | null => {
@@ -501,14 +504,24 @@ const totalCost = computed((): number | null => {
   return costs.reduce((a, b) => a + b, 0)
 })
 
+const outputUnitCode = computed(() =>
+  props.units.find(u => u.id === draft.output_unit_id)?.code ?? ''
+)
+
+const perUnitCost = computed((): number | null => {
+  const batch = Number(draft.standard_unit_cost)
+  const qty   = Number(draft.output_quantity)
+  if (!batch || !qty) return null
+  return batch / qty
+})
+
 function esc(s: string | null | undefined): string {
   if (!s) return ''
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function buildPrintHtml(): string {
-  const outputUnitCode = props.units.find(u => u.id === draft.output_unit_id)?.code ?? ''
-  const imgSrc         = imageUrl.value ? window.location.origin + imageUrl.value.split('?')[0] : null
+  const imgSrc = imageUrl.value ? window.location.origin + imageUrl.value.split('?')[0] : null
 
   const imgTag = imgSrc
     ? `<img src="${imgSrc}" style="width:140px;height:140px;object-fit:cover;border-radius:8px;float:right;margin:0 0 16px 20px" onerror="this.style.display='none'">`
@@ -568,8 +581,18 @@ ${imgTag}
 ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 
 <div class="meta">
-  <div><label>Output</label><span>${draft.output_quantity} ${esc(outputUnitCode)}</span></div>
-  <div><label>Std. cost / unit</label><span>${draft.standard_unit_cost != null && draft.standard_unit_cost !== '' ? `€ ${draft.standard_unit_cost}` : '—'}</span></div>
+  <div><label>Batch Amount</label><span>${draft.output_quantity} ${esc(outputUnitCode.value)}</span></div>
+  ${(() => {
+    const batchCostStr = draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
+      ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}`
+      : '—'
+    const puc = (draft.standard_unit_cost !== '' && Number(draft.output_quantity) > 0)
+      ? Number(draft.standard_unit_cost) / Number(draft.output_quantity)
+      : null
+    const pucStr = puc != null ? `€ ${puc.toFixed(4)} / ${esc(outputUnitCode.value)}` : null
+    return `<div><label>Batch cost</label><span>${batchCostStr}</span></div>`
+      + (pucStr ? `<div><label>Unit cost</label><span>${pucStr}</span></div>` : '')
+  })()}
   <div><label>Status</label>
     <span class="badge ${draft.is_active ? 'active' : 'inactive'}">${draft.is_active ? 'Active' : 'Inactive'}</span>
     ${draft.is_pre_product ? '<span class="badge preprod">Pre-product</span>' : ''}
@@ -672,11 +695,14 @@ function printRecipe() {
           </div>
           <div>
             <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
-              {{ $t('recipes.stdCost') }}
-              <span class="text-gray-400 font-normal normal-case tracking-normal ml-1">{{ $t('recipes.perOutputUnit') }}</span>
+              {{ $t('recipes.batchCostLabel') }}
             </div>
             <div class="text-sm text-gray-900 dark:text-gray-100">
-              {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null ? `€ ${draft.standard_unit_cost}` : '—' }}
+              {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
+                 ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}` : '—' }}
+            </div>
+            <div v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">
+              = € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}
             </div>
           </div>
           <div class="flex gap-4">
@@ -772,11 +798,13 @@ function printRecipe() {
             </div>
           </div>
 
-          <!-- Std. cost -->
+          <!-- Batch cost -->
           <div>
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-              {{ $t('recipes.stdCost') }}
-              <span class="text-gray-400 font-normal normal-case tracking-normal ml-1">{{ $t('recipes.perOutputUnit') }}</span>
+              {{ $t('recipes.batchCostLabel') }}
+              <span class="font-normal normal-case tracking-normal ml-1">
+                ({{ draft.output_quantity || '?' }} {{ outputUnitCode || '?' }})
+              </span>
             </label>
             <input
               v-model="draft.standard_unit_cost"
@@ -786,6 +814,14 @@ function printRecipe() {
                      dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               :placeholder="$t('recipes.stdCostPlaceholder')"
             />
+            <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">
+              = € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}
+            </p>
+            <button v-if="totalCost != null" type="button"
+              class="mt-1 text-xs text-primary-500 hover:underline"
+              @click="draft.standard_unit_cost = totalCost">
+              {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
+            </button>
           </div>
 
           <!-- Flags -->
@@ -834,7 +870,7 @@ function printRecipe() {
                     {{ $t('recipes.qty') }}
                   </th>
                   <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
-                    {{ $t('ingredients.unit') }}
+                    {{ $t('recipes.unit') }}
                   </th>
                   <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
                     {{ $t('recipes.cost') }}
