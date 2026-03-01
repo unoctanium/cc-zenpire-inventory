@@ -225,6 +225,8 @@
     "flow": "Typischer Ablauf: Löschen → Initial befüllen → Beispieldaten laden",
     "dbExport": "DB Export",
     "dbExportDesc": "Alle Geschäftsdaten als JSON-Datei exportieren und herunterladen.",
+    "dbExportPlain": "DB Export einfach",
+    "dbExportPlainDesc": "Alle Geschäftsdaten als JSON-Datei exportieren und herunterladen, ohne Bilder.",
     "dbImport": "DB Import",
     "dbImportDesc": "Geschäftsdaten aus einer zuvor exportierten JSON-Datei importieren.",
     "exportSuccess": "Export heruntergeladen",

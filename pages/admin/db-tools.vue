@@ -2,7 +2,8 @@
 const { t }   = useI18n()
 const toast   = useToast()
 const out     = ref('')
-const exporting = ref(false)
+const exporting      = ref(false)
+const exportingPlain = ref(false)
 
 async function call(path: string) {
   out.value = `Calling ${path}...`
@@ -37,6 +38,32 @@ async function runExport() {
     })
   } finally {
     exporting.value = false
+  }
+}
+
+async function runExportPlain() {
+  exportingPlain.value = true
+  try {
+    const data = await $fetch('/api/manage/export-plain', { credentials: 'include' })
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `zenpire-export-plain-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.add({ title: t('devTools.exportSuccess') })
+  } catch (e: any) {
+    toast.add({
+      title:       t('devTools.exportFailed'),
+      description: e?.data?.statusMessage ?? e?.message ?? String(e),
+      color:       'error',
+    })
+  } finally {
+    exportingPlain.value = false
   }
 }
 </script>
@@ -110,6 +137,16 @@ async function runExport() {
           </td>
           <td class="py-1 align-middle text-gray-600 dark:text-gray-400">
             {{ $t('devTools.dbExportDesc') }}
+          </td>
+        </tr>
+        <tr>
+          <td class="pr-4 py-1 align-middle">
+            <UButton color="neutral" variant="soft" class="w-36" :loading="exportingPlain" @click="runExportPlain">
+              {{ $t('devTools.dbExportPlain') }}
+            </UButton>
+          </td>
+          <td class="py-1 align-middle text-gray-600 dark:text-gray-400">
+            {{ $t('devTools.dbExportPlainDesc') }}
           </td>
         </tr>
       </tbody>

@@ -225,6 +225,8 @@
     "flow": "標準手順: 全削除 → 初期データ投入 → サンプルデータ投入",
     "dbExport": "DBエクスポート",
     "dbExportDesc": "全業務データをJSONファイルとしてエクスポート・ダウンロードします。",
+    "dbExportPlain": "DBエクスポート（画像なし）",
+    "dbExportPlainDesc": "全業務データをJSONファイルとしてエクスポート・ダウンロードします（画像を除く）。",
     "dbImport": "DBインポート",
     "dbImportDesc": "エクスポートしたJSONファイルから業務データをインポートします。",
     "exportSuccess": "エクスポート完了",

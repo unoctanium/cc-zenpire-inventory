@@ -225,6 +225,8 @@
     "flow": "Typical flow: Purge → Seed Initial → Seed Example",
     "dbExport": "DB Export",
     "dbExportDesc": "Export all business data to a JSON file for download.",
+    "dbExportPlain": "DB Export plain",
+    "dbExportPlainDesc": "Export all business data to a JSON file for download, without images.",
     "dbImport": "DB Import",
     "dbImportDesc": "Import business data from a previously exported JSON file.",
     "exportSuccess": "Export downloaded",
