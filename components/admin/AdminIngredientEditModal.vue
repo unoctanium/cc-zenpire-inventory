@@ -43,6 +43,14 @@ const emit = defineEmits<{
 const { t }   = useI18n()
 const toast   = useToast()
 
+const childLightboxOpen = ref(false)
+
+function handleModalOpen(val: boolean) {
+  // Don't close the modal while the image lightbox is open
+  if (!val && childLightboxOpen.value) return
+  emit('update:open', val)
+}
+
 const draft = reactive({
   name:               '',
   default_unit_id:    '',
@@ -181,7 +189,7 @@ async function save() {
 </script>
 
 <template>
-  <UModal :open="open" size="lg" @update:open="emit('update:open', $event)">
+  <UModal :open="open" size="lg" @update:open="handleModalOpen">
     <template #header>
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         <template v-if="inViewMode">
@@ -205,6 +213,8 @@ async function save() {
           :can-manage="canManage && !inViewMode && ingredient?.kind !== 'produced'"
           @upload="uploadImage"
           @remove="removeImage"
+          @lightbox-open="childLightboxOpen = true"
+          @lightbox-close="childLightboxOpen = false"
         />
 
         <!-- Name -->

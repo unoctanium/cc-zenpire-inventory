@@ -56,6 +56,14 @@ const emit = defineEmits<{
 const { t }  = useI18n()
 const toast  = useToast()
 
+const childLightboxOpen = ref(false)
+
+function handleModalOpen(val: boolean) {
+  // Don't close the modal while the image lightbox is open
+  if (!val && childLightboxOpen.value) return
+  emit('update:open', val)
+}
+
 // ─── basic fields ─────────────────────────────────────────────────────────────
 
 const draft = reactive({
@@ -609,7 +617,7 @@ function printRecipe() {
 </script>
 
 <template>
-  <UModal :open="open" size="xl" @update:open="emit('update:open', $event)">
+  <UModal :open="open" size="xl" @update:open="handleModalOpen">
     <template #header>
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         <template v-if="inViewMode">
@@ -633,6 +641,8 @@ function printRecipe() {
           :can-manage="canManage && !inViewMode"
           @upload="uploadImage"
           @remove="removeImage"
+          @lightbox-open="childLightboxOpen = true"
+          @lightbox-close="childLightboxOpen = false"
         />
 
         <!-- ── Section 1: Basic fields ──────────────────────────────────────── -->
