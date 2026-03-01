@@ -56,6 +56,7 @@ const loadingDetail       = ref(false)
 const inViewMode          = ref(false)
 const hasImage            = ref(false)
 const imageUploading      = ref(false)
+const imageVersion        = ref(0)
 
 watch(() => props.open, async (v) => {
   if (!v) return
@@ -92,7 +93,7 @@ watch(() => props.open, async (v) => {
 
 const imageUrl = computed(() =>
   hasImage.value && props.ingredient?.id
-    ? `/api/ingredients/${props.ingredient.id}/image`
+    ? `/api/ingredients/${props.ingredient.id}/image?v=${imageVersion.value}`
     : null
 )
 
@@ -105,6 +106,7 @@ async function uploadImage(file: File) {
     await $fetch(`/api/ingredients/${props.ingredient.id}/image`,
       { method: 'PUT', credentials: 'include', body: fd })
     hasImage.value = true
+    imageVersion.value++
   } catch (e: any) {
     toast.add({
       title:       t('common.saveFailed'),
@@ -200,7 +202,7 @@ async function save() {
         <AdminImageUpload v-if="ingredient?.id"
           :image-url="imageUrl"
           :uploading="imageUploading"
-          :can-manage="canManage && ingredient?.kind !== 'produced'"
+          :can-manage="canManage && !inViewMode && ingredient?.kind !== 'produced'"
           @upload="uploadImage"
           @remove="removeImage"
         />

@@ -73,6 +73,7 @@ const savedId        = ref<string | null>(null)   // id after first save (enable
 const inViewMode     = ref(false)
 const hasImage       = ref(false)
 const imageUploading = ref(false)
+const imageVersion   = ref(0)
 
 // Full detail fetched after save or when opening existing recipe
 const components = ref<ComponentRow[]>([])
@@ -126,7 +127,7 @@ async function loadDetail(id: string) {
 
 const imageUrl = computed(() =>
   hasImage.value && savedId.value
-    ? `/api/recipes/${savedId.value}/image`
+    ? `/api/recipes/${savedId.value}/image?v=${imageVersion.value}`
     : null
 )
 
@@ -139,6 +140,7 @@ async function uploadImage(file: File) {
     await $fetch(`/api/recipes/${savedId.value}/image`,
       { method: 'PUT', credentials: 'include', body: fd })
     hasImage.value = true
+    imageVersion.value++
   } catch (e: any) {
     toast.add({
       title:       t('common.saveFailed'),
