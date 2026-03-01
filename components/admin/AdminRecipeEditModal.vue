@@ -494,7 +494,7 @@ const totalCost = computed((): number | null => {
 })
 
 function printRecipe() {
-  if (savedId.value) window.open(`/recipes/${savedId.value}/print`, '_blank')
+  if (savedId.value) window.open(`/recipes/print/${savedId.value}`, '_blank')
 }
 </script>
 
