@@ -12,6 +12,8 @@
     "adminSettings": "Admin Settings",
     "dbTools": "DB Tools",
     "personalSettings": "Personal Settings",
+    "production": "Production",
+    "allergenCard": "Allergen Card",
     "apps": {
       "dashboard": "Dashboard",
       "recipes": "Recipes",
@@ -182,6 +184,20 @@
     "deleteComponentConfirm": "Remove {name} from this recipe?",
     "deleteStepTitle": "Delete step",
     "deleteStepConfirm": "Delete step {no}?"
+  },
+  "production": {
+    "title": "Production",
+    "subtitle": "Kitchen view — quick access to recipes for production",
+    "noPermission": "You do not have permission to view Production.",
+    "loadError": "Failed to load production recipes"
+  },
+  "allergenCard": {
+    "title": "Allergen Matrix",
+    "subtitle": "Overview of allergens present in each recipe",
+    "noPermission": "You do not have permission to view the allergen matrix.",
+    "loadError": "Failed to load allergen matrix",
+    "recipe": "Recipe",
+    "noRecipes": "No recipes found."
   },
   "allergens": {
     "title": "Allergens",

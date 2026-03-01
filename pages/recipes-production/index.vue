@@ -24,12 +24,12 @@ type RecipeRow = {
   updated_at:         string
 }
 
-type UnitOption = { id: string; code: string; name: string }
+type UnitOption       = { id: string; code: string; name: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
-const { canRead, canManage } = useTablePermissions('recipe')
+const { canRead } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
@@ -60,9 +60,9 @@ const { filterText, filterColumn, filterColumnOptions, clearFilter,
         sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<RecipeRow>({
   rows,
   filterColumns: [
-    { label: t('common.all'),          value: 'all'       },
-    { label: t('recipes.name'),        value: 'name'      },
-    { label: t('recipes.active'),      value: 'is_active' },
+    { label: t('common.all'),     value: 'all'       },
+    { label: t('recipes.name'),   value: 'name'      },
+    { label: t('recipes.active'), value: 'is_active' },
   ],
   defaultSortKey: 'name',
   getSearchValue: (row, col) => {
@@ -73,57 +73,18 @@ const { filterText, filterColumn, filterColumnOptions, clearFilter,
 
 // ─── error ────────────────────────────────────────────────────────────────────
 
-function showError(title: string, e: any) {
-  toast.add({ title, description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
-}
-
 const errorText = computed(() =>
-  error.value ? `${t('recipes.loadError')}: ${error.value.message}` : null
+  error.value ? `${t('production.loadError')}: ${error.value.message}` : null
 )
 
 // ─── modal ───────────────────────────────────────────────────────────────────
 
 const isModalOpen   = ref(false)
-const editingRecipe = ref<RecipeRow | null>(null)
+const viewingRecipe = ref<RecipeRow | null>(null)
 
-function openNew() {
-  if (!canManage.value) return
-  editingRecipe.value = null
+function openRecipe(row: RecipeRow) {
+  viewingRecipe.value = row
   isModalOpen.value   = true
-}
-
-function openEdit(row: RecipeRow) {
-  if (!canManage.value) return
-  editingRecipe.value = row
-  isModalOpen.value   = true
-}
-
-function onSaved() {
-  isModalOpen.value = false
-  refresh()
-}
-
-// ─── delete ───────────────────────────────────────────────────────────────────
-
-const isDeleteOpen = ref(false)
-const deletingRow  = ref<RecipeRow | null>(null)
-
-function requestDelete(row: RecipeRow) {
-  if (!canManage.value) return
-  deletingRow.value  = row
-  isDeleteOpen.value = true
-}
-
-async function confirmDelete() {
-  const row = deletingRow.value
-  if (!row) return
-  try {
-    await $fetch(`/api/recipes/${row.id}`, { method: 'DELETE', credentials: 'include' })
-    toast.add({ title: t('recipes.deleted') })
-    isDeleteOpen.value = false
-    deletingRow.value  = null
-    await refresh()
-  } catch (e: any) { showError(t('common.deleteFailed'), e) }
 }
 
 // ─── column widths ────────────────────────────────────────────────────────────
@@ -137,21 +98,18 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     inner: [
       { header: t('recipes.description'), candidates: rows.value.map(r => r.description.slice(0, 60)) },
       { header: t('recipes.output'),      candidates: rows.value.map(r => `${r.output_quantity} ${r.output_unit_code}`) },
-      { header: t('recipes.batchCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * r.output_quantity).toFixed(2)}` : '—') },
-      { header: t('recipes.compCost'),  candidates: rows.value.map(r => r.comp_cost != null ? `€ ${r.comp_cost.toFixed(2)}` : '—') },
-      { header: t('recipes.unitCost'),  candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : '—') },
       { header: t('recipes.active'),      candidates: ['true', 'false'] },
       { header: t('recipes.preProduct'),  candidates: ['true', 'false'] },
       { header: t('recipes.components'),  candidates: rows.value.map(r => String(r.component_count)) },
     ],
-    last: { header: '', candidates: [], minPx: 88 },
+    last: { header: '', candidates: [], minPx: 0 },   // no sticky-right column
   }))
 )
 </script>
 
 <template>
   <div v-if="!canRead" class="p-6 text-red-600">
-    403 – {{ $t('recipes.noPermission') }}
+    403 – {{ $t('production.noPermission') }}
   </div>
 
   <AdminTableShell v-else :error-text="errorText">
@@ -160,9 +118,8 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
         v-model:filter-text="filterText"
         v-model:filter-column="filterColumn"
         :filter-column-options="filterColumnOptions"
-        :can-add="canManage"
+        :can-add="false"
         @refresh="refresh()"
-        @add="openNew"
       />
     </template>
 
@@ -170,19 +127,11 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
       <div ref="tableContainer">
         <table
           class="table-fixed border-separate border-spacing-0 text-sm"
-          :style="{ width: (firstWidth + totalInnerWidth + lastWidth) + 'px', minWidth: '100%' }"
+          :style="{ minWidth: '100%' }"
         >
           <colgroup>
             <col :style="{ width: firstWidth + 'px' }" />
-            <col :style="{ width: innerWidths[0] + 'px' }" />
-            <col :style="{ width: innerWidths[1] + 'px' }" />
-            <col :style="{ width: innerWidths[2] + 'px' }" />
-            <col :style="{ width: innerWidths[3] + 'px' }" />
-            <col :style="{ width: innerWidths[4] + 'px' }" />
-            <col :style="{ width: innerWidths[5] + 'px' }" />
-            <col :style="{ width: innerWidths[6] + 'px' }" />
-            <col :style="{ width: innerWidths[7] + 'px' }" />
-            <col :style="{ width: lastWidth + 'px' }" />
+            <col v-for="w in innerWidths" :key="w" :style="{ width: w + 'px' }" />
           </colgroup>
 
           <thead class="sticky top-0 z-20 bg-white dark:bg-gray-950">
@@ -207,21 +156,6 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.output') }}
               </th>
-              <!-- Batch Cost -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('recipes.batchCost') }}
-              </th>
-              <!-- Comp. Cost -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('recipes.compCost') }}
-              </th>
-              <!-- Unit Cost -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('recipes.unitCost') }}
-              </th>
               <!-- Active -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
@@ -241,26 +175,20 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
                          border-b border-gray-200 dark:border-gray-800">
                 {{ $t('recipes.components') }}
               </th>
-              <!-- Actions — sticky right -->
-              <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800 border-l border-gray-200 dark:border-gray-800
-                         bg-white dark:bg-gray-950">
-                {{ $t('common.actions') }}
-              </th>
             </tr>
           </thead>
 
           <tbody>
             <tr v-if="pending">
-              <td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
+              <td colspan="6" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
             </tr>
             <tr v-else-if="visibleRows.length === 0">
-              <td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
+              <td colspan="6" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
             </tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
                 class="border-b border-gray-100 dark:border-gray-900/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40"
-                @click="openEdit(row)">
+                @click="openRecipe(row)">
               <!-- Name — sticky left -->
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
                          border-r border-gray-200 dark:border-gray-800">
@@ -275,30 +203,6 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <!-- Output -->
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">{{ row.output_quantity }} {{ row.output_unit_code }}</span>
-              </td>
-              <!-- Batch Cost (standard_unit_cost × output_quantity), red if < comp_cost -->
-              <td class="px-2 py-1.5 align-middle">
-                <span
-                  class="text-gray-800 dark:text-gray-200"
-                  :class="row.comp_cost != null && row.standard_unit_cost != null
-                    && row.comp_cost > row.standard_unit_cost * row.output_quantity
-                    ? 'rounded px-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : ''"
-                >
-                  {{ row.standard_unit_cost != null ? `€ ${(row.standard_unit_cost * row.output_quantity).toFixed(2)}` : '—' }}
-                </span>
-              </td>
-              <!-- Comp. Cost (component sum) -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.comp_cost != null ? `€ ${row.comp_cost.toFixed(2)}` : '—' }}
-                </span>
-              </td>
-              <!-- Unit Cost (per-unit standard cost) -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '—' }}
-                </span>
               </td>
               <!-- Active -->
               <td class="px-2 py-1.5 align-middle">
@@ -326,26 +230,6 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">{{ row.component_count }}</span>
               </td>
-              <!-- Actions — sticky right -->
-              <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950
-                         border-l border-gray-200 dark:border-gray-800">
-                <div class="flex items-center justify-end gap-1">
-                  <UButton
-                    v-if="canManage"
-                    size="xs" color="neutral" variant="ghost"
-                    :aria-label="$t('common.edit')"
-                    icon="i-heroicons-pencil-square"
-                    @click.stop="openEdit(row)"
-                  />
-                  <UButton
-                    v-if="canManage"
-                    size="xs" color="error" variant="ghost"
-                    :aria-label="$t('common.delete')"
-                    icon="i-heroicons-trash"
-                    @click.stop="requestDelete(row)"
-                  />
-                </div>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -353,18 +237,14 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     </template>
 
     <template #footer>
-      <AdminDeleteModal v-model:open="isDeleteOpen" :title="$t('recipes.deleteTitle')" @confirm="confirmDelete">
-        <p>{{ $t('recipes.deleteConfirmExisting', { name: deletingRow?.name ?? '' }) }}</p>
-      </AdminDeleteModal>
-
       <AdminRecipeEditModal
         v-model:open="isModalOpen"
-        :recipe="editingRecipe"
+        :recipe="viewingRecipe"
         :units="units"
         :ingredients="ingredients"
         :all-recipes="rows"
-        :can-manage="canManage"
-        @saved="onSaved"
+        :production-mode="true"
+        @saved="isModalOpen = false"
         @list-updated="refresh()"
       />
     </template>

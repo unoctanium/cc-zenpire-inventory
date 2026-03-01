@@ -109,7 +109,7 @@ async function save() {
         <!-- Std cost (optional) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {{ $t('ingredients.standardCost') }}
+            {{ $t('ingredients.unitCost') }}
           </label>
           <input
             v-model="standard_unit_cost"

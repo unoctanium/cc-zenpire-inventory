@@ -253,10 +253,10 @@ async function save() {
           <div v-else class="text-sm text-gray-700 dark:text-gray-300">{{ ingredient?.default_unit_code }}</div>
         </div>
 
-        <!-- Standard cost -->
+        <!-- Unit cost -->
         <div>
           <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-            {{ $t('ingredients.standardCost') }}
+            {{ $t('ingredients.unitCost') }}
           </label>
           <input v-if="!inViewMode && (!ingredient || ingredient.kind !== 'produced')"
             v-model="draft.standard_unit_cost"
@@ -266,7 +266,7 @@ async function save() {
                    dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             :placeholder="$t('ingredients.costPlaceholder')" />
           <div v-else class="text-sm text-gray-700 dark:text-gray-300">
-            {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost}` : '—' }}
+            {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost.toFixed(2)}` : '—' }}
           </div>
         </div>
 

@@ -12,6 +12,8 @@
     "adminSettings": "Admin-Einstellungen",
     "dbTools": "DB-Tools",
     "personalSettings": "Persönliche Einstellungen",
+    "production": "Produktion",
+    "allergenCard": "Allergenkarte",
     "apps": {
       "dashboard": "Dashboard",
       "recipes": "Rezepte",
@@ -182,6 +184,20 @@
     "deleteComponentConfirm": "{name} aus diesem Rezept entfernen?",
     "deleteStepTitle": "Schritt löschen",
     "deleteStepConfirm": "Schritt {no} löschen?"
+  },
+  "production": {
+    "title": "Produktion",
+    "subtitle": "Küchenansicht — schneller Zugriff auf Rezepte für die Produktion",
+    "noPermission": "Sie haben keine Berechtigung, die Produktion anzuzeigen.",
+    "loadError": "Produktionsrezepte konnten nicht geladen werden"
+  },
+  "allergenCard": {
+    "title": "Allergenmatrix",
+    "subtitle": "Übersicht der Allergene in jedem Rezept",
+    "noPermission": "Sie haben keine Berechtigung, die Allergenmatrix anzuzeigen.",
+    "loadError": "Allergenmatrix konnte nicht geladen werden",
+    "recipe": "Rezept",
+    "noRecipes": "Keine Rezepte gefunden."
   },
   "allergens": {
     "title": "Allergene",

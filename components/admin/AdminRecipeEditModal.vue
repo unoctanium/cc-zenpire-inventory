@@ -38,13 +38,14 @@ type ComponentRow = {
 type StepRow = { recipe_id: string; step_no: number; instruction_text: string }
 
 const props = defineProps<{
-  open:        boolean
-  recipe:      RecipeRow | null
-  units:       UnitOption[]
-  ingredients: IngredientOption[]
-  allRecipes:  RecipeRow[]
-  viewMode?:   boolean
-  canManage?:  boolean
+  open:           boolean
+  recipe:         RecipeRow | null
+  units:          UnitOption[]
+  ingredients:    IngredientOption[]
+  allRecipes:     RecipeRow[]
+  viewMode?:      boolean
+  canManage?:     boolean
+  productionMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -91,7 +92,7 @@ const detailLoading = ref(false)
 watch(() => props.open, async (v) => {
   if (!v) return
   savedId.value    = null
-  inViewMode.value = props.viewMode ?? false
+  inViewMode.value = props.productionMode ? true : (props.viewMode ?? false)
   components.value = []
   steps.value      = []
   hasImage.value   = false
@@ -521,6 +522,7 @@ function esc(s: string | null | undefined): string {
 }
 
 function buildPrintHtml(): string {
+  const noCosts = props.productionMode === true
   const imgSrc = imageUrl.value ? window.location.origin + imageUrl.value.split('?')[0] : null
 
   const imgTag = imgSrc
@@ -532,8 +534,8 @@ function buildPrintHtml(): string {
       <td style="padding:5px 10px 5px 0;border-bottom:1px solid #f3f4f6">${esc(c.name)}</td>
       <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? 'Ingredient' : 'Sub-recipe'}</td>
       <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${c.quantity}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
-      <td style="padding:5px 0 5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(componentCost(c))}</td>
+      <td style="padding:5px ${noCosts ? '0' : '10px'};border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
+      ${noCosts ? '' : `<td style="padding:5px 0 5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(componentCost(c))}</td>`}
     </tr>`
   ).join('')
 
@@ -582,7 +584,7 @@ ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 
 <div class="meta">
   <div><label>Batch Amount</label><span>${draft.output_quantity} ${esc(outputUnitCode.value)}</span></div>
-  ${(() => {
+  ${noCosts ? '' : (() => {
     const batchCostStr = draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
       ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}`
       : '—'
@@ -597,7 +599,7 @@ ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
     <span class="badge ${draft.is_active ? 'active' : 'inactive'}">${draft.is_active ? 'Active' : 'Inactive'}</span>
     ${draft.is_pre_product ? '<span class="badge preprod">Pre-product</span>' : ''}
   </div>
-  ${totalCost.value != null ? `<div><label>Total comp. cost</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
+  ${!noCosts && totalCost.value != null ? `<div><label>Total comp. cost</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
 </div>
 
 ${components.value.length > 0 ? `
@@ -607,13 +609,13 @@ ${components.value.length > 0 ? `
     <th>Name</th><th>Type</th>
     <th style="text-align:right">Qty</th>
     <th>Unit</th>
-    <th style="text-align:right">Cost</th>
+    ${noCosts ? '' : '<th style="text-align:right">Cost</th>'}
   </tr></thead>
   <tbody>${compRows}</tbody>
-  <tfoot><tr>
+  ${noCosts ? '' : `<tfoot><tr>
     <td colspan="4" style="text-align:right;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:8px 10px 4px 0">Total</td>
     <td style="text-align:right;padding:8px 0 4px;font-weight:600">${formatCost(totalCost.value)}</td>
-  </tr></tfoot>
+  </tr></tfoot>`}
 </table>` : ''}
 
 ${steps.value.length > 0 ? `
@@ -640,7 +642,7 @@ function printRecipe() {
 </script>
 
 <template>
-  <UModal :open="open" size="xl" @update:open="handleModalOpen">
+  <UModal :open="open" :ui="{ content: 'sm:max-w-[90vw]' }" @update:open="handleModalOpen">
     <template #header>
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         <template v-if="inViewMode">
@@ -693,7 +695,7 @@ function printRecipe() {
               {{ units.find(u => u.id === draft.output_unit_id)?.code }}
             </div>
           </div>
-          <div>
+          <div v-if="!productionMode">
             <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
               {{ $t('recipes.batchCostLabel') }}
             </div>
@@ -849,9 +851,10 @@ function printRecipe() {
           <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
 
           <div v-else class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2">
-            <table class="table-fixed border-separate border-spacing-0 text-xs"
+            <table :class="productionMode ? 'table-auto' : 'table-fixed'"
+                   class="border-separate border-spacing-0 text-xs"
                    style="min-width: 520px; width: 100%">
-              <colgroup>
+              <colgroup v-if="!productionMode">
                 <col style="width: 160px" />
                 <col style="width: 80px" />
                 <col style="width: 90px" />
@@ -872,10 +875,10 @@ function printRecipe() {
                   <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
                     {{ $t('recipes.unit') }}
                   </th>
-                  <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
+                  <th v-if="!productionMode" class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">
                     {{ $t('recipes.cost') }}
                   </th>
-                  <th class="sticky right-0 z-20 text-right px-2 py-1 font-medium
+                  <th v-if="!productionMode" class="sticky right-0 z-20 text-right px-2 py-1 font-medium
                              border-b border-gray-200 dark:border-gray-800
                              border-l border-gray-200 dark:border-gray-800
                              bg-white dark:bg-gray-950">
@@ -934,11 +937,11 @@ function printRecipe() {
                     <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
                   </td>
                   <!-- Cost -->
-                  <td class="px-2 py-1 align-middle text-right text-gray-600 dark:text-gray-400">
+                  <td v-if="!productionMode" class="px-2 py-1 align-middle text-right text-gray-600 dark:text-gray-400">
                     {{ formatCost(componentCost(row)) }}
                   </td>
                   <!-- Actions (sticky right) -->
-                  <td class="sticky right-0 z-10 px-2 py-1 align-middle
+                  <td v-if="!productionMode" class="sticky right-0 z-10 px-2 py-1 align-middle
                              border-l border-gray-200 dark:border-gray-800
                              bg-white dark:bg-gray-950">
                     <AdminInlineRowActions v-if="!inViewMode"
@@ -990,9 +993,9 @@ function printRecipe() {
                     </select>
                   </td>
                   <!-- Cost (n/a for pending) -->
-                  <td class="px-2 py-1 align-middle text-right text-gray-400">—</td>
+                  <td v-if="!productionMode" class="px-2 py-1 align-middle text-right text-gray-400">—</td>
                   <!-- Actions (sticky right) -->
-                  <td class="sticky right-0 z-10 px-2 py-1 align-middle
+                  <td v-if="!productionMode" class="sticky right-0 z-10 px-2 py-1 align-middle
                              border-l border-gray-200 dark:border-gray-800
                              bg-gray-50 dark:bg-gray-900/50">
                     <AdminInlineRowActions
@@ -1006,7 +1009,7 @@ function printRecipe() {
                   </td>
                 </tr>
               </tbody>
-              <tfoot>
+              <tfoot v-if="!productionMode">
                 <tr class="border-t border-gray-200 dark:border-gray-700">
                   <td colspan="3" class="px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
                     {{ $t('recipes.totalCost') }}
@@ -1157,7 +1160,7 @@ function printRecipe() {
           <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
             {{ $t('common.close') }}
           </UButton>
-          <UButton v-if="canManage" @click="inViewMode = false">
+          <UButton v-if="canManage && !productionMode" @click="inViewMode = false">
             {{ $t('common.edit') }}
           </UButton>
         </div>

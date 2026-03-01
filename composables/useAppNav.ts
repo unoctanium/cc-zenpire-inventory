@@ -14,12 +14,14 @@ const ALL_APPS = [
     id: 'recipes',
     labelKey: 'nav.apps.recipes',
     icon: 'i-heroicons-book-open',
-    to: '/recipes',
+    to: '/recipes-production',
     inTopBar: true,
     links: [
-      { labelKey: 'nav.recipes',     to: '/recipes'     },
+      { labelKey: 'nav.production',  to: '/recipes-production' },
+      { labelKey: 'nav.recipes',     to: '/recipes',      requireManage: true },
       { labelKey: 'nav.ingredients', to: '/ingredients' },
       { labelKey: 'nav.allergens',   to: '/allergens'   },
+      { labelKey: 'nav.allergenCard', to: '/allergen-card' },
       { labelKey: 'nav.units',       to: '/units'       },
     ],
   },
@@ -57,10 +59,12 @@ const ALL_APPS = [
 ]
 
 const ROUTE_MAP: Record<string, string> = {
-  '/recipes':     'recipes',
-  '/ingredients': 'recipes',
-  '/allergens':   'recipes',
-  '/units':       'recipes',
+  '/recipes-production': 'recipes',
+  '/recipes':            'recipes',
+  '/ingredients':        'recipes',
+  '/allergens':          'recipes',
+  '/allergen-card':      'recipes',
+  '/units':              'recipes',
   '/stock':       'stock',
   '/admin':       'admin',
   '/settings':    'settings',

@@ -137,7 +137,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
     inner: [
       { header: t('ingredients.kind'),        candidates: ['purchased', 'produced'] },
       { header: t('ingredients.unit'),         candidates: [...units.value.map(u => u.code), ...units.value.map(u => `${u.code} – ${u.name}`)] },
-      { header: t('ingredients.standardCost'), candidates: [...rows.value.map(r => r.standard_unit_cost != null ? String(r.standard_unit_cost) : ''), '0.000001'] },
+      { header: t('ingredients.unitCost'), candidates: [...rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : ''), '€ 0.00'] },
     ],
     last: { header: '', candidates: [], minPx: 88 },
   }))
@@ -208,7 +208,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <!-- Cost -->
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
                          border-b border-gray-200 dark:border-gray-800">
-                {{ $t('ingredients.standardCost') }}
+                {{ $t('ingredients.unitCost') }}
               </th>
               <!-- Actions — sticky right -->
               <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
@@ -247,7 +247,7 @@ const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
               <!-- Cost -->
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost}` : '–' }}
+                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '–' }}
                 </span>
               </td>
               <!-- Actions — sticky right -->

@@ -12,6 +12,8 @@
     "adminSettings": "管理設定",
     "dbTools": "DBツール",
     "personalSettings": "個人設定",
+    "production": "製造",
+    "allergenCard": "アレルゲン表",
     "apps": {
       "dashboard": "ダッシュボード",
       "recipes": "レシピ",
@@ -182,6 +184,20 @@
     "deleteComponentConfirm": "{name} をこのレシピから削除しますか？",
     "deleteStepTitle": "手順を削除",
     "deleteStepConfirm": "手順 {no} を削除しますか？"
+  },
+  "production": {
+    "title": "製造",
+    "subtitle": "キッチンビュー — 製造用レシピへのクイックアクセス",
+    "noPermission": "製造を表示する権限がありません。",
+    "loadError": "製造レシピの読み込みに失敗しました"
+  },
+  "allergenCard": {
+    "title": "アレルゲン表",
+    "subtitle": "各レシピに含まれるアレルゲンの一覧",
+    "noPermission": "アレルゲン表を表示する権限がありません。",
+    "loadError": "アレルゲン表の読み込みに失敗しました",
+    "recipe": "レシピ",
+    "noRecipes": "レシピが見つかりません。"
   },
   "allergens": {
     "title": "アレルゲン",

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuth } from '~/composables/useAuth'
+import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const route  = useRoute()
 const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
@@ -11,6 +12,12 @@ const isAdmin  = computed(() => Boolean(auth.value?.is_admin))
 const initials = computed(() => initialsFromEmail(email.value))
 
 const { barApps, activeApp, sidebarOpen, setApp } = useAppNav()
+const { canManage: canManageRecipe } = useTablePermissions('recipe')
+
+function isLinkVisible(link: any): boolean {
+  if (link.requireManage) return canManageRecipe.value
+  return true
+}
 
 // Auth redirect is handled by middleware/auth.global.ts (runs before layouts mount).
 
@@ -141,7 +148,7 @@ function isLinkActive(linkTo: string) {
             <!-- Sidebar nav links -->
             <nav class="flex-1 overflow-y-auto flex flex-col px-2 gap-0.5 pb-2">
               <NuxtLink
-                v-for="link in activeApp.links ?? []"
+                v-for="link in (activeApp.links ?? []).filter(isLinkVisible)"
                 :key="link.to"
                 :to="link.to"
                 class="flex items-center px-3 py-2 rounded text-sm transition-colors"
@@ -177,7 +184,7 @@ function isLinkActive(linkTo: string) {
             </div>
             <nav class="flex-1 overflow-y-auto flex flex-col px-2 gap-0.5 pb-2">
               <NuxtLink
-                v-for="link in activeApp.links ?? []"
+                v-for="link in (activeApp.links ?? []).filter(isLinkVisible)"
                 :key="link.to"
                 :to="link.to"
                 class="flex items-center px-3 py-2 rounded text-sm transition-colors"
