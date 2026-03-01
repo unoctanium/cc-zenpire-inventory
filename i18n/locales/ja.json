@@ -53,6 +53,7 @@
     "missingFields": "入力が不足しています",
     "confirm": "よろしいですか？",
     "close": "閉じる",
+    "print": "印刷",
     "uploadImage":  "画像をアップロード",
     "replaceImage": "画像を置き換え",
     "removeImage":  "画像を削除"

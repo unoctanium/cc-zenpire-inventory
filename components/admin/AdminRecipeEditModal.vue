@@ -492,6 +492,10 @@ const totalCost = computed((): number | null => {
   if (costs.length === 0) return null
   return costs.reduce((a, b) => a + b, 0)
 })
+
+function printRecipe() {
+  if (savedId.value) window.open(`/recipes/${savedId.value}/print`, '_blank')
+}
 </script>
 
 <template>
@@ -988,23 +992,33 @@ const totalCost = computed((): number | null => {
     </template>
 
     <template #footer>
-      <!-- View mode footer: Close + Edit (edit only when canManage) -->
-      <div v-if="inViewMode" class="flex justify-end gap-2 w-full">
-        <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
-          {{ $t('common.close') }}
+      <!-- View mode footer -->
+      <div v-if="inViewMode" class="flex items-center w-full">
+        <UButton v-if="savedId" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
+          {{ $t('common.print') }}
         </UButton>
-        <UButton v-if="canManage" @click="inViewMode = false">
-          {{ $t('common.edit') }}
-        </UButton>
+        <div class="flex gap-2 ml-auto">
+          <UButton color="neutral" variant="soft" @click="emit('update:open', false)">
+            {{ $t('common.close') }}
+          </UButton>
+          <UButton v-if="canManage" @click="inViewMode = false">
+            {{ $t('common.edit') }}
+          </UButton>
+        </div>
       </div>
-      <!-- Edit mode footer: Cancel/Close + Save -->
-      <div v-else class="flex justify-end gap-2 w-full">
-        <UButton color="neutral" variant="soft" @click="emit('saved')">
-          {{ savedId ? $t('common.close') : $t('common.cancel') }}
+      <!-- Edit mode footer -->
+      <div v-else class="flex items-center w-full">
+        <UButton v-if="savedId" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
+          {{ $t('common.print') }}
         </UButton>
-        <UButton :loading="saving" @click="saveBasic">
-          {{ $t('common.save') }}
-        </UButton>
+        <div class="flex gap-2 ml-auto">
+          <UButton color="neutral" variant="soft" @click="emit('saved')">
+            {{ savedId ? $t('common.close') : $t('common.cancel') }}
+          </UButton>
+          <UButton :loading="saving" @click="saveBasic">
+            {{ $t('common.save') }}
+          </UButton>
+        </div>
       </div>
     </template>
   </UModal>

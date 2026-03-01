@@ -14,6 +14,8 @@ const { barApps, activeApp, sidebarOpen, setApp } = useAppNav()
 
 // Auth redirect is handled by middleware/auth.global.ts (runs before layouts mount).
 
+const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯🇵' }
+
 const langOptions = computed(() =>
   (locales.value as any[]).map(l => ({
     label: l.name,
@@ -87,8 +89,8 @@ function isLinkActive(linkTo: string) {
 
         <!-- Language selector -->
         <UDropdownMenu :items="[langOptions]">
-          <UButton color="neutral" variant="ghost" size="sm" class="text-white hover:bg-white/15">
-            {{ (locales as any[]).find(l => l.code === locale)?.name }}
+          <UButton color="neutral" variant="ghost" size="sm" class="text-white hover:bg-white/15 text-xl leading-none px-2">
+            {{ FLAG[locale] ?? locale }}
           </UButton>
         </UDropdownMenu>
 
