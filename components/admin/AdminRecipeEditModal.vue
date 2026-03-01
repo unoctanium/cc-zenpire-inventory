@@ -493,8 +493,116 @@ const totalCost = computed((): number | null => {
   return costs.reduce((a, b) => a + b, 0)
 })
 
+function esc(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function buildPrintHtml(): string {
+  const outputUnitCode = props.units.find(u => u.id === draft.output_unit_id)?.code ?? ''
+  const imgSrc         = imageUrl.value ? imageUrl.value.split('?')[0] : null
+
+  const imgTag = imgSrc
+    ? `<img src="${imgSrc}" style="width:140px;height:140px;object-fit:cover;border-radius:8px;float:right;margin:0 0 16px 20px" onerror="this.style.display='none'">`
+    : ''
+
+  const compRows = components.value.map(c =>
+    `<tr>
+      <td style="padding:5px 10px 5px 0;border-bottom:1px solid #f3f4f6">${esc(c.name)}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? 'Ingredient' : 'Sub-recipe'}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${c.quantity}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
+      <td style="padding:5px 0 5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(componentCost(c))}</td>
+    </tr>`
+  ).join('')
+
+  const stepItems = steps.value.map(s =>
+    `<li style="display:flex;gap:12px;margin-bottom:8px">
+      <span style="min-width:22px;text-align:right;color:#9ca3af;font-weight:500;flex-shrink:0">${s.step_no}.</span>
+      <span style="line-height:1.5">${esc(s.instruction_text)}</span>
+    </li>`
+  ).join('')
+
+  return `<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(draft.name)} — Zenpire</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
+  .toolbar{display:flex;gap:12px;align-items:center;padding:12px 0 16px;border-bottom:2px solid #e5e7eb;margin-bottom:24px}
+  .btn{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #d1d5db;background:#f9fafb;color:#374151}
+  .btn-primary{background:#1f2937;color:#fff;border-color:#1f2937}
+  h1{font-size:24px;font-weight:700;margin-bottom:6px}
+  .desc{color:#4b5563;margin-bottom:16px;line-height:1.6}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
+  .meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
+  .badge{display:inline-flex;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:500;margin-right:4px}
+  .active{background:#dcfce7;color:#15803d}.inactive{background:#f3f4f6;color:#6b7280}.preprod{background:#dbeafe;color:#1d4ed8}
+  h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;padding:4px 10px 8px 0;border-bottom:1px solid #e5e7eb}
+  ol{list-style:none;padding:0}
+  .footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+  @media print{.toolbar{display:none}@page{margin:1.5cm}body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="window.print()">🖨&nbsp; Print / Save as PDF</button>
+  <button class="btn" onclick="window.close()">Close</button>
+  <span style="font-size:12px;color:#9ca3af">In the print dialog, choose "Save as PDF" for a PDF file.</span>
+</div>
+
+${imgTag}
+<h1>${esc(draft.name)}</h1>
+${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
+
+<div class="meta">
+  <div><label>Output</label><span>${draft.output_quantity} ${esc(outputUnitCode)}</span></div>
+  <div><label>Std. cost / unit</label><span>${draft.standard_unit_cost != null && draft.standard_unit_cost !== '' ? `€ ${draft.standard_unit_cost}` : '—'}</span></div>
+  <div><label>Status</label>
+    <span class="badge ${draft.is_active ? 'active' : 'inactive'}">${draft.is_active ? 'Active' : 'Inactive'}</span>
+    ${draft.is_pre_product ? '<span class="badge preprod">Pre-product</span>' : ''}
+  </div>
+  ${totalCost.value != null ? `<div><label>Total comp. cost</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
+</div>
+
+${components.value.length > 0 ? `
+<h2>Components</h2>
+<table>
+  <thead><tr>
+    <th>Name</th><th>Type</th>
+    <th style="text-align:right">Qty</th>
+    <th>Unit</th>
+    <th style="text-align:right">Cost</th>
+  </tr></thead>
+  <tbody>${compRows}</tbody>
+  <tfoot><tr>
+    <td colspan="4" style="text-align:right;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:8px 10px 4px 0">Total</td>
+    <td style="text-align:right;padding:8px 0 4px;font-weight:600">${formatCost(totalCost.value)}</td>
+  </tr></tfoot>
+</table>` : ''}
+
+${steps.value.length > 0 ? `
+<h2>Steps</h2>
+<ol>${stepItems}</ol>` : ''}
+
+<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+</body></html>`
+}
+
 function printRecipe() {
-  if (savedId.value) window.open(`/recipes/print/${savedId.value}`, '_blank')
+  if (!savedId.value) return
+  const win = window.open('', '_blank')
+  if (!win) {
+    toast.add({ title: 'Print blocked', description: 'Please allow pop-ups for this site.', color: 'error' })
+    return
+  }
+  win.document.write(buildPrintHtml())
+  win.document.close()
+  win.focus()
 }
 </script>
 
