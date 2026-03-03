@@ -10,9 +10,16 @@ export default defineNuxtConfig({
         link: [
           { rel: 'icon', type: 'image/png', href: '/logo.png' },
           { rel: 'apple-touch-icon', href: '/logo.png' },
+          { rel: 'manifest', href: '/manifest.json' },
         ],
         meta: [
           { name: 'theme-color', content: '#0082c9' },
+          // iOS standalone mode: hides Safari chrome when launched from home screen
+          { name: 'apple-mobile-web-app-capable', content: 'yes' },
+          // 'default' = status bar stays visible with dark content; app content sits below it
+          // (use 'black-translucent' only if you want content to extend under the status bar)
+          { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+          { name: 'apple-mobile-web-app-title', content: 'Zenpire' },
         ],
       },
     },

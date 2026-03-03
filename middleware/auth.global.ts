@@ -9,6 +9,9 @@
  * runs before middleware, so auth.value is already resolved here.
  */
 export default defineNuxtRouteMiddleware((to) => {
+  // Local dev prototype pages are public — no auth required
+  if (to.path.startsWith('/dev/local/')) return
+
   const auth = useAuth()
 
   // Unauthenticated → redirect to /login (skip if already going there)
