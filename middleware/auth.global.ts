@@ -10,7 +10,7 @@
  */
 export default defineNuxtRouteMiddleware((to) => {
   // Local dev prototype pages are public — no auth required
-  if (to.path.startsWith('/dev/local/')) return
+  if (to.path.startsWith('/local/')) return
 
   const auth = useAuth()
 
