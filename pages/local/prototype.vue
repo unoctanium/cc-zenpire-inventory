@@ -49,7 +49,11 @@ const USER_MENU_ITEMS = [
 // ── State ──────────────────────────────────────────────────────────────────
 
 const activeAppId     = ref('dashboard')
-const activeTabIdx    = ref(0)
+const tabMemory       = ref<Record<string, number>>({})  // remembers last tab per app
+const activeTabIdx    = computed({
+  get: () => tabMemory.value[activeAppId.value] ?? 0,
+  set: (v: number) => { tabMemory.value[activeAppId.value] = v },
+})
 const selectedEntry   = ref<string | null>(null)
 const showDetail      = ref(false)
 const userDrawerOpen  = ref(false)
@@ -84,7 +88,6 @@ const activeTabInOverflow = computed(() =>
 
 function selectApp(id: string) {
   activeAppId.value     = id
-  activeTabIdx.value    = 0
   selectedEntry.value   = null
   showDetail.value      = false
   morePopupOpen.value   = false
@@ -302,7 +305,7 @@ function selectEntry(entry: string) {
         </template>
         <template v-else>
           <button
-            class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2 ring-opacity-30 transition-all active:scale-95 flex-none ml-3"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ring-2 ring-opacity-30 transition-all active:scale-95 flex-none"
             style="background: var(--color-app-bar); ring-color: var(--color-app-bar)"
             @click="userDrawerOpen = true"
           >
