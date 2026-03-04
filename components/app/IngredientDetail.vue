@@ -209,6 +209,81 @@ function cancelEdit() {
   editMode.value = false
 }
 
+// ─── print ────────────────────────────────────────────────────────────────────
+
+function esc(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function printIngredient() {
+  if (!props.ingredient) return
+  const ing = props.ingredient
+
+  const imgSrc = hasImage.value && imageUrl.value
+    ? window.location.origin + imageUrl.value.split('?')[0]
+    : null
+  const imgTag = imgSrc
+    ? `<img src="${imgSrc}" style="width:120px;height:120px;object-fit:cover;border-radius:8px;float:right;margin:0 0 16px 20px">`
+    : ''
+
+  const selectedAllergenNames = props.allergens
+    .filter(a => selectedAllergenIds.value.includes(a.id))
+    .map(a => a.name)
+
+  const allergenSection = selectedAllergenNames.length
+    ? `<h2>Allergens</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${
+        selectedAllergenNames.map(n =>
+          `<span style="padding:2px 10px;background:#fee2e2;color:#991b1b;border-radius:999px;font-size:12px">${esc(n)}</span>`
+        ).join('')
+      }</div>`
+    : ''
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(ing.name)} — Zenpire</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
+h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
+.meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
+.comment{color:#4b5563;line-height:1.6;white-space:pre-wrap}
+.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+@media print{@page{margin:1.5cm}}</style></head>
+<body>
+${imgTag}<h1>${esc(ing.name)}</h1>
+<div class="meta">
+  <div><label>Kind</label><span>${esc(ing.kind)}</span></div>
+  <div><label>Unit</label><span>${esc(ing.default_unit_code)}</span></div>
+  ${ing.standard_unit_cost != null ? `<div><label>Unit Cost</label><span>€ ${ing.standard_unit_cost.toFixed(6)}</span></div>` : ''}
+</div>
+${draft.comment ? `<h2>Comment</h2><p class="comment">${esc(draft.comment)}</p>` : ''}
+${allergenSection}
+<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+</body></html>`
+
+  const isStandalone =
+    (window.navigator as any).standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches
+
+  if (isStandalone) {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const win  = window.open(url, '_blank')
+    if (!win) { URL.revokeObjectURL(url); toast.add({ title: 'Print blocked', description: 'Please allow pop-ups.', color: 'error' }); return }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } else {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument ?? iframe.contentWindow?.document
+    if (!doc) { document.body.removeChild(iframe); return }
+    doc.open(); doc.write(html); doc.close()
+    iframe.onload = () => {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 2000)
+    }
+  }
+}
+
 // ─── delete ───────────────────────────────────────────────────────────────────
 
 async function doDelete() {
@@ -245,6 +320,11 @@ async function doDelete() {
           icon="i-heroicons-pencil-square"
           @click="editMode = true"
         >{{ $t('common.edit') }}</UButton>
+        <UButton
+          size="xs" color="neutral" variant="ghost"
+          icon="i-heroicons-printer"
+          @click="printIngredient"
+        >{{ $t('common.print') }}</UButton>
         <UButton
           v-if="canManage"
           size="xs" color="error" variant="ghost"
