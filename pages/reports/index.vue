@@ -1,28 +1,23 @@
 <script setup lang="ts">
+import RecipesReport      from './recipes.vue'
+import IngredientsReport  from './ingredients.vue'
+import AllergensReport    from './allergens.vue'
+import AllergenCardReport from './allergen-card.vue'
+import UnitsReport        from './units.vue'
+
 const { t } = useI18n()
 
 const REPORTS = [
-  { key: 'recipes',       labelKey: 'nav.recipes',       icon: 'i-heroicons-book-open',            to: '/reports/recipes'       },
-  { key: 'ingredients',   labelKey: 'nav.ingredients',   icon: 'i-heroicons-beaker',               to: '/reports/ingredients'   },
-  { key: 'allergens',     labelKey: 'nav.allergens',     icon: 'i-heroicons-exclamation-triangle',  to: '/reports/allergens'     },
-  { key: 'allergen-card', labelKey: 'nav.allergenMatrix', icon: 'i-heroicons-table-cells',          to: '/reports/allergen-card' },
-  { key: 'units',         labelKey: 'nav.units',         icon: 'i-heroicons-scale',                 to: '/reports/units'         },
+  { key: 'recipes',       labelKey: 'nav.recipes',        icon: 'i-heroicons-book-open',           to: '/reports/recipes'       },
+  { key: 'ingredients',   labelKey: 'nav.ingredients',    icon: 'i-heroicons-beaker',              to: '/reports/ingredients'   },
+  { key: 'allergens',     labelKey: 'nav.allergens',      icon: 'i-heroicons-exclamation-triangle', to: '/reports/allergens'     },
+  { key: 'allergen-card', labelKey: 'nav.allergenMatrix', icon: 'i-heroicons-table-cells',         to: '/reports/allergen-card' },
+  { key: 'units',         labelKey: 'nav.units',          icon: 'i-heroicons-scale',               to: '/reports/units'         },
 ] as const
 
 type ReportKey = typeof REPORTS[number]['key']
 
 const selected = ref<ReportKey | null>(null)
-
-// Lazy-loaded — only fetches data when the user selects a report
-const reportComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
-  'recipes':       defineAsyncComponent(() => import('./recipes.vue')),
-  'ingredients':   defineAsyncComponent(() => import('./ingredients.vue')),
-  'allergens':     defineAsyncComponent(() => import('./allergens.vue')),
-  'allergen-card': defineAsyncComponent(() => import('./allergen-card.vue')),
-  'units':         defineAsyncComponent(() => import('./units.vue')),
-}
-
-const currentComponent = computed(() => selected.value ? reportComponents[selected.value] : null)
 </script>
 
 <template>
@@ -78,14 +73,23 @@ const currentComponent = computed(() => selected.value ? reportComponents[select
 
     <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
-      <Suspense>
-        <!-- :key forces remount (fresh fetch) when a different report is selected -->
-        <component :is="currentComponent" v-if="currentComponent" :key="selected" />
 
-        <div v-else class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20">
-          <UIcon name="i-heroicons-chart-bar-square" class="w-12 h-12" />
-          <p class="text-sm">{{ t('reports.selectPrompt') }}</p>
-        </div>
+      <!-- Placeholder when nothing selected -->
+      <div
+        v-if="!selected"
+        class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20"
+      >
+        <UIcon name="i-heroicons-chart-bar-square" class="w-12 h-12" />
+        <p class="text-sm">{{ t('reports.selectPrompt') }}</p>
+      </div>
+
+      <!-- Report content — Suspense only wraps the async component -->
+      <Suspense v-else>
+        <RecipesReport      v-if="selected === 'recipes'"       :key="selected" />
+        <IngredientsReport  v-else-if="selected === 'ingredients'"   :key="selected" />
+        <AllergensReport    v-else-if="selected === 'allergens'"     :key="selected" />
+        <AllergenCardReport v-else-if="selected === 'allergen-card'" :key="selected" />
+        <UnitsReport        v-else-if="selected === 'units'"         :key="selected" />
 
         <template #fallback>
           <div class="flex items-center justify-center py-20 text-gray-400 dark:text-gray-600">
@@ -93,6 +97,7 @@ const currentComponent = computed(() => selected.value ? reportComponents[select
           </div>
         </template>
       </Suspense>
+
     </template>
 
   </AppSplitLayout>

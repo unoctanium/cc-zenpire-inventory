@@ -68,7 +68,6 @@ const ROUTE_MAP: Record<string, string> = {
   '/allergens':          'recipes',
   '/allergen-card':      'recipes',
   '/units':              'recipes',
-  '/reports':            'dashboard',
   '/stock':              'stock',
   '/admin':              'admin',
   '/settings':           'settings',
