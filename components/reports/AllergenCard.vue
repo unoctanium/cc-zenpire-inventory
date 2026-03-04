@@ -56,6 +56,7 @@ const errorText = computed(() =>
           </button>
         </div>
         <div class="flex-1" />
+        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="print()">{{ $t('common.print') }}</UButton>
         <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-arrow-path"
           :aria-label="$t('common.refresh')" @click="refresh()" />
       </div>

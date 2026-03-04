@@ -33,10 +33,10 @@ function openSubNavMore(event: MouseEvent) {
 
 <template>
   <!-- TABLET ≥sm: left panel (pills + list) | right panel (detail) -->
-  <div class="hidden sm:flex h-full overflow-hidden">
+  <div class="hidden sm:flex print:flex h-full print:h-auto overflow-hidden print:overflow-visible">
 
     <!-- Left panel -->
-    <div class="w-64 flex-none flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div class="print:hidden w-64 flex-none flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
 
       <!-- Nav pills -->
       <div
@@ -74,14 +74,14 @@ function openSubNavMore(event: MouseEvent) {
     </div>
 
     <!-- Right panel -->
-    <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
+    <div class="flex-1 overflow-auto print:overflow-visible bg-gray-50 dark:bg-gray-950 print:bg-white">
       <slot name="detail" />
     </div>
 
   </div>
 
   <!-- MOBILE <sm: list, or detail when a child route is active -->
-  <div class="sm:hidden">
+  <div class="sm:hidden print:hidden">
     <slot v-if="props.showDetailOnMobile" name="detail" />
     <slot v-else name="list" />
   </div>

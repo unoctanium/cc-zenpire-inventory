@@ -10,8 +10,8 @@
       </p>
     </div>
 
-    <!-- Toolbar — full width -->
-    <slot name="toolbar" />
+    <!-- Toolbar — full width, hidden on print -->
+    <div class="print:hidden"><slot name="toolbar" /></div>
 
     <!-- Error -->
     <div
@@ -22,7 +22,7 @@
     </div>
 
     <!-- Table container -->
-    <div class="overflow-auto rounded-lg border border-gray-200 dark:border-gray-800">
+    <div class="overflow-auto print:overflow-visible rounded-lg print:rounded-none border border-gray-200 dark:border-gray-800 print:border-0">
       <slot name="table" />
     </div>
 

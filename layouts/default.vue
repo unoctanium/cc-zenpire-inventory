@@ -81,10 +81,10 @@ function openSubNavMore(event: MouseEvent) {
       <!-- ══════════════════════════════════════════════════════════════════════
            TABLET / DESKTOP  (≥ sm · 640 px)
            ══════════════════════════════════════════════════════════════════════ -->
-      <div class="hidden sm:flex overflow-hidden bg-white dark:bg-gray-900" style="height:100dvh">
+      <div class="hidden sm:flex print:flex overflow-hidden print:overflow-visible print:!h-auto bg-white dark:bg-gray-900" style="height:100dvh">
 
         <!-- Vertical icon bar -->
-        <div class="w-20 flex-none flex flex-col items-center pt-4 pb-4 gap-2 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div class="print:hidden w-20 flex-none flex flex-col items-center pt-4 pb-4 gap-2 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
 
           <!-- User avatar -->
           <button
@@ -130,7 +130,7 @@ function openSubNavMore(event: MouseEvent) {
 
         <!-- Content area: h-full gives Safari/WebKit a definite height so that
              children using h-full (AppSplitLayout) resolve correctly. -->
-        <div class="flex-1 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
+        <div class="flex-1 h-full overflow-auto print:overflow-visible print:h-auto bg-gray-50 dark:bg-gray-950 print:bg-white">
           <slot />
         </div>
 
@@ -139,7 +139,7 @@ function openSubNavMore(event: MouseEvent) {
       <!-- ══════════════════════════════════════════════════════════════════════
            MOBILE / PHONE  (< sm · 640 px)
            ══════════════════════════════════════════════════════════════════════ -->
-      <div class="flex sm:hidden flex-col overflow-hidden bg-white dark:bg-gray-900" style="height:100dvh">
+      <div class="flex sm:hidden print:hidden flex-col overflow-hidden bg-white dark:bg-gray-900" style="height:100dvh">
 
         <!-- Top bar -->
         <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-none">
