@@ -5,6 +5,8 @@ const { activeApp } = useAppNav()
 
 const navLinks = computed(() => activeApp.value.links ?? [])
 
+const props = defineProps<{ showDetailOnMobile?: boolean }>()
+
 function isLinkActive(to: string) {
   return route.path === to || route.path.startsWith(to + '/')
 }
@@ -50,8 +52,9 @@ function isLinkActive(to: string) {
 
   </div>
 
-  <!-- MOBILE <sm: list only -->
+  <!-- MOBILE <sm: list, or detail when a child route is active -->
   <div class="sm:hidden">
-    <slot name="list" />
+    <slot v-if="props.showDetailOnMobile" name="detail" />
+    <slot v-else name="list" />
   </div>
 </template>
