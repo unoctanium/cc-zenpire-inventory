@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const { data: recipe, error: rErr } = await admin
     .from('recipe')
     .select(`
-      id, name, description, output_quantity, output_unit_id,
+      id, name, description, production_notes, output_quantity, output_unit_id,
       standard_unit_cost, is_active, is_pre_product, created_at, updated_at,
       image_data,
       unit:output_unit_id ( code )
@@ -43,14 +43,6 @@ export default defineEventHandler(async (event) => {
 
   if (cErr) throw createError({ statusCode: 500, statusMessage: cErr.message })
 
-  const { data: steps, error: sErr } = await admin
-    .from('recipe_step')
-    .select('recipe_id, step_no, instruction_text')
-    .eq('recipe_id', id)
-    .order('step_no', { ascending: true })
-
-  if (sErr) throw createError({ statusCode: 500, statusMessage: sErr.message })
-
   return {
     ok: true,
     recipe: {
@@ -78,6 +70,5 @@ export default defineEventHandler(async (event) => {
                               : (c.sub_recipe?.output_unit?.factor ?? null),
       component_unit_factor: c.unit?.factor ?? null,
     })),
-    steps: steps ?? [],
   }
 })

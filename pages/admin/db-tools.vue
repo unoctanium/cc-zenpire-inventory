@@ -94,7 +94,7 @@ function onImportFileChange(event: Event) {
       if (!parsed.tables || typeof parsed.tables !== 'object') throw new Error('Missing tables')
 
       const expected = ['unit', 'allergen', 'ingredient', 'recipe', 'recipe_component',
-        'recipe_step', 'supplier', 'supplier_offer', 'supplier_offer_price',
+        'supplier', 'supplier_offer', 'supplier_offer_price',
         'ingredient_supplier_offer', 'ingredient_stock']
       for (const t of expected) {
         if (!Array.isArray(parsed.tables[t])) throw new Error(`Missing table: ${t}`)

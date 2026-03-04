@@ -46,7 +46,6 @@ export default defineEventHandler(async (event) => {
     ingredient,
     recipe,
     recipe_component,
-    recipe_step,
     supplier,
     supplier_offer,
     supplier_offer_price,
@@ -58,7 +57,6 @@ export default defineEventHandler(async (event) => {
     fetchTable('ingredient'),
     fetchTable('recipe'),
     fetchTable('recipe_component'),
-    fetchTable('recipe_step'),
     fetchTable('supplier'),
     fetchTable('supplier_offer'),
     fetchTable('supplier_offer_price'),
@@ -81,7 +79,6 @@ export default defineEventHandler(async (event) => {
       recipe,
       // 4. join/child tables
       recipe_component,
-      recipe_step,
       supplier,
       supplier_offer,
       supplier_offer_price,

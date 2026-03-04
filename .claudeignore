@@ -1,0 +1,25 @@
+# Nuxt & Node
+.nuxt/
+dist/
+node_modules/
+.output/
+
+# Secrets & Environment
+.env*
+.env.local
+.env.production
+
+# Version Control & OS
+.git/
+.DS_Store
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Secret Keys/Certificates
+*.pem
+*.key
+**/secrets/
+**/credentials/
+

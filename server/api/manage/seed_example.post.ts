@@ -221,6 +221,7 @@ export default defineEventHandler(async (event) => {
     dashiId = exDashi.id
     await admin.from('recipe').update({
       description: 'Japanese soup stock',
+      production_notes: 'Simmer nori in cold water for 30 min. Remove nori before boiling. Cool and store.',
       output_quantity: 1000,
       output_unit_id: ml,
       standard_unit_cost: 0.0004,
@@ -231,6 +232,7 @@ export default defineEventHandler(async (event) => {
     const { data: created } = await admin.from('recipe').insert({
       name: 'Dashi',
       description: 'Japanese soup stock',
+      production_notes: 'Simmer nori in cold water for 30 min. Remove nori before boiling. Cool and store.',
       output_quantity: 1000,
       output_unit_id: ml,
       standard_unit_cost: 0.0004,
@@ -260,6 +262,7 @@ export default defineEventHandler(async (event) => {
     ramenId = exRamen.id
     await admin.from('recipe').update({
       description: 'Classic Japanese ramen bowl',
+      production_notes: 'Cook noodles al dente. Heat dashi to 80°C. Assemble: noodles in bowl, ladle 200 ml dashi, garnish.',
       output_quantity: 1,
       output_unit_id: pcs,
       is_active: true,
@@ -269,6 +272,7 @@ export default defineEventHandler(async (event) => {
     const { data: created } = await admin.from('recipe').insert({
       name: 'Ramen',
       description: 'Classic Japanese ramen bowl',
+      production_notes: 'Cook noodles al dente. Heat dashi to 80°C. Assemble: noodles in bowl, ladle 200 ml dashi, garnish.',
       output_quantity: 1,
       output_unit_id: pcs,
       is_active: true,
