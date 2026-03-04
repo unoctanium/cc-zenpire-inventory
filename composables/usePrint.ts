@@ -13,37 +13,24 @@ export function usePrint() {
   function printHtml(html: string) {
     if (typeof window === 'undefined') return
 
-    const isStandalone =
-      (window.navigator as any).standalone === true ||
-      window.matchMedia('(display-mode: standalone)').matches
+    const blob    = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url     = URL.createObjectURL(blob)
+    const iframe  = document.createElement('iframe')
+    let   printed = false
 
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url  = URL.createObjectURL(blob)
-
-    if (isStandalone) {
-      const win = window.open(url, '_blank')
-      if (win) {
-        setTimeout(() => URL.revokeObjectURL(url), 60_000)
-      } else {
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
+    iframe.onload = () => {
+      if (printed) return
+      printed = true
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      setTimeout(() => {
+        try { document.body.removeChild(iframe) } catch {}
         URL.revokeObjectURL(url)
-      }
-    } else {
-      const iframe   = document.createElement('iframe')
-      let   printed  = false
-      iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
-      iframe.onload = () => {
-        if (printed) return
-        printed = true
-        iframe.contentWindow?.focus()
-        iframe.contentWindow?.print()
-        setTimeout(() => {
-          try { document.body.removeChild(iframe) } catch {}
-          URL.revokeObjectURL(url)
-        }, 2000)
-      }
-      document.body.appendChild(iframe)
-      iframe.src = url
+      }, 2000)
     }
+    document.body.appendChild(iframe)
+    iframe.src = url
   }
 
   /**
