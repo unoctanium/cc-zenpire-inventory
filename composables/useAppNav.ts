@@ -5,10 +5,15 @@ const ALL_APPS = [
     icon: 'i-heroicons-squares-2x2',
     to: '/',
     inTopBar: true,
-    links: [
-      { labelKey: 'nav.overview', to: '/'              },
-      { labelKey: 'nav.reports',  to: '/reports/recipes' },
-    ],
+    links: [],
+  },
+  {
+    id: 'reports',
+    labelKey: 'nav.apps.reports',
+    icon: 'i-heroicons-chart-bar-square',
+    to: '/reports',
+    inTopBar: true,
+    links: [],
   },
   {
     id: 'recipes',
@@ -57,6 +62,7 @@ const ALL_APPS = [
 ]
 
 const ROUTE_MAP: Record<string, string> = {
+  '/reports':            'reports',
   '/recipes':            'recipes',
   '/ingredients':        'recipes',
   '/allergens':          'recipes',

@@ -14,9 +14,11 @@
     "personalSettings": "Personal Settings",
     "production": "Production",
     "allergenCard": "Allergen Card",
+    "allergenMatrix": "Allergen Matrix",
     "apps": {
       "dashboard": "Dashboard",
       "recipes": "Recipes",
+      "reports": "Reports",
       "stock": "Stock",
       "admin": "Admin Settings",
       "settings": "User Settings"
@@ -199,6 +201,9 @@
     "subtitle": "Kitchen view — quick access to recipes for production",
     "noPermission": "You do not have permission to view Production.",
     "loadError": "Failed to load production recipes"
+  },
+  "reports": {
+    "selectPrompt": "Select a report"
   },
   "allergenCard": {
     "title": "Allergen Matrix",

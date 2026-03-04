@@ -14,9 +14,11 @@
     "personalSettings": "個人設定",
     "production": "製造",
     "allergenCard": "アレルゲン表",
+    "allergenMatrix": "アレルゲン一覧表",
     "apps": {
       "dashboard": "ダッシュボード",
       "recipes": "レシピ",
+      "reports": "レポート",
       "stock": "在庫",
       "admin": "管理設定",
       "settings": "ユーザー設定"
@@ -199,6 +201,9 @@
     "subtitle": "キッチンビュー — 製造用レシピへのクイックアクセス",
     "noPermission": "製造を表示する権限がありません。",
     "loadError": "製造レシピの読み込みに失敗しました"
+  },
+  "reports": {
+    "selectPrompt": "レポートを選択"
   },
   "allergenCard": {
     "title": "アレルゲン表",

@@ -14,9 +14,11 @@
     "personalSettings": "Persönliche Einstellungen",
     "production": "Produktion",
     "allergenCard": "Allergenkarte",
+    "allergenMatrix": "Allergenmatrix",
     "apps": {
       "dashboard": "Dashboard",
       "recipes": "Rezepte",
+      "reports": "Berichte",
       "stock": "Lager",
       "admin": "Admin-Einstellungen",
       "settings": "Benutzereinstellungen"
@@ -199,6 +201,9 @@
     "subtitle": "Küchenansicht — schneller Zugriff auf Rezepte für die Produktion",
     "noPermission": "Sie haben keine Berechtigung, die Produktion anzuzeigen.",
     "loadError": "Produktionsrezepte konnten nicht geladen werden"
+  },
+  "reports": {
+    "selectPrompt": "Bericht auswählen"
   },
   "allergenCard": {
     "title": "Allergenmatrix",
