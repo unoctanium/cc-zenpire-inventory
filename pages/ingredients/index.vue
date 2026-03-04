@@ -53,6 +53,7 @@ function selectIngredient(id: string) {
 
 function startCreate() {
   if (!canManage.value) return
+  if (window.innerWidth < 640) { navigateTo('/ingredients/new'); return }
   selectedId.value = null
   isCreating.value = true
 }

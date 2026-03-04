@@ -55,6 +55,7 @@ function selectRecipe(id: string) {
 
 function startCreate() {
   if (!canManage.value) return
+  if (window.innerWidth < 640) { navigateTo('/recipes/new'); return }
   selectedId.value = null
   isCreating.value = true
 }
