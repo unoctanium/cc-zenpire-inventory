@@ -26,6 +26,9 @@ const ALL_APPS = [
       { labelKey: 'nav.ingredients', to: '/ingredients'  },
       { labelKey: 'nav.allergens',   to: '/allergens'    },
       { labelKey: 'nav.units',       to: '/units'        },
+      { labelKey: 'Test1',           to: '/recipes/test1' },
+      { labelKey: 'Test2',           to: '/recipes/test2' },
+      { labelKey: 'Test3',           to: '/recipes/test3' },
     ],
   },
   {

@@ -50,6 +50,25 @@ function openMorePopup(event: MouseEvent) {
 }
 
 const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯🇵' }
+
+// Sub-nav overflow (mobile pill strip)
+const PILL_LIMIT = 4
+const visibleLinks  = computed(() => navLinks.value.length > PILL_LIMIT + 1 ? navLinks.value.slice(0, PILL_LIMIT) : navLinks.value)
+const overflowLinks = computed(() => navLinks.value.length > PILL_LIMIT + 1 ? navLinks.value.slice(PILL_LIMIT) : [])
+
+const subNavMoreOpen = ref(false)
+const subNavMorePos  = ref({ left: 0, top: 0 })
+
+function openSubNavMore(event: MouseEvent) {
+  const btn  = event.currentTarget as HTMLElement
+  const rect = btn.getBoundingClientRect()
+  const popupW = 180
+  subNavMorePos.value = {
+    left: Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8)),
+    top:  rect.bottom + 6,
+  }
+  subNavMoreOpen.value = !subNavMoreOpen.value
+}
 </script>
 
 <template>
@@ -143,7 +162,7 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
           style="-webkit-overflow-scrolling: touch; scrollbar-width: none"
         >
           <NuxtLink
-            v-for="link in navLinks"
+            v-for="link in visibleLinks"
             :key="link.to"
             :to="link.to"
             class="flex-none px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
@@ -154,6 +173,14 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
           >
             {{ t(link.labelKey) }}
           </NuxtLink>
+          <!-- Overflow pill button -->
+          <button
+            v-if="overflowLinks.length"
+            class="flex-none flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+            @click.stop="openSubNavMore"
+          >
+            <UIcon name="i-heroicons-chevron-down" class="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <!-- Content -->
@@ -312,6 +339,34 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
             class="absolute left-1/2"
             style="transform: translateX(-50%); bottom: -8px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white"
           />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         SHARED: SUB-NAV OVERFLOW POPUP (mobile pill strip)
+         ══════════════════════════════════════════════════════════════════════ -->
+    <Teleport to="body">
+      <div v-if="subNavMoreOpen" class="fixed inset-0 z-50" @click="subNavMoreOpen = false">
+        <div
+          class="absolute bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 py-2"
+          style="min-width: 180px"
+          :style="`left: ${subNavMorePos.left}px; top: ${subNavMorePos.top}px`"
+          @click.stop
+        >
+          <NuxtLink
+            v-for="link in overflowLinks"
+            :key="link.to"
+            :to="link.to"
+            class="flex items-center gap-3 px-5 py-3 text-sm transition-colors"
+            :class="isLinkActive(link.to)
+              ? 'font-semibold text-gray-900 dark:text-white'
+              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            :style="isLinkActive(link.to) ? 'color: var(--color-app-bar)' : ''"
+            @click="subNavMoreOpen = false"
+          >
+            {{ t(link.labelKey) }}
+          </NuxtLink>
         </div>
       </div>
     </Teleport>
