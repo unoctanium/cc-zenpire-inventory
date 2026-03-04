@@ -505,16 +505,16 @@ function printRecipe() {
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
 .toolbar{display:flex;gap:12px;align-items:center;padding:12px 0 16px;border-bottom:2px solid #e5e7eb;margin-bottom:24px}
 .btn{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #d1d5db;background:#f9fafb;color:#374151}
-.btn-primary{background:#1f2937;color:#fff;border-color:#1f2937}
 h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
 .desc{color:#4b5563;margin-bottom:16px;line-height:1.6}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
 .meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
 table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;padding:4px 10px 8px 0;border-bottom:1px solid #e5e7eb}
 ol{list-style:none;padding:0}.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
-@media print{.toolbar{display:none}@page{margin:1.5cm}}</style></head>
+@media print{.toolbar{display:none}@page{margin:1.5cm}}</style>
+<script>window.onload=function(){window.print()}<\/script></head>
 <body>
-<div class="toolbar"><button class="btn btn-primary" onclick="window.print()">🖨&nbsp;Print / Save PDF</button><button class="btn" onclick="window.close()">Close</button></div>
+<div class="toolbar"><button class="btn" onclick="window.close()">✕&nbsp;Close</button></div>
 ${imgTag}<h1>${esc(draft.name)}</h1>
 ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 <div class="meta">
