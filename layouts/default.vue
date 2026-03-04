@@ -51,6 +51,15 @@ function openMorePopup(event: MouseEvent) {
 
 const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯🇵' }
 
+// Mobile back-navigation: when on a pushed sub-page, replace top bar with back button
+const backNav = computed(() => {
+  const p = route.path
+  if (p.startsWith('/reports/'))    return { label: t('nav.apps.reports'), to: '/reports' }
+  if (/^\/recipes\/.+/.test(p))     return { label: t('nav.recipes'),      to: '/recipes' }
+  if (/^\/ingredients\/.+/.test(p)) return { label: t('nav.ingredients'),  to: '/ingredients' }
+  return null
+})
+
 // Sub-nav overflow (mobile pill strip)
 const PILL_LIMIT = 4
 const visibleLinks  = computed(() => navLinks.value.length > PILL_LIMIT + 1 ? navLinks.value.slice(0, PILL_LIMIT) : navLinks.value)
@@ -142,17 +151,30 @@ function openSubNavMore(event: MouseEvent) {
       <div class="flex sm:hidden print:hidden flex-col overflow-hidden bg-white dark:bg-gray-900" style="height:100dvh">
 
         <!-- Top bar -->
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-none">
-          <button
-            class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all active:scale-95 flex-none"
-            style="background: var(--color-app-bar)"
-            @click="userDrawerOpen = true"
-          >
-            {{ initials }}
-          </button>
-          <h1 class="text-base font-semibold text-gray-900 dark:text-white flex-1 truncate">
-            {{ activeApp ? t(activeApp.labelKey) : '' }}
-          </h1>
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-none min-h-[52px]">
+          <!-- Pushed page: back chevron + calling page name -->
+          <template v-if="backNav">
+            <button
+              class="flex items-center gap-0.5 text-sm font-medium text-gray-700 dark:text-gray-300 active:opacity-60 transition-opacity"
+              @click="navigateTo(backNav.to)"
+            >
+              <UIcon name="i-heroicons-chevron-left" class="w-5 h-5 flex-none" />
+              {{ backNav.label }}
+            </button>
+          </template>
+          <!-- Normal top bar: avatar + app name -->
+          <template v-else>
+            <button
+              class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all active:scale-95 flex-none"
+              style="background: var(--color-app-bar)"
+              @click="userDrawerOpen = true"
+            >
+              {{ initials }}
+            </button>
+            <h1 class="text-base font-semibold text-gray-900 dark:text-white flex-1 truncate">
+              {{ activeApp ? t(activeApp.labelKey) : '' }}
+            </h1>
+          </template>
         </div>
 
         <!-- Sub-nav pill strip (mobile) -->
