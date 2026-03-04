@@ -66,6 +66,11 @@ function openSubNavMore(event: MouseEvent) {
         </button>
       </div>
 
+      <!-- Search slot -->
+      <div v-if="$slots.search" class="flex-none">
+        <slot name="search" />
+      </div>
+
       <!-- List slot -->
       <div class="flex-1 overflow-y-auto min-h-0">
         <slot name="list" />
@@ -88,7 +93,12 @@ function openSubNavMore(event: MouseEvent) {
   <!-- MOBILE <sm: list, or detail when a child route is active -->
   <div class="sm:hidden print:hidden">
     <slot v-if="props.showDetailOnMobile" name="detail" />
-    <slot v-else name="list" />
+    <template v-else>
+      <div v-if="$slots.search" class="flex-none">
+        <slot name="search" />
+      </div>
+      <slot name="list" />
+    </template>
     <!-- FAB (mobile) -->
     <div v-if="$slots.fab && !props.showDetailOnMobile" class="fixed bottom-20 left-4 z-50">
       <slot name="fab" />

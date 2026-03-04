@@ -1,3 +1,6 @@
+type AppLink     = { labelKey: string; to: string }
+type AppMenuLink = { labelKey: string; to: string; icon: string }
+
 const ALL_APPS = [
   {
     id: 'dashboard',
@@ -5,15 +8,8 @@ const ALL_APPS = [
     icon: 'i-heroicons-squares-2x2',
     to: '/',
     inTopBar: true,
-    links: [],
-  },
-  {
-    id: 'reports',
-    labelKey: 'nav.apps.reports',
-    icon: 'i-heroicons-chart-bar-square',
-    to: '/reports',
-    inTopBar: true,
-    links: [],
+    links:     [] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
   },
   {
     id: 'recipes',
@@ -22,11 +18,12 @@ const ALL_APPS = [
     to: '/recipes',
     inTopBar: true,
     links: [
-      { labelKey: 'nav.recipes',     to: '/recipes'      },
-      { labelKey: 'nav.ingredients', to: '/ingredients'  },
-      { labelKey: 'nav.allergens',   to: '/allergens'    },
-      { labelKey: 'nav.units',       to: '/units'        },
-    ],
+      { labelKey: 'nav.recipes',     to: '/recipes'     },
+      { labelKey: 'nav.ingredients', to: '/ingredients' },
+      { labelKey: 'nav.allergens',   to: '/allergens'   },
+      { labelKey: 'nav.units',       to: '/units'       },
+    ] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
   },
   {
     id: 'stock',
@@ -36,7 +33,23 @@ const ALL_APPS = [
     inTopBar: true,
     links: [
       { labelKey: 'nav.apps.stock', to: '/stock' },
-    ],
+    ] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
+  },
+  {
+    id: 'reports',
+    labelKey: 'nav.apps.reports',
+    icon: 'i-heroicons-chart-bar-square',
+    to: '/reports',
+    inTopBar: true,
+    links:     [] as AppLink[],
+    menuLinks: [
+      { labelKey: 'nav.recipes',        to: '/reports/recipes',       icon: 'i-heroicons-book-open'            },
+      { labelKey: 'nav.ingredients',    to: '/reports/ingredients',   icon: 'i-heroicons-beaker'               },
+      { labelKey: 'nav.allergens',      to: '/reports/allergens',     icon: 'i-heroicons-exclamation-triangle' },
+      { labelKey: 'nav.allergenMatrix', to: '/reports/allergen-card', icon: 'i-heroicons-table-cells'          },
+      { labelKey: 'nav.units',          to: '/reports/units',         icon: 'i-heroicons-scale'                },
+    ] as AppMenuLink[],
   },
 ]
 
