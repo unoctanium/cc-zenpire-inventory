@@ -51,6 +51,7 @@ function selectAllergen(a: AllergenRow) {
 
 function startCreate() {
   if (!canManage.value) return
+  if (window.innerWidth < 640) { navigateTo('/allergens/new'); return }
   selectedId.value       = null
   isCreating.value       = true
   editMode.value         = true
@@ -137,7 +138,6 @@ function handleMobileTap(id: string) {
             <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
           </button>
         </div>
-        <UButton v-if="canManage" size="xs" icon="i-heroicons-plus" @click="startCreate">{{ $t('allergens.add') }}</UButton>
       </div>
 
       <div class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -243,6 +243,17 @@ function handleMobileTap(id: string) {
         </div>
 
       </div>
+    </template>
+
+    <!-- FAB -->
+    <template v-if="canManage" #fab>
+      <button
+        class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white"
+        style="background: var(--color-app-bar)"
+        @click="startCreate"
+      >
+        <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+      </button>
     </template>
 
   </AppSplitLayout>

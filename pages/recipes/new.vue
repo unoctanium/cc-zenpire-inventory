@@ -17,6 +17,7 @@ const allRecipes  = computed(() => allRecipeData.value?.recipes ?? [])
 
 function onSaved(id: string) { navigateTo(`/recipes/${id}`) }
 function onDeleted()         { navigateTo('/recipes') }
+function onCancelled()       { navigateTo('/recipes') }
 </script>
 
 <template>
@@ -29,6 +30,7 @@ function onDeleted()         { navigateTo('/recipes') }
       :can-manage="canManage"
       @saved="onSaved"
       @deleted="onDeleted"
+      @cancelled="onCancelled"
     />
   </div>
 </template>

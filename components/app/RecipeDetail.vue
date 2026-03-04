@@ -49,6 +49,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'saved', id: string): void
   (e: 'deleted'): void
+  (e: 'cancelled'): void
 }>()
 
 const { t }  = useI18n()
@@ -219,6 +220,7 @@ async function saveBasic() {
 }
 
 function cancelEdit() {
+  if (isNew.value) { emit('cancelled'); return }
   if (props.recipe) {
     // Revert to saved recipe values
     const r = props.recipe
@@ -230,6 +232,8 @@ function cancelEdit() {
     draft.standard_unit_cost = r.standard_unit_cost != null ? r.standard_unit_cost * loadQty : ''
     draft.is_active          = r.is_active
     draft.is_pre_product     = r.is_pre_product
+    // Reset any in-progress component row edits
+    compUiRows.value.forEach(row => { row._mode = 'view'; row._draft = undefined })
     editMode.value = false
   }
 }
@@ -731,7 +735,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
 
       <!-- Save / Cancel -->
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-        <UButton v-if="!isNew" color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
         <UButton :loading="saving" @click="saveBasic">{{ $t('common.save') }}</UButton>
       </div>
 
@@ -755,7 +759,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
                 <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
-                <th class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
+                <th v-if="editMode" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
               </tr>
             </thead>
             <tbody>
@@ -781,7 +785,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
                   <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
                 </td>
                 <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
-                <td class="px-2 py-1.5 text-right whitespace-nowrap">
+                <td v-if="editMode" class="px-2 py-1.5 text-right whitespace-nowrap">
                   <AdminInlineRowActions
                     :mode="row._mode"
                     :can-edit="canManage" :can-delete="canManage"
@@ -794,7 +798,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
               <tr>
                 <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
                 <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
-                <td></td>
+                <td v-if="editMode"></td>
               </tr>
             </tfoot>
           </table>

@@ -70,6 +70,11 @@ function onDeleted() {
   refresh()
 }
 
+function onCancelled() {
+  isCreating.value = false
+  selectedId.value = null
+}
+
 function handleMobileTap(id: string) {
   navigateTo(`/ingredients/${id}`)
 }
@@ -97,7 +102,6 @@ function handleMobileTap(id: string) {
             <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
           </button>
         </div>
-        <UButton v-if="canManage" size="xs" icon="i-heroicons-plus" @click="startCreate">{{ $t('ingredients.add') }}</UButton>
       </div>
 
       <!-- Name list -->
@@ -152,6 +156,7 @@ function handleMobileTap(id: string) {
         :can-manage="canManage"
         @saved="onSaved"
         @deleted="onDeleted"
+        @cancelled="onCancelled"
       />
 
       <AppIngredientDetail
@@ -169,6 +174,17 @@ function handleMobileTap(id: string) {
         <UIcon name="i-heroicons-beaker" class="w-12 h-12" />
         <p class="text-sm">{{ $t('ingredients.selectPrompt') }}</p>
       </div>
+    </template>
+
+    <!-- FAB -->
+    <template v-if="canManage" #fab>
+      <button
+        class="w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white"
+        style="background: var(--color-app-bar)"
+        @click="startCreate"
+      >
+        <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+      </button>
     </template>
 
   </AppSplitLayout>

@@ -36,6 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'saved', id: string): void
   (e: 'deleted'): void
+  (e: 'cancelled'): void
 }>()
 
 const { t }  = useI18n()
@@ -195,10 +196,7 @@ async function save() {
 }
 
 function cancelEdit() {
-  if (isNew.value) {
-    // Nothing to revert to — parent handles clearing selection
-    return
-  }
+  if (isNew.value) { emit('cancelled'); return }
   // Revert draft from ingredient prop
   if (props.ingredient) {
     draft.name               = props.ingredient.name
@@ -474,7 +472,7 @@ async function doDelete() {
 
     <!-- Action buttons (edit mode) -->
     <div v-if="editMode" class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-      <UButton v-if="!isNew" color="neutral" variant="soft" @click="cancelEdit">
+      <UButton color="neutral" variant="soft" @click="cancelEdit">
         {{ $t('common.cancel') }}
       </UButton>
       <UButton :loading="saving" @click="save">

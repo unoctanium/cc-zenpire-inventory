@@ -36,7 +36,7 @@ function openSubNavMore(event: MouseEvent) {
   <div class="hidden sm:flex print:flex h-full print:h-auto overflow-hidden print:overflow-visible">
 
     <!-- Left panel -->
-    <div class="print:hidden w-64 flex-none flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <div class="print:hidden w-64 flex-none flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 relative">
 
       <!-- Nav pills -->
       <div
@@ -71,6 +71,11 @@ function openSubNavMore(event: MouseEvent) {
         <slot name="list" />
       </div>
 
+      <!-- FAB (tablet) -->
+      <div v-if="$slots.fab" class="absolute bottom-4 left-4 z-10">
+        <slot name="fab" />
+      </div>
+
     </div>
 
     <!-- Right panel -->
@@ -84,6 +89,10 @@ function openSubNavMore(event: MouseEvent) {
   <div class="sm:hidden print:hidden">
     <slot v-if="props.showDetailOnMobile" name="detail" />
     <slot v-else name="list" />
+    <!-- FAB (mobile) -->
+    <div v-if="$slots.fab && !props.showDetailOnMobile" class="fixed bottom-20 left-4 z-50">
+      <slot name="fab" />
+    </div>
   </div>
 
   <!-- Sub-nav overflow popup (tablet) -->

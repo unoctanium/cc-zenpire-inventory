@@ -14,6 +14,7 @@ const allergens = computed(() => allergenData.value?.allergens ?? [])
 
 function onSaved(id: string) { navigateTo(`/ingredients/${id}`) }
 function onDeleted()         { navigateTo('/ingredients') }
+function onCancelled()       { navigateTo('/ingredients') }
 </script>
 
 <template>
@@ -25,6 +26,7 @@ function onDeleted()         { navigateTo('/ingredients') }
       :can-manage="canManage"
       @saved="onSaved"
       @deleted="onDeleted"
+      @cancelled="onCancelled"
     />
   </div>
 </template>
