@@ -15,8 +15,36 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }  = useI18n()
-const toast  = useToast()
+const { t }         = useI18n()
+const toast         = useToast()
+const { printHtml } = usePrint()
+
+function esc(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function printUnit() {
+  if (!props.unit) return
+  const u = props.unit
+  printHtml(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(u.code)} — Zenpire</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
+h1{font-size:24px;font-weight:700;margin-bottom:20px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
+.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+@media print{@page{margin:1.5cm}}</style></head>
+<body>
+<h1>${esc(u.code)} — ${esc(u.name)}</h1>
+<div class="meta">
+  <div><label>Code</label><span>${esc(u.code)}</span></div>
+  <div><label>Name</label><span>${esc(u.name)}</span></div>
+  <div><label>Type</label><span>${esc(u.unit_type)}</span></div>
+  <div><label>Factor</label><span>${u.factor}</span></div>
+</div>
+<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+</body></html>`)
+}
 
 const unitTypeOptions: { label: string; value: UnitType }[] = [
   { label: 'mass',   value: 'mass'   },
@@ -108,14 +136,15 @@ async function doDelete() {
 </script>
 
 <template>
-  <div class="p-4 space-y-4 max-w-sm">
+  <div class="p-4 space-y-4">
 
     <!-- Header -->
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         {{ isNew ? $t('units.add') : unit!.code + ' — ' + unit!.name }}
       </h2>
-      <div v-if="!isNew" class="flex gap-1">
+      <div v-if="!isNew" class="flex items-center gap-1">
+        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printUnit">{{ $t('common.print') }}</UButton>
         <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">{{ $t('common.edit') }}</UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
       </div>

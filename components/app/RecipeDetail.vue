@@ -55,9 +55,10 @@ const toast  = useToast()
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
-const editMode         = ref(false)
-const showEditSheet    = ref(false)
-const confirmingDelete = ref(false)
+const editMode          = ref(false)
+const showEditSheet     = ref(false)
+const confirmingDelete  = ref(false)
+const editingComponents = ref(false)
 
 const isNew = computed(() => !props.recipe)
 
@@ -91,7 +92,8 @@ const loadedProductionNotes = ref('')
 watch(
   () => props.recipe,
   async (recipe) => {
-    confirmingDelete.value = false
+    confirmingDelete.value  = false
+    editingComponents.value = false
     components.value = []
     hasImage.value   = false
 
@@ -213,7 +215,7 @@ async function saveBasic() {
       savedId.value = res.recipe.id
       toast.add({ title: t('recipes.created') })
       await loadDetail(res.recipe.id)
-      // Stay in edit mode so user can add components
+      editingComponents.value = true
       emit('saved', res.recipe.id)
     }
   } catch (e: any) {
@@ -244,8 +246,9 @@ function cancelEdit() {
     draft.production_notes   = loadedProductionNotes.value
     // Reset any in-progress component row edits
     compUiRows.value.forEach(row => { row._mode = 'view'; row._draft = undefined })
-    editMode.value      = false
-    showEditSheet.value = false
+    editMode.value          = false
+    showEditSheet.value     = false
+    editingComponents.value = false
   }
 }
 
@@ -432,6 +435,8 @@ const perUnitCost = computed((): number | null => {
 
 // ─── print ────────────────────────────────────────────────────────────────────
 
+const { printHtml } = usePrint()
+
 function esc(s: string | null | undefined): string {
   if (!s) return ''
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -454,16 +459,14 @@ function printRecipe() {
     </tr>`
   ).join('')
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(draft.name)} — Zenpire</title>
+  printHtml(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(draft.name)} — Zenpire</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
-.toolbar{display:flex;gap:12px;align-items:center;padding:12px 0 16px;border-bottom:2px solid #e5e7eb;margin-bottom:24px}
-.btn{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #d1d5db;background:#f9fafb;color:#374151}
 h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
 .desc{color:#4b5563;margin-bottom:16px;line-height:1.6}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
 .meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
 table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;padding:4px 10px 8px 0;border-bottom:1px solid #e5e7eb}
-ol{list-style:none;padding:0}.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
 @media print{@page{margin:1.5cm}}</style></head>
 <body>
 ${imgTag}<h1>${esc(draft.name)}</h1>
@@ -478,33 +481,7 @@ ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 ${components.value.length > 0 ? `<h2>Components</h2><table><thead><tr><th>Name</th><th>Type</th><th style="text-align:right">Qty</th><th>Unit</th><th style="text-align:right">Cost</th></tr></thead><tbody>${compRows}</tbody></table>` : ''}
 ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-wrap;line-height:1.6;color:#374151">${esc(draft.production_notes)}</p>` : ''}
 <div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
-</body></html>`
-
-  const isStandalone =
-    (window.navigator as any).standalone === true ||
-    window.matchMedia('(display-mode: standalone)').matches
-
-  if (isStandalone) {
-    // iOS PWA: iframe.contentWindow.print() is blocked — open in Safari instead
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url  = URL.createObjectURL(blob)
-    const win  = window.open(url, '_blank')
-    if (!win) { URL.revokeObjectURL(url); toast.add({ title: 'Print blocked', description: 'Please allow pop-ups.', color: 'error' }); return }
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  } else {
-    // Non-PWA: hidden iframe — print dialog opens directly, no new tab shown
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
-    document.body.appendChild(iframe)
-    const doc = iframe.contentDocument ?? iframe.contentWindow?.document
-    if (!doc) { document.body.removeChild(iframe); return }
-    doc.open(); doc.write(html); doc.close()
-    iframe.onload = () => {
-      iframe.contentWindow?.focus()
-      iframe.contentWindow?.print()
-      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 2000)
-    }
-  }
+</body></html>`)
 }
 </script>
 
@@ -518,11 +495,11 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
         <template v-else>{{ $t('recipes.viewTitle') }}</template>
       </h2>
       <div v-if="!isNew" class="flex items-center gap-1">
-        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
-          {{ $t('common.print') }}
-        </UButton>
         <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">
           {{ $t('common.edit') }}
+        </UButton>
+        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
+          {{ $t('common.print') }}
         </UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">
           {{ $t('common.delete') }}
@@ -705,9 +682,20 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
     <!-- ─── Components section (available after first save) ─────────────────── -->
     <div v-if="savedId" class="pt-2">
-      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 border-t border-gray-100 dark:border-gray-800 pt-3">
-        {{ $t('recipes.componentsSection') }}
-      </h3>
+      <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-2">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          {{ $t('recipes.componentsSection') }}
+        </h3>
+        <UButton
+          v-if="!isNew && canManage"
+          size="xs" variant="ghost"
+          :color="editingComponents ? 'primary' : 'neutral'"
+          :icon="editingComponents ? 'i-heroicons-check' : 'i-heroicons-pencil-square'"
+          @click="editingComponents = !editingComponents"
+        >
+          {{ editingComponents ? $t('common.done') : $t('common.edit') }}
+        </UButton>
+      </div>
 
       <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
 
@@ -721,7 +709,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
                 <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
-                <th v-if="showEditSheet" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
+                <th v-if="editingComponents" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
               </tr>
             </thead>
             <tbody>
@@ -747,7 +735,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
                   <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
                 </td>
                 <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
-                <td v-if="showEditSheet" class="px-2 py-1.5 text-right whitespace-nowrap">
+                <td v-if="editingComponents" class="px-2 py-1.5 text-right whitespace-nowrap">
                   <AdminInlineRowActions
                     :mode="row._mode"
                     :can-edit="canManage" :can-delete="canManage"
@@ -760,7 +748,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
               <tr>
                 <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
                 <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
-                <td v-if="showEditSheet"></td>
+                <td v-if="editingComponents"></td>
               </tr>
             </tfoot>
           </table>
@@ -768,7 +756,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
         <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
 
         <!-- Component search (edit mode) -->
-        <div v-if="showEditSheet" class="space-y-2">
+        <div v-if="editingComponents" class="space-y-2">
           <div class="relative">
             <input
               v-model="compSearch"

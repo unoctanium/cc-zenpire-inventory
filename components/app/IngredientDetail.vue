@@ -39,8 +39,9 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }  = useI18n()
-const toast  = useToast()
+const { t }        = useI18n()
+const toast        = useToast()
+const { printHtml } = usePrint()
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
@@ -266,29 +267,7 @@ ${allergenSection}
 <div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
 </body></html>`
 
-  const isStandalone =
-    (window.navigator as any).standalone === true ||
-    window.matchMedia('(display-mode: standalone)').matches
-
-  if (isStandalone) {
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url  = URL.createObjectURL(blob)
-    const win  = window.open(url, '_blank')
-    if (!win) { URL.revokeObjectURL(url); toast.add({ title: 'Print blocked', description: 'Please allow pop-ups.', color: 'error' }); return }
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  } else {
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
-    document.body.appendChild(iframe)
-    const doc = iframe.contentDocument ?? iframe.contentWindow?.document
-    if (!doc) { document.body.removeChild(iframe); return }
-    doc.open(); doc.write(html); doc.close()
-    iframe.onload = () => {
-      iframe.contentWindow?.focus()
-      iframe.contentWindow?.print()
-      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 2000)
-    }
-  }
+  printHtml(html)
 }
 
 // ─── delete ───────────────────────────────────────────────────────────────────
@@ -311,7 +290,7 @@ async function doDelete() {
 </script>
 
 <template>
-  <div class="p-4 space-y-4 max-w-lg">
+  <div class="p-4 space-y-4">
 
     <!-- Header -->
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">

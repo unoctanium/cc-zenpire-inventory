@@ -12,8 +12,31 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }  = useI18n()
-const toast  = useToast()
+const { t }         = useI18n()
+const toast         = useToast()
+const { printHtml } = usePrint()
+
+function esc(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function printAllergen() {
+  if (!props.allergen) return
+  const a = props.allergen
+  printHtml(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(a.name)} — Zenpire</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
+h1{font-size:24px;font-weight:700;margin-bottom:20px}
+h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
+.comment{color:#4b5563;line-height:1.6;white-space:pre-wrap}
+.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+@media print{@page{margin:1.5cm}}</style></head>
+<body>
+<h1>${esc(a.name)}</h1>
+${a.comment ? `<h2>Comment</h2><p class="comment">${esc(a.comment)}</p>` : ''}
+<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+</body></html>`)
+}
 
 const isNew            = computed(() => !props.allergen)
 const editMode         = ref(false)
@@ -88,14 +111,15 @@ async function doDelete() {
 </script>
 
 <template>
-  <div class="p-4 space-y-4 max-w-sm">
+  <div class="p-4 space-y-4">
 
     <!-- Header -->
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         {{ isNew ? $t('allergens.add') : allergen!.name }}
       </h2>
-      <div v-if="!isNew" class="flex gap-1">
+      <div v-if="!isNew" class="flex items-center gap-1">
+        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printAllergen">{{ $t('common.print') }}</UButton>
         <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">{{ $t('common.edit') }}</UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
       </div>
