@@ -30,37 +30,33 @@ const filteredUnits = computed(() => {
 // ─── selection ────────────────────────────────────────────────────────────────
 
 const selectedId = ref<string | null>(null)
-const isCreating = ref(false)
+const showCreateModal = ref(false)
 
 const selectedUnit = computed(() => units.value.find(u => u.id === selectedId.value) ?? null)
 
 function selectUnit(u: UnitRow) {
   selectedId.value = u.id
-  isCreating.value = false
 }
 
 function startCreate() {
   if (!canManage.value) return
-  if (window.innerWidth < 640) { navigateTo('/units/new'); return }
-  selectedId.value = null
-  isCreating.value = true
+  showCreateModal.value = true
 }
 
 function onSaved(id: string) {
-  isCreating.value = false
+  showCreateModal.value = false
   selectedId.value = id
   refresh()
 }
 
 function onDeleted() {
+  showCreateModal.value = false
   selectedId.value = null
-  isCreating.value = false
   refresh()
 }
 
 function onCancelled() {
-  isCreating.value = false
-  selectedId.value = null
+  showCreateModal.value = false
 }
 
 function handleMobileTap(id: string) {
@@ -100,7 +96,7 @@ function handleMobileTap(id: string) {
         <button
           v-for="u in filteredUnits" :key="u.id"
           class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          :class="selectedId === u.id && !isCreating
+          :class="selectedId === u.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectUnit(u)"
@@ -126,7 +122,7 @@ function handleMobileTap(id: string) {
     <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
       <div
-        v-if="!selectedId && !isCreating"
+        v-if="!selectedId"
         class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20"
       >
         <UIcon name="i-heroicons-scale" class="w-12 h-12" />
@@ -135,8 +131,8 @@ function handleMobileTap(id: string) {
 
       <AppUnitDetail
         v-else
-        :key="selectedId ?? 'new'"
-        :unit="isCreating ? null : selectedUnit"
+        :key="selectedId"
+        :unit="selectedUnit"
         :can-manage="canManage"
         @saved="onSaved"
         @deleted="onDeleted"
@@ -150,4 +146,16 @@ function handleMobileTap(id: string) {
     </template>
 
   </AppSplitLayout>
+
+  <!-- New unit bottom sheet -->
+  <AppBottomSheet :open="showCreateModal" @close="showCreateModal = false">
+    <AppUnitDetail
+      key="new"
+      :unit="null"
+      :can-manage="canManage"
+      @saved="onSaved"
+      @deleted="onDeleted"
+      @cancelled="onCancelled"
+    />
+  </AppBottomSheet>
 </template>

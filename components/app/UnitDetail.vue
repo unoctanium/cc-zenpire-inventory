@@ -26,12 +26,14 @@ const unitTypeOptions: { label: string; value: UnitType }[] = [
 
 const isNew            = computed(() => !props.unit)
 const editMode         = ref(false)
+const showEditSheet    = ref(false)
 const confirmingDelete = ref(false)
 const saving           = ref(false)
 const draft            = reactive({ code: '', name: '', unit_type: 'mass' as UnitType, factor: 1 })
 
 watch(() => props.unit, (u) => {
   confirmingDelete.value = false
+  showEditSheet.value    = false
   if (u) {
     editMode.value  = false
     draft.code      = u.code
@@ -47,6 +49,11 @@ watch(() => props.unit, (u) => {
   }
 }, { immediate: true })
 
+function startEdit() {
+  editMode.value      = true
+  showEditSheet.value = true
+}
+
 function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   const u = props.unit!
@@ -55,6 +62,7 @@ function cancelEdit() {
   draft.unit_type = u.unit_type
   draft.factor    = u.factor
   editMode.value         = false
+  showEditSheet.value    = false
   confirmingDelete.value = false
 }
 
@@ -78,7 +86,8 @@ async function save() {
     } else {
       await $fetch(`/api/units/${props.unit!.id}`, { method: 'PUT', credentials: 'include', body })
       toast.add({ title: t('units.updated') })
-      editMode.value = false
+      editMode.value      = false
+      showEditSheet.value = false
       emit('saved', props.unit!.id)
     }
   } catch (e: any) {
@@ -104,10 +113,10 @@ async function doDelete() {
     <!-- Header -->
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        {{ isNew ? $t('units.add') : (editMode ? $t('common.edit') : unit!.code + ' — ' + unit!.name) }}
+        {{ isNew ? $t('units.add') : unit!.code + ' — ' + unit!.name }}
       </h2>
-      <div v-if="!editMode && !isNew" class="flex gap-1">
-        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="editMode = true">{{ $t('common.edit') }}</UButton>
+      <div v-if="!isNew" class="flex gap-1">
+        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">{{ $t('common.edit') }}</UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
       </div>
     </div>
@@ -121,8 +130,8 @@ async function doDelete() {
       </div>
     </div>
 
-    <!-- View mode -->
-    <div v-if="!editMode" class="space-y-3">
+    <!-- View mode (existing) -->
+    <div v-if="!isNew" class="space-y-3">
       <div>
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('units.code') }}</div>
         <div class="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">{{ unit?.code }}</div>
@@ -142,8 +151,8 @@ async function doDelete() {
       <p class="text-xs text-gray-400 dark:text-gray-600">{{ $t('units.usedByOthers') }}</p>
     </div>
 
-    <!-- Edit / Create mode -->
-    <div v-else class="space-y-3">
+    <!-- Create mode (new — inline, parent already provides the sheet) -->
+    <div v-if="isNew" class="space-y-3">
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.code') }} *</label>
         <input v-model="draft.code"
@@ -184,4 +193,50 @@ async function doDelete() {
     </div>
 
   </div>
+
+  <!-- Edit sheet (existing unit) -->
+  <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
+    <div class="p-4 space-y-4 max-w-sm">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
+        {{ $t('common.edit') }} — {{ unit?.code }}
+      </h3>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.code') }} *</label>
+        <input v-model="draft.code"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          placeholder="e.g. g" autocomplete="off" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.name') }} *</label>
+        <input v-model="draft.name"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          placeholder="e.g. Gram" autocomplete="off" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.type') }} *</label>
+        <select v-model="draft.unit_type"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          <option v-for="o in unitTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.factor') }} *</label>
+        <input v-model.number="draft.factor" type="number" min="0.000001" step="any"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          placeholder="1" />
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
+      </div>
+    </div>
+  </AppBottomSheet>
 </template>

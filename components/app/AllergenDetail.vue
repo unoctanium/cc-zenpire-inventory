@@ -17,12 +17,14 @@ const toast  = useToast()
 
 const isNew            = computed(() => !props.allergen)
 const editMode         = ref(false)
+const showEditSheet    = ref(false)
 const confirmingDelete = ref(false)
 const saving           = ref(false)
 const draft            = reactive({ name: '', comment: '' })
 
 watch(() => props.allergen, (a) => {
   confirmingDelete.value = false
+  showEditSheet.value    = false
   if (a) {
     editMode.value = false
     draft.name     = a.name
@@ -34,12 +36,18 @@ watch(() => props.allergen, (a) => {
   }
 }, { immediate: true })
 
+function startEdit() {
+  editMode.value      = true
+  showEditSheet.value = true
+}
+
 function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   const a = props.allergen!
   draft.name     = a.name
   draft.comment  = a.comment ?? ''
   editMode.value         = false
+  showEditSheet.value    = false
   confirmingDelete.value = false
 }
 
@@ -58,7 +66,8 @@ async function save() {
     } else {
       await $fetch(`/api/allergens/${props.allergen!.id}`, { method: 'PUT', credentials: 'include', body })
       toast.add({ title: t('allergens.updated') })
-      editMode.value = false
+      editMode.value      = false
+      showEditSheet.value = false
       emit('saved', props.allergen!.id)
     }
   } catch (e: any) {
@@ -84,10 +93,10 @@ async function doDelete() {
     <!-- Header -->
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        {{ isNew ? $t('allergens.add') : (editMode ? $t('common.edit') : allergen!.name) }}
+        {{ isNew ? $t('allergens.add') : allergen!.name }}
       </h2>
-      <div v-if="!editMode && !isNew" class="flex gap-1">
-        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="editMode = true">{{ $t('common.edit') }}</UButton>
+      <div v-if="!isNew" class="flex gap-1">
+        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">{{ $t('common.edit') }}</UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
       </div>
     </div>
@@ -101,8 +110,8 @@ async function doDelete() {
       </div>
     </div>
 
-    <!-- View mode -->
-    <div v-if="!editMode" class="space-y-3">
+    <!-- View mode (existing) -->
+    <div v-if="!isNew" class="space-y-3">
       <div>
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('allergens.name') }}</div>
         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ allergen?.name }}</div>
@@ -113,8 +122,8 @@ async function doDelete() {
       </div>
     </div>
 
-    <!-- Edit / Create mode -->
-    <div v-else class="space-y-3">
+    <!-- Create mode (new — inline, parent already provides the sheet) -->
+    <div v-if="isNew" class="space-y-3">
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
         <input v-model="draft.name"
@@ -138,4 +147,33 @@ async function doDelete() {
     </div>
 
   </div>
+
+  <!-- Edit sheet (existing allergen) -->
+  <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
+    <div class="p-4 space-y-4 max-w-sm">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
+        {{ $t('common.edit') }} — {{ allergen?.name }}
+      </h3>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
+        <input v-model="draft.name"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.comment') }}</label>
+        <textarea v-model="draft.comment" rows="2"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('allergens.commentPlaceholder')" />
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
+      </div>
+    </div>
+  </AppBottomSheet>
 </template>

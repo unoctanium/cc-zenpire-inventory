@@ -44,37 +44,33 @@ const filteredRecipes = computed(() => {
 // ─── selection ────────────────────────────────────────────────────────────────
 
 const selectedId = ref<string | null>(null)
-const isCreating = ref(false)
+const showCreateModal = ref(false)
 
 const selectedRecipe = computed(() => recipes.value.find(r => r.id === selectedId.value) ?? null)
 
 function selectRecipe(id: string) {
   selectedId.value = id
-  isCreating.value = false
 }
 
 function startCreate() {
   if (!canManage.value) return
-  if (window.innerWidth < 640) { navigateTo('/recipes/new'); return }
-  selectedId.value = null
-  isCreating.value = true
+  showCreateModal.value = true
 }
 
 function onSaved(id: string) {
-  isCreating.value = false
+  showCreateModal.value = false
   selectedId.value = id
   refresh()
 }
 
 function onDeleted() {
+  showCreateModal.value = false
   selectedId.value = null
-  isCreating.value = false
   refresh()
 }
 
 function onCancelled() {
-  isCreating.value = false
-  selectedId.value = null
+  showCreateModal.value = false
 }
 
 // ─── mobile navigation ────────────────────────────────────────────────────────
@@ -117,7 +113,7 @@ function handleMobileTap(id: string) {
         <button
           v-for="r in filteredRecipes" :key="r.id"
           class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          :class="selectedId === r.id && !isCreating
+          :class="selectedId === r.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectRecipe(r.id)"
@@ -142,22 +138,9 @@ function handleMobileTap(id: string) {
 
     <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
-      <!-- Creating new recipe -->
-      <AppRecipeDetail
-        v-if="isCreating"
-        :recipe="null"
-        :units="units"
-        :ingredients="ingredients"
-        :all-recipes="recipes"
-        :can-manage="canManage"
-        @saved="onSaved"
-        @deleted="onDeleted"
-        @cancelled="onCancelled"
-      />
-
       <!-- Viewing/editing existing recipe -->
       <AppRecipeDetail
-        v-else-if="selectedRecipe"
+        v-if="selectedRecipe"
         :key="selectedRecipe.id"
         :recipe="selectedRecipe"
         :units="units"
@@ -181,4 +164,18 @@ function handleMobileTap(id: string) {
     </template>
 
   </AppSplitLayout>
+
+  <!-- New recipe bottom sheet -->
+  <AppBottomSheet :open="showCreateModal" @close="showCreateModal = false">
+    <AppRecipeDetail
+      :recipe="null"
+      :units="units"
+      :ingredients="ingredients"
+      :all-recipes="recipes"
+      :can-manage="canManage"
+      @saved="onSaved"
+      @deleted="onDeleted"
+      @cancelled="onCancelled"
+    />
+  </AppBottomSheet>
 </template>

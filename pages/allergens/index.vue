@@ -31,37 +31,33 @@ const filteredAllergens = computed(() => {
 // ─── selection ────────────────────────────────────────────────────────────────
 
 const selectedId = ref<string | null>(null)
-const isCreating = ref(false)
+const showCreateModal = ref(false)
 
 const selectedAllergen = computed(() => allergens.value.find(a => a.id === selectedId.value) ?? null)
 
 function selectAllergen(a: AllergenRow) {
   selectedId.value = a.id
-  isCreating.value = false
 }
 
 function startCreate() {
   if (!canManage.value) return
-  if (window.innerWidth < 640) { navigateTo('/allergens/new'); return }
-  selectedId.value = null
-  isCreating.value = true
+  showCreateModal.value = true
 }
 
 function onSaved(id: string) {
-  isCreating.value = false
+  showCreateModal.value = false
   selectedId.value = id
   refresh()
 }
 
 function onDeleted() {
+  showCreateModal.value = false
   selectedId.value = null
-  isCreating.value = false
   refresh()
 }
 
 function onCancelled() {
-  isCreating.value = false
-  selectedId.value = null
+  showCreateModal.value = false
 }
 
 function handleMobileTap(id: string) {
@@ -101,7 +97,7 @@ function handleMobileTap(id: string) {
         <button
           v-for="a in filteredAllergens" :key="a.id"
           class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          :class="selectedId === a.id && !isCreating
+          :class="selectedId === a.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectAllergen(a)"
@@ -125,7 +121,7 @@ function handleMobileTap(id: string) {
     <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
       <div
-        v-if="!selectedId && !isCreating"
+        v-if="!selectedId"
         class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20"
       >
         <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12" />
@@ -134,8 +130,8 @@ function handleMobileTap(id: string) {
 
       <AppAllergenDetail
         v-else
-        :key="selectedId ?? 'new'"
-        :allergen="isCreating ? null : selectedAllergen"
+        :key="selectedId"
+        :allergen="selectedAllergen"
         :can-manage="canManage"
         @saved="onSaved"
         @deleted="onDeleted"
@@ -149,4 +145,16 @@ function handleMobileTap(id: string) {
     </template>
 
   </AppSplitLayout>
+
+  <!-- New allergen bottom sheet -->
+  <AppBottomSheet :open="showCreateModal" @close="showCreateModal = false">
+    <AppAllergenDetail
+      key="new"
+      :allergen="null"
+      :can-manage="canManage"
+      @saved="onSaved"
+      @deleted="onDeleted"
+      @cancelled="onCancelled"
+    />
+  </AppBottomSheet>
 </template>

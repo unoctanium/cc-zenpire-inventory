@@ -42,37 +42,33 @@ const filteredIngredients = computed(() => {
 // ─── selection ────────────────────────────────────────────────────────────────
 
 const selectedId = ref<string | null>(null)
-const isCreating = ref(false)
+const showCreateModal = ref(false)
 
 const selectedIngredient = computed(() => ingredients.value.find(i => i.id === selectedId.value) ?? null)
 
 function selectIngredient(id: string) {
   selectedId.value = id
-  isCreating.value = false
 }
 
 function startCreate() {
   if (!canManage.value) return
-  if (window.innerWidth < 640) { navigateTo('/ingredients/new'); return }
-  selectedId.value = null
-  isCreating.value = true
+  showCreateModal.value = true
 }
 
 function onSaved(id: string) {
-  isCreating.value = false
+  showCreateModal.value = false
   selectedId.value = id
   refresh()
 }
 
 function onDeleted() {
+  showCreateModal.value = false
   selectedId.value = null
-  isCreating.value = false
   refresh()
 }
 
 function onCancelled() {
-  isCreating.value = false
-  selectedId.value = null
+  showCreateModal.value = false
 }
 
 function handleMobileTap(id: string) {
@@ -113,7 +109,7 @@ function handleMobileTap(id: string) {
         <button
           v-for="i in filteredIngredients" :key="i.id"
           class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          :class="selectedId === i.id && !isCreating
+          :class="selectedId === i.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectIngredient(i.id)"
@@ -150,18 +146,7 @@ function handleMobileTap(id: string) {
     <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
       <AppIngredientDetail
-        v-if="isCreating"
-        :ingredient="null"
-        :units="units"
-        :allergens="allergens"
-        :can-manage="canManage"
-        @saved="onSaved"
-        @deleted="onDeleted"
-        @cancelled="onCancelled"
-      />
-
-      <AppIngredientDetail
-        v-else-if="selectedIngredient"
+        v-if="selectedIngredient"
         :key="selectedIngredient.id"
         :ingredient="selectedIngredient"
         :units="units"
@@ -183,4 +168,17 @@ function handleMobileTap(id: string) {
     </template>
 
   </AppSplitLayout>
+
+  <!-- New ingredient bottom sheet -->
+  <AppBottomSheet :open="showCreateModal" @close="showCreateModal = false">
+    <AppIngredientDetail
+      :ingredient="null"
+      :units="units"
+      :allergens="allergens"
+      :can-manage="canManage"
+      @saved="onSaved"
+      @deleted="onDeleted"
+      @cancelled="onCancelled"
+    />
+  </AppBottomSheet>
 </template>

@@ -44,7 +44,8 @@ const toast  = useToast()
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
-const editMode = ref(false)
+const editMode      = ref(false)
+const showEditSheet = ref(false)
 
 const isNew      = computed(() => !props.ingredient)
 const isProduced = computed(() => props.ingredient?.kind === 'produced')
@@ -76,7 +77,8 @@ watch(
     hasImage.value = false
 
     if (ing) {
-      editMode.value = false
+      editMode.value      = false
+      showEditSheet.value = false
       draft.name               = ing.name
       draft.default_unit_id    = ing.default_unit_id
       draft.standard_unit_cost = ing.standard_unit_cost ?? ''
@@ -175,7 +177,8 @@ async function save() {
     if (props.ingredient) {
       await $fetch(`/api/ingredients/${props.ingredient.id}`, { method: 'PUT', credentials: 'include', body })
       toast.add({ title: t('ingredients.updated') })
-      editMode.value = false
+      editMode.value      = false
+      showEditSheet.value = false
       emit('saved', props.ingredient.id)
     } else {
       const res = await $fetch<{ ok: boolean; ingredient: { id: string } }>(
@@ -195,6 +198,11 @@ async function save() {
   }
 }
 
+function startEdit() {
+  editMode.value      = true
+  showEditSheet.value = true
+}
+
 function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   // Revert draft from ingredient prop
@@ -204,7 +212,8 @@ function cancelEdit() {
     draft.standard_unit_cost = props.ingredient.standard_unit_cost ?? ''
     draft.comment            = props.ingredient.comment ?? ''
   }
-  editMode.value = false
+  editMode.value      = false
+  showEditSheet.value = false
 }
 
 // ─── print ────────────────────────────────────────────────────────────────────
@@ -308,15 +317,14 @@ async function doDelete() {
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         <template v-if="isNew">{{ $t('ingredients.newTitle') }}</template>
-        <template v-else-if="editMode">{{ $t('ingredients.editTitle') }}</template>
         <template v-else>{{ $t('ingredients.viewTitle') }}</template>
       </h2>
-      <div v-if="!isNew && !editMode" class="flex items-center gap-1">
+      <div v-if="!isNew" class="flex items-center gap-1">
         <UButton
           v-if="canManage && !isProduced"
           size="xs" color="neutral" variant="ghost"
           icon="i-heroicons-pencil-square"
-          @click="editMode = true"
+          @click="startEdit"
         >{{ $t('common.edit') }}</UButton>
         <UButton
           size="xs" color="neutral" variant="ghost"
@@ -348,137 +356,170 @@ async function doDelete() {
       v-if="ingredient?.id"
       :image-url="imageUrl"
       :uploading="imageUploading"
-      :can-manage="canManage && editMode && !isProduced"
+      :can-manage="false"
       @upload="uploadImage"
       @remove="removeImage"
     />
 
-    <!-- Name -->
-    <div>
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-        {{ $t('ingredients.name') }} *
-      </label>
-      <input
-        v-if="editMode"
-        v-model="draft.name"
-        class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-               focus:outline-none focus:ring-1 focus:ring-gray-400
-               dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        :placeholder="$t('ingredients.namePlaceholder')"
-        autocomplete="off"
-      />
-      <div v-else class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ingredient?.name }}</div>
-    </div>
-
-    <!-- Kind (always read-only) -->
-    <div v-if="ingredient">
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-        {{ $t('ingredients.kind') }}
-      </label>
-      <span
-        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-        :class="ingredient.kind === 'purchased'
-          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-          : 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'"
-      >
-        {{ ingredient.kind }}
-      </span>
-    </div>
-
-    <!-- Default unit -->
-    <div>
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-        {{ $t('ingredients.unit') }} *
-      </label>
-      <select
-        v-if="editMode && !isProduced"
-        v-model="draft.default_unit_id"
-        class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-               focus:outline-none focus:ring-1 focus:ring-gray-400
-               dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-      >
-        <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
-      </select>
-      <div v-else class="text-sm text-gray-700 dark:text-gray-300">
-        {{ ingredient?.default_unit_code ?? units.find(u => u.id === draft.default_unit_id)?.code }}
+    <!-- View fields (existing ingredient) -->
+    <template v-if="!isNew">
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.name') }}</div>
+        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ingredient?.name }}</div>
       </div>
-    </div>
-
-    <!-- Unit cost -->
-    <div>
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-        {{ $t('ingredients.unitCost') }}
-      </label>
-      <input
-        v-if="editMode && !isProduced"
-        v-model="draft.standard_unit_cost"
-        type="number" min="0" step="0.000001"
-        class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-               focus:outline-none focus:ring-1 focus:ring-gray-400
-               dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        :placeholder="$t('ingredients.costPlaceholder')"
-      />
-      <div v-else class="text-sm text-gray-700 dark:text-gray-300">
-        {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost.toFixed(6)}` : '—' }}
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.kind') }}</div>
+        <span
+          class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+          :class="ingredient!.kind === 'purchased'
+            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+            : 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'"
+        >{{ ingredient!.kind }}</span>
       </div>
-    </div>
-
-    <!-- Comment -->
-    <div>
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-        {{ $t('ingredients.comment') }}
-      </label>
-      <textarea
-        v-if="editMode"
-        v-model="draft.comment"
-        rows="2"
-        class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-               focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-               dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-        :placeholder="$t('ingredients.commentPlaceholder')"
-      />
-      <div v-else class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-        {{ ingredient?.comment || '—' }}
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.unit') }}</div>
+        <div class="text-sm text-gray-700 dark:text-gray-300">{{ ingredient?.default_unit_code }}</div>
       </div>
-    </div>
-
-    <!-- Allergens -->
-    <div>
-      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-        {{ $t('ingredients.allergens') }}
-      </label>
-      <div v-if="loadingDetail" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('common.loading') }}</div>
-      <div v-else-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">
-        {{ $t('ingredients.noAllergens') }}
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.unitCost') }}</div>
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost.toFixed(6)}` : '—' }}
+        </div>
       </div>
-      <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
-        <label
-          v-for="al in allergens"
-          :key="al.id"
-          class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200"
-          :class="editMode ? 'cursor-pointer' : 'cursor-default'"
-        >
-          <input
-            type="checkbox"
-            :checked="selectedAllergenIds.includes(al.id)"
-            :disabled="!editMode"
-            class="rounded border-gray-300 dark:border-gray-700"
-            @change="toggleAllergen(al.id)"
-          />
-          {{ al.name }}
-        </label>
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.comment') }}</div>
+        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ ingredient?.comment || '—' }}</div>
       </div>
-    </div>
+      <div>
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.allergens') }}</div>
+        <div v-if="loadingDetail" class="text-sm text-gray-400">{{ $t('common.loading') }}</div>
+        <div v-else-if="selectedAllergenIds.length === 0" class="text-sm text-gray-400">—</div>
+        <div v-else class="flex flex-wrap gap-1">
+          <span
+            v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))"
+            :key="al.id"
+            class="rounded-full px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >{{ al.name }}</span>
+        </div>
+      </div>
+    </template>
 
-    <!-- Action buttons (edit mode) -->
-    <div v-if="editMode" class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-      <UButton color="neutral" variant="soft" @click="cancelEdit">
-        {{ $t('common.cancel') }}
-      </UButton>
-      <UButton :loading="saving" @click="save">
-        {{ $t('common.save') }}
-      </UButton>
-    </div>
+    <!-- Create mode (new — inline, parent already provides the sheet) -->
+    <template v-if="isNew">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.name') }} *</label>
+        <input v-model="draft.name"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unit') }} *</label>
+        <select v-model="draft.default_unit_id"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unitCost') }}</label>
+        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.costPlaceholder')" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.comment') }}</label>
+        <textarea v-model="draft.comment" rows="2"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.commentPlaceholder')" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ $t('ingredients.allergens') }}</label>
+        <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
+        <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
+          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 cursor-pointer">
+            <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
+              class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
+            {{ al.name }}
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
+      </div>
+    </template>
 
   </div>
+
+  <!-- Edit sheet (existing ingredient) -->
+  <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
+    <div class="p-4 space-y-4 max-w-lg">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
+        {{ $t('ingredients.editTitle') }} — {{ ingredient?.name }}
+      </h3>
+      <AdminImageUpload
+        v-if="ingredient?.id"
+        :image-url="imageUrl"
+        :uploading="imageUploading"
+        :can-manage="canManage && !isProduced"
+        @upload="uploadImage"
+        @remove="removeImage"
+      />
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.name') }} *</label>
+        <input v-model="draft.name"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+      </div>
+      <div v-if="!isProduced">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unit') }} *</label>
+        <select v-model="draft.default_unit_id"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+        </select>
+      </div>
+      <div v-if="!isProduced">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unitCost') }}</label>
+        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.costPlaceholder')" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.comment') }}</label>
+        <textarea v-model="draft.comment" rows="2"
+          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
+                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          :placeholder="$t('ingredients.commentPlaceholder')" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ $t('ingredients.allergens') }}</label>
+        <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
+        <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
+          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 cursor-pointer">
+            <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
+              class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
+            {{ al.name }}
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
+      </div>
+    </div>
+  </AppBottomSheet>
 </template>

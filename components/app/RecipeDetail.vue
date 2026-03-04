@@ -58,6 +58,7 @@ const toast  = useToast()
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
 const editMode         = ref(false)
+const showEditSheet    = ref(false)
 const confirmingDelete = ref(false)
 
 const isNew = computed(() => !props.recipe)
@@ -97,7 +98,8 @@ watch(
     hasImage.value   = false
 
     if (recipe) {
-      editMode.value   = false
+      editMode.value      = false
+      showEditSheet.value = false
       savedId.value    = recipe.id
       const loadQty    = Number(recipe.output_quantity) || 1
       draft.name               = recipe.name
@@ -200,7 +202,8 @@ async function saveBasic() {
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
       toast.add({ title: t('recipes.updated') })
-      editMode.value = false
+      editMode.value      = false
+      showEditSheet.value = false
       emit('saved', savedId.value)
     } else {
       const res = await $fetch<{ ok: boolean; recipe: { id: string } }>(
@@ -219,6 +222,11 @@ async function saveBasic() {
   }
 }
 
+function startEdit() {
+  editMode.value      = true
+  showEditSheet.value = true
+}
+
 function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   if (props.recipe) {
@@ -234,7 +242,8 @@ function cancelEdit() {
     draft.is_pre_product     = r.is_pre_product
     // Reset any in-progress component row edits
     compUiRows.value.forEach(row => { row._mode = 'view'; row._draft = undefined })
-    editMode.value = false
+    editMode.value      = false
+    showEditSheet.value = false
   }
 }
 
@@ -566,14 +575,13 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
     <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
       <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
         <template v-if="isNew">{{ $t('recipes.newTitle') }}</template>
-        <template v-else-if="editMode">{{ $t('recipes.editTitle') }}</template>
         <template v-else>{{ $t('recipes.viewTitle') }}</template>
       </h2>
-      <div v-if="!isNew && !editMode" class="flex items-center gap-1">
+      <div v-if="!isNew" class="flex items-center gap-1">
         <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
           {{ $t('common.print') }}
         </UButton>
-        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="editMode = true">
+        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">
           {{ $t('common.edit') }}
         </UButton>
         <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">
@@ -601,13 +609,13 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
       v-if="savedId"
       :image-url="imageUrl"
       :uploading="imageUploading"
-      :can-manage="canManage && editMode"
+      :can-manage="false"
       @upload="uploadImage"
       @remove="removeImage"
     />
 
     <!-- ─── Basic fields (view mode) ─────────────────────────────────────────── -->
-    <div v-if="!editMode" class="space-y-3">
+    <div v-if="!isNew" class="space-y-3">
 
       <div>
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.name') }}</div>
@@ -663,8 +671,8 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
 
     </div>
 
-    <!-- ─── Basic fields (edit mode) ─────────────────────────────────────────── -->
-    <div v-else class="space-y-3">
+    <!-- ─── Basic fields (new recipe — edit mode inline, parent sheet wraps) ── -->
+    <div v-if="isNew" class="space-y-3">
 
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.name') }} *</label>
@@ -759,7 +767,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
                 <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
-                <th v-if="editMode" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
+                <th v-if="showEditSheet" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
               </tr>
             </thead>
             <tbody>
@@ -785,7 +793,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
                   <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
                 </td>
                 <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
-                <td v-if="editMode" class="px-2 py-1.5 text-right whitespace-nowrap">
+                <td v-if="showEditSheet" class="px-2 py-1.5 text-right whitespace-nowrap">
                   <AdminInlineRowActions
                     :mode="row._mode"
                     :can-edit="canManage" :can-delete="canManage"
@@ -798,7 +806,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
               <tr>
                 <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
                 <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
-                <td v-if="editMode"></td>
+                <td v-if="showEditSheet"></td>
               </tr>
             </tfoot>
           </table>
@@ -806,7 +814,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
         <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
 
         <!-- Component search (edit mode) -->
-        <div v-if="editMode" class="space-y-2">
+        <div v-if="showEditSheet" class="space-y-2">
           <div class="relative">
             <input
               v-model="compSearch"
@@ -882,7 +890,7 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
                      dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
             <span v-else class="text-gray-800 dark:text-gray-200">{{ su.instruction_text }}</span>
           </div>
-          <div v-if="editMode" class="flex items-center gap-0.5 pt-0.5">
+          <div v-if="showEditSheet" class="flex items-center gap-0.5 pt-0.5">
             <template v-if="su._editing">
               <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-check" @click="saveStep(su)" />
               <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="discardEditStep(su)" />
@@ -897,12 +905,12 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
       <p v-if="stepsUi.length === 0" class="text-xs text-gray-400 py-1">{{ $t('recipes.noSteps') }}</p>
 
       <!-- Add step (edit mode) -->
-      <div v-if="editMode && !addingStep">
+      <div v-if="showEditSheet && !addingStep">
         <UButton size="xs" color="neutral" variant="soft" icon="i-heroicons-plus" @click="addingStep = true">
           {{ $t('recipes.addStep') }}
         </UButton>
       </div>
-      <div v-else-if="editMode && addingStep" class="space-y-2">
+      <div v-else-if="showEditSheet && addingStep" class="space-y-2">
         <textarea v-model="newStepText" rows="2"
           class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
                  focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
@@ -932,4 +940,94 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
     />
 
   </div>
+
+  <!-- Edit sheet (existing recipe) -->
+  <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
+    <div class="p-4 space-y-4">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
+        {{ $t('recipes.editTitle') }} — {{ draft.name }}
+      </h3>
+
+      <!-- Basic fields -->
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.name') }} *</label>
+          <input v-model="draft.name"
+            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-1 focus:ring-gray-400
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.description') }}</label>
+          <textarea v-model="draft.description" rows="2"
+            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            :placeholder="$t('recipes.descPlaceholder')" />
+        </div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.output') }} *</label>
+            <input v-model="draft.output_quantity" type="number" min="0.001" step="any"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                     focus:outline-none focus:ring-1 focus:ring-gray-400
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              :placeholder="$t('recipes.outputQtyPlaceholder')" />
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">&nbsp;</label>
+            <select v-model="draft.output_unit_id"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                     focus:outline-none focus:ring-1 focus:ring-gray-400
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+              <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+            {{ $t('recipes.batchCostLabel') }}
+            <span class="font-normal normal-case tracking-normal ml-1">({{ draft.output_quantity || '?' }} {{ outputUnitCode || '?' }})</span>
+          </label>
+          <input v-model="draft.standard_unit_cost" type="number" min="0" step="any"
+            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-1 focus:ring-gray-400
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            :placeholder="$t('recipes.stdCostPlaceholder')" />
+          <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
+          <button v-if="totalCost != null" type="button"
+            class="mt-1 text-xs text-blue-500 hover:underline"
+            @click="draft.standard_unit_cost = totalCost">
+            {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
+          </button>
+        </div>
+        <div class="flex gap-6">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input v-model="draft.is_active" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
+          </label>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+          <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+          <UButton :loading="saving" @click="saveBasic">{{ $t('common.save') }}</UButton>
+        </div>
+      </div>
+
+      <!-- Image (in edit sheet) -->
+      <AdminImageUpload
+        v-if="savedId"
+        :image-url="imageUrl"
+        :uploading="imageUploading"
+        :can-manage="canManage"
+        @upload="uploadImage"
+        @remove="removeImage"
+      />
+
+    </div>
+  </AppBottomSheet>
 </template>
