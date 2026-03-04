@@ -23,7 +23,9 @@
     },
     "more": "More",
     "moreApps": "More Apps",
-    "language": "Language"
+    "language": "Language",
+    "overview": "Overview",
+    "reports": "Reports"
   },
   "auth": {
     "login": "Login",
@@ -40,6 +42,7 @@
     "loading": "Loading…"
   },
   "common": {
+    "selectPrompt": "Select an item",
     "cancel": "Cancel",
     "refresh": "Refresh",
     "save": "Save",
@@ -70,6 +73,7 @@
     "refreshSession": "Refresh session"
   },
   "units": {
+    "selectPrompt": "Select a unit to view details",
     "title": "Units",
     "subtitle": "Manage units of measure (permission: unit.manage)",
     "add": "Add unit",
@@ -97,6 +101,7 @@
     "noPermission": "You do not have permission to view Units."
   },
   "ingredients": {
+    "selectPrompt": "Select an ingredient to view details",
     "title": "Ingredients",
     "subtitle": "Manage ingredients used in recipes (permission: recipe.manage)",
     "add": "Add ingredient",
@@ -130,6 +135,7 @@
     "noAllergens": "No allergens defined yet."
   },
   "recipes": {
+    "selectPrompt": "Select a recipe to view details",
     "title": "Recipes",
     "subtitle": "Manage recipes and their components (permission: recipe.manage)",
     "add": "Add recipe",
@@ -203,6 +209,7 @@
     "noRecipes": "No recipes found."
   },
   "allergens": {
+    "selectPrompt": "Select an allergen to view details",
     "title": "Allergens",
     "subtitle": "Manage allergens for labelling (permission: recipe.manage)",
     "add": "Add allergen",

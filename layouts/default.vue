@@ -9,7 +9,14 @@ const email    = computed(() => auth.value?.email ?? '')
 const isAdmin  = computed(() => Boolean(auth.value?.is_admin))
 const initials = computed(() => initialsFromEmail(email.value))
 
+const route = useRoute()
 const { barApps, overflowApps, activeApp, setApp } = useAppNav()
+
+const navLinks = computed(() => activeApp.value.links ?? [])
+
+function isLinkActive(to: string) {
+  return route.path === to || route.path.startsWith(to + '/')
+}
 
 function initialsFromEmail(e: string) {
   if (!e) return '?'
@@ -102,8 +109,9 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
 
         </div>
 
-        <!-- Content area -->
-        <div class="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
+        <!-- Content area: h-full gives Safari/WebKit a definite height so that
+             children using h-full (AppSplitLayout) resolve correctly. -->
+        <div class="flex-1 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
           <slot />
         </div>
 
@@ -126,6 +134,26 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
           <h1 class="text-base font-semibold text-gray-900 dark:text-white flex-1 truncate">
             {{ t(activeApp.labelKey) }}
           </h1>
+        </div>
+
+        <!-- Sub-nav pill strip (mobile) -->
+        <div
+          v-if="navLinks.length"
+          class="flex-none flex overflow-x-auto px-3 py-2 gap-1.5 border-b border-gray-100 dark:border-gray-800"
+          style="-webkit-overflow-scrolling: touch; scrollbar-width: none"
+        >
+          <NuxtLink
+            v-for="link in navLinks"
+            :key="link.to"
+            :to="link.to"
+            class="flex-none px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
+            :class="isLinkActive(link.to)
+              ? 'text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
+            :style="isLinkActive(link.to) ? 'background: var(--color-app-bar)' : ''"
+          >
+            {{ t(link.labelKey) }}
+          </NuxtLink>
         </div>
 
         <!-- Content -->

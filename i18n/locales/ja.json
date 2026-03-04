@@ -23,7 +23,9 @@
     },
     "more": "その他",
     "moreApps": "その他のアプリ",
-    "language": "言語"
+    "language": "言語",
+    "overview": "概要",
+    "reports": "レポート"
   },
   "auth": {
     "login": "ログイン",
@@ -40,6 +42,7 @@
     "loading": "読込中…"
   },
   "common": {
+    "selectPrompt": "アイテムを選択",
     "cancel": "キャンセル",
     "refresh": "更新",
     "save": "保存",
@@ -70,6 +73,7 @@
     "refreshSession": "セッション更新"
   },
   "units": {
+    "selectPrompt": "単位を選択して詳細を表示",
     "title": "単位",
     "subtitle": "食材やレシピで使用する計量単位を管理します（権限: unit.manage）",
     "add": "単位を追加",
@@ -97,6 +101,7 @@
     "noPermission": "単位を表示する権限がありません。"
   },
   "ingredients": {
+    "selectPrompt": "食材を選択して詳細を表示",
     "title": "食材",
     "subtitle": "レシピで使用する食材を管理します（権限: recipe.manage）",
     "add": "食材を追加",
@@ -130,6 +135,7 @@
     "noAllergens": "まだアレルゲンが定義されていません。"
   },
   "recipes": {
+    "selectPrompt": "レシピを選択して詳細を表示",
     "title": "レシピ",
     "subtitle": "レシピとその構成要素を管理します（権限: recipe.manage）",
     "add": "レシピを追加",
@@ -203,6 +209,7 @@
     "noRecipes": "レシピが見つかりません。"
   },
   "allergens": {
+    "selectPrompt": "アレルゲンを選択して詳細を表示",
     "title": "アレルゲン",
     "subtitle": "アレルゲン表示のための管理（権限: recipe.manage）",
     "add": "アレルゲンを追加",

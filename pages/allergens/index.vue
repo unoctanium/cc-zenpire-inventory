@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useTableWidths }      from '~/composables/useTableWidths'
-import { useInlineTable }      from '~/composables/useInlineTable'
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const { t }  = useI18n()
@@ -10,248 +8,242 @@ const toast  = useToast()
 
 type AllergenRow = { id: string; name: string; comment: string | null; created_at: string; updated_at: string }
 
-type Draft = { name: string; comment: string }
-
-type UiRow =
-  | (AllergenRow & { _mode: 'view' | 'edit'; _draft?: Draft })
-  | { id: '__new__'; name: ''; comment: null; created_at: ''; updated_at: ''; _mode: 'edit'; _draft: Draft }
-
 // ─── permissions ──────────────────────────────────────────────────────────────
 
 const { canRead, canManage } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data, pending, refresh, error } = await useFetch<{ ok: boolean; allergens: AllergenRow[] }>(
-  '/api/allergens', { credentials: 'include' }
-)
+const { data, refresh } = await useFetch<{ ok: boolean; allergens: AllergenRow[] }>('/api/allergens', { credentials: 'include' })
 
-const rows = ref<UiRow[]>([])
+const allergens = computed(() => data.value?.allergens ?? [])
 
-watchEffect(() => {
-  const api    = data.value?.allergens ?? []
-  const hasNew = rows.value.some(r => r.id === '__new__')
-  const mapped = api.map(a => ({ ...a, _mode: 'view' as const }))
-  rows.value   = hasNew
-    ? [rows.value.find(r => r.id === '__new__') as UiRow, ...mapped]
-    : mapped
+// ─── list + search ────────────────────────────────────────────────────────────
+
+const search = ref('')
+
+const filteredAllergens = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  const list = [...allergens.value].sort((a, b) => a.name.localeCompare(b.name))
+  if (!q) return list
+  return list.filter(a => a.name.toLowerCase().includes(q))
 })
 
-// ─── sort + filter ────────────────────────────────────────────────────────────
+// ─── selection + form state ───────────────────────────────────────────────────
 
-const { filterText, filterColumn, filterColumnOptions, clearFilter,
-        sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<UiRow>({
-  rows,
-  filterColumns: [
-    { label: t('common.all'),         value: 'all'     },
-    { label: t('allergens.name'),     value: 'name'    },
-    { label: t('allergens.comment'),  value: 'comment' },
-  ],
-  defaultSortKey: 'name',
-  getSearchValue: (row, col) => {
-    const src: any = row._mode === 'edit' && row._draft ? row._draft : row
-    return String(src[col] ?? '')
-  },
-})
+const selectedId       = ref<string | null>(null)
+const isCreating       = ref(false)
+const editMode         = ref(false)
+const confirmingDelete = ref(false)
 
-// ─── inline edit ──────────────────────────────────────────────────────────────
+const selectedAllergen = computed(() => allergens.value.find(a => a.id === selectedId.value) ?? null)
 
-function showError(title: string, e: any) {
-  toast.add({ title, description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
+const draft = reactive({ name: '', comment: '' })
+
+function selectAllergen(a: AllergenRow) {
+  selectedId.value       = a.id
+  isCreating.value       = false
+  editMode.value         = false
+  confirmingDelete.value = false
+  draft.name    = a.name
+  draft.comment = a.comment ?? ''
 }
 
-function startAdd() {
-  if (!canManage.value || rows.value.some(r => r.id === '__new__')) return
-  rows.value.unshift({
-    id: '__new__', name: '', comment: null, created_at: '', updated_at: '',
-    _mode: 'edit', _draft: { name: '', comment: '' },
-  })
+function startCreate() {
+  if (!canManage.value) return
+  selectedId.value       = null
+  isCreating.value       = true
+  editMode.value         = true
+  confirmingDelete.value = false
+  draft.name    = ''
+  draft.comment = ''
 }
 
-function startEdit(row: UiRow) {
-  if (!canManage.value || row.id === '__new__') return
-  row._mode  = 'edit'
-  row._draft = { name: row.name, comment: row.comment ?? '' }
+function cancelEdit() {
+  if (isCreating.value) { isCreating.value = false; editMode.value = false; return }
+  const a = selectedAllergen.value
+  if (a) { draft.name = a.name; draft.comment = a.comment ?? '' }
+  editMode.value = false
 }
 
-function discard(row: UiRow) {
-  if (row.id === '__new__') { rows.value = rows.value.filter(r => r.id !== '__new__'); return }
-  row._mode  = 'view'
-  row._draft = undefined
+function showError(e: any) {
+  toast.add({ title: t('common.saveFailed'), description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
 }
 
-async function commit(row: UiRow) {
-  const d = row._draft
-  if (!d || !canManage.value) return
-  if (!d.name.trim()) {
+const saving = ref(false)
+
+async function save() {
+  if (!draft.name.trim()) {
     toast.add({ title: t('common.missingFields'), description: t('allergens.nameRequired'), color: 'red' })
     return
   }
+  saving.value = true
   try {
-    const body = { name: d.name.trim(), comment: d.comment.trim() || null }
-    if (row.id === '__new__') {
-      await $fetch('/api/allergens', { method: 'POST', credentials: 'include', body })
+    const body = { name: draft.name.trim(), comment: draft.comment.trim() || null }
+    if (isCreating.value) {
+      const res = await $fetch<{ ok: boolean; allergen: { id: string } }>('/api/allergens', { method: 'POST', credentials: 'include', body })
       toast.add({ title: t('allergens.created') })
-      rows.value = rows.value.filter(r => r.id !== '__new__')
-    } else {
-      await $fetch(`/api/allergens/${row.id}`, { method: 'PUT', credentials: 'include', body })
+      isCreating.value = false
+      await refresh()
+      selectedId.value = res.allergen?.id ?? null
+      editMode.value   = false
+    } else if (selectedId.value) {
+      await $fetch(`/api/allergens/${selectedId.value}`, { method: 'PUT', credentials: 'include', body })
       toast.add({ title: t('allergens.updated') })
-      row._mode  = 'view'
-      row._draft = undefined
+      editMode.value = false
+      await refresh()
     }
-    await refresh()
-  } catch (e: any) { showError(t('common.saveFailed'), e) }
+  } catch (e: any) { showError(e) } finally { saving.value = false }
 }
 
-// ─── delete ───────────────────────────────────────────────────────────────────
-
-const isDeleteOpen = ref(false)
-const deletingRow  = ref<UiRow | null>(null)
-
-function requestDelete(row: UiRow) {
-  if (!canManage.value) return
-  deletingRow.value  = row
-  isDeleteOpen.value = true
-}
-
-async function confirmDelete() {
-  const row = deletingRow.value
-  if (!row) return
-  if (row.id === '__new__') {
-    rows.value = rows.value.filter(r => r.id !== '__new__')
-    isDeleteOpen.value = false; deletingRow.value = null; return
-  }
+async function doDelete() {
+  if (!selectedId.value) return
   try {
-    await $fetch(`/api/allergens/${row.id}`, { method: 'DELETE', credentials: 'include' })
+    await $fetch(`/api/allergens/${selectedId.value}`, { method: 'DELETE', credentials: 'include' })
     toast.add({ title: t('allergens.deleted') })
-    isDeleteOpen.value = false; deletingRow.value = null
+    selectedId.value       = null
+    isCreating.value       = false
+    confirmingDelete.value = false
+    editMode.value         = false
     await refresh()
-  } catch (e: any) { showError(t('common.deleteFailed'), e) }
+  } catch (e: any) {
+    toast.add({ title: t('common.deleteFailed'), description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
+  }
 }
 
-// ─── column widths ────────────────────────────────────────────────────────────
-
-const tableContainer = ref<HTMLElement | null>(null)
-
-const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
-  tableContainer,
-  computed(() => ({
-    first: { header: t('allergens.name'),    candidates: rows.value.map(r => r.name) },
-    inner: [
-      { header: t('allergens.comment'), candidates: rows.value.map(r => r.comment?.slice(0, 80) ?? '') },
-    ],
-    last:  { header: '', candidates: [], minPx: 108 },
-  }))
-)
-
-const errorText = computed(() =>
-  error.value ? `${t('allergens.loadError')}: ${error.value.message}` : null
-)
+function handleMobileTap(id: string) {
+  navigateTo(`/allergens/${id}`)
+}
 </script>
 
 <template>
-  <div v-if="!canRead" class="p-6 text-red-600">
-    403 – {{ $t('allergens.noPermission') }}
-  </div>
+  <div v-if="!canRead" class="p-6 text-red-600">403 – {{ $t('allergens.noPermission') }}</div>
 
-  <AdminTableShell v-else :error-text="errorText">
-    <template #toolbar>
-      <AdminTableToolbar
-        v-model:filter-text="filterText"
-        v-model:filter-column="filterColumn"
-        :filter-column-options="filterColumnOptions"
-        :can-add="canManage"
-        @refresh="refresh()"
-        @add="startAdd"
-      />
-    </template>
+  <AppSplitLayout v-else>
 
-    <template #table>
-      <div ref="tableContainer">
-        <table
-          class="table-fixed border-separate border-spacing-0 text-sm"
-          :style="{ width: (firstWidth + totalInnerWidth + lastWidth) + 'px', minWidth: '100%' }"
+    <!-- ─── List panel ─────────────────────────────────────────────────────── -->
+    <template #list>
+      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div class="relative flex-1">
+          <UIcon name="i-heroicons-magnifying-glass"
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            v-model="search" type="text"
+            class="w-full rounded border border-gray-300 bg-white pl-7 pr-7 py-1.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-1 focus:ring-gray-400
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            :placeholder="$t('common.search') + '…'" />
+          <button v-if="search" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" @click="search = ''">
+            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+          </button>
+        </div>
+        <UButton v-if="canManage" size="xs" icon="i-heroicons-plus" @click="startCreate">{{ $t('allergens.add') }}</UButton>
+      </div>
+
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-if="filteredAllergens.length === 0" class="px-3 py-3 text-sm text-gray-400 dark:text-gray-600">{{ $t('common.noData') }}</div>
+
+        <!-- TABLET -->
+        <button
+          v-for="a in filteredAllergens" :key="a.id"
+          class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          :class="selectedId === a.id && !isCreating
+            ? 'bg-blue-50 dark:bg-blue-900/20'
+            : 'bg-white dark:bg-gray-900'"
+          @click="selectAllergen(a)"
         >
-          <colgroup>
-            <col :style="{ width: firstWidth + 'px' }" />
-            <col :style="{ width: innerWidths[0] + 'px' }" />
-            <col :style="{ width: lastWidth + 'px' }" />
-          </colgroup>
+          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ a.name }}</span>
+          <span v-if="a.comment" class="text-xs text-gray-400 truncate max-w-[80px]">{{ a.comment }}</span>
+        </button>
 
-          <thead class="sticky top-0 z-20 bg-white dark:bg-gray-950">
-            <tr>
-              <!-- Name — sticky left -->
-              <th class="sticky left-0 z-30 px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800 border-r border-gray-200 dark:border-gray-800
-                         bg-white dark:bg-gray-950">
-                <div class="flex items-center justify-between gap-1">
-                  <span>{{ $t('allergens.name') }}</span>
-                  <AdminSortButton :active="sortKey === 'name'" :dir="sortKey === 'name' ? sortDir : null"
-                    :aria-label="$t('allergens.sortByName')" @click="toggleSort('name')" />
-                </div>
-              </th>
-              <!-- Comment -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('allergens.comment') }}
-              </th>
-              <!-- Actions — sticky right -->
-              <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800 border-l border-gray-200 dark:border-gray-800
-                         bg-white dark:bg-gray-950">
-                {{ $t('common.actions') }}
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-if="pending">
-              <td colspan="3" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
-            </tr>
-            <tr v-else-if="visibleRows.length === 0">
-              <td colspan="3" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
-            </tr>
-
-            <tr v-for="row in visibleRows" :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-900/60">
-              <!-- Name — sticky left -->
-              <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
-                         border-r border-gray-200 dark:border-gray-800">
-                <input v-if="row._mode === 'edit'" v-model="row._draft!.name"
-                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-300
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
-                  :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
-                <span v-else class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
-              </td>
-              <!-- Comment -->
-              <td class="px-2 py-1.5 align-middle">
-                <input v-if="row._mode === 'edit'" v-model="row._draft!.comment"
-                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-300
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-gray-700"
-                  :placeholder="$t('allergens.commentPlaceholder')" autocomplete="off" />
-                <span v-else class="text-gray-600 dark:text-gray-400 truncate block" :title="row.comment ?? ''">
-                  {{ row.comment || '–' }}
-                </span>
-              </td>
-              <!-- Actions — sticky right -->
-              <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950
-                         border-l border-gray-200 dark:border-gray-800">
-                <AdminInlineRowActions :mode="row._mode" :can-edit="canManage" :can-delete="canManage"
-                  @edit="startEdit(row)" @save="commit(row)" @discard="discard(row)" @delete="requestDelete(row)" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- MOBILE -->
+        <button
+          v-for="a in filteredAllergens" :key="a.id + '-m'"
+          class="sm:hidden flex w-full items-center gap-2 px-4 py-3 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          @click="handleMobileTap(a.id)"
+        >
+          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ a.name }}</span>
+          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 flex-none" />
+        </button>
       </div>
     </template>
 
-    <template #footer>
-      <AdminDeleteModal v-model:open="isDeleteOpen" :title="$t('allergens.deleteTitle')" @confirm="confirmDelete">
-        <p v-if="deletingRow?.id === '__new__'">{{ $t('allergens.deleteConfirmNew') }}</p>
-        <p v-else>{{ $t('allergens.deleteConfirmExisting', { name: (deletingRow as any)?.name }) }}</p>
-      </AdminDeleteModal>
+    <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
+    <template #detail>
+
+      <div
+        v-if="!selectedId && !isCreating"
+        class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20"
+      >
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12" />
+        <p class="text-sm">{{ $t('allergens.selectPrompt') }}</p>
+      </div>
+
+      <div v-else class="p-4 space-y-4 max-w-sm">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+            {{ isCreating ? $t('allergens.add') : (editMode ? $t('common.edit') : selectedAllergen?.name) }}
+          </h2>
+          <div v-if="!editMode && !isCreating" class="flex gap-1">
+            <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="editMode = true">{{ $t('common.edit') }}</UButton>
+            <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
+          </div>
+        </div>
+
+        <!-- Inline delete confirmation -->
+        <div
+          v-if="confirmingDelete"
+          class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 flex items-center justify-between gap-3"
+        >
+          <p class="text-sm text-red-700 dark:text-red-300">
+            {{ $t('allergens.deleteConfirmExisting', { name: selectedAllergen?.name ?? '' }) }}
+          </p>
+          <div class="flex gap-2 flex-none">
+            <UButton size="xs" color="neutral" variant="soft" @click="confirmingDelete = false">{{ $t('common.cancel') }}</UButton>
+            <UButton size="xs" color="error" @click="doDelete">{{ $t('common.delete') }}</UButton>
+          </div>
+        </div>
+
+        <!-- View mode -->
+        <div v-if="!editMode" class="space-y-3">
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('allergens.name') }}</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedAllergen?.name }}</div>
+          </div>
+          <div>
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('allergens.comment') }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ selectedAllergen?.comment || '—' }}</div>
+          </div>
+        </div>
+
+        <!-- Edit / Create mode -->
+        <div v-else class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
+            <input v-model="draft.name"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                     focus:outline-none focus:ring-1 focus:ring-gray-400
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.comment') }}</label>
+            <textarea v-model="draft.comment" rows="2"
+              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
+                     focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
+                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              :placeholder="$t('allergens.commentPlaceholder')" />
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
+            <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
+            <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
+          </div>
+        </div>
+
+      </div>
     </template>
-  </AdminTableShell>
+
+  </AppSplitLayout>
 </template>

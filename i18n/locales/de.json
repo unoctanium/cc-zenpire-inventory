@@ -23,7 +23,9 @@
     },
     "more": "Mehr",
     "moreApps": "Weitere Apps",
-    "language": "Sprache"
+    "language": "Sprache",
+    "overview": "Übersicht",
+    "reports": "Berichte"
   },
   "auth": {
     "login": "Anmelden",
@@ -40,6 +42,7 @@
     "loading": "Laden…"
   },
   "common": {
+    "selectPrompt": "Element auswählen",
     "cancel": "Abbrechen",
     "refresh": "Aktualisieren",
     "save": "Speichern",
@@ -70,6 +73,7 @@
     "refreshSession": "Sitzung aktualisieren"
   },
   "units": {
+    "selectPrompt": "Einheit auswählen",
     "title": "Einheiten",
     "subtitle": "Maßeinheiten verwalten (Berechtigung: unit.manage)",
     "add": "Einheit hinzufügen",
@@ -97,6 +101,7 @@
     "noPermission": "Sie haben keine Berechtigung, Einheiten anzuzeigen."
   },
   "ingredients": {
+    "selectPrompt": "Zutat auswählen",
     "title": "Zutaten",
     "subtitle": "Zutaten für Rezepte verwalten (Berechtigung: recipe.manage)",
     "add": "Zutat hinzufügen",
@@ -130,6 +135,7 @@
     "noAllergens": "Noch keine Allergene definiert."
   },
   "recipes": {
+    "selectPrompt": "Rezept auswählen",
     "title": "Rezepte",
     "subtitle": "Rezepte und ihre Komponenten verwalten (Berechtigung: recipe.manage)",
     "add": "Rezept hinzufügen",
@@ -203,6 +209,7 @@
     "noRecipes": "Keine Rezepte gefunden."
   },
   "allergens": {
+    "selectPrompt": "Allergen auswählen",
     "title": "Allergene",
     "subtitle": "Allergene für die Kennzeichnung verwalten (Berechtigung: recipe.manage)",
     "add": "Allergen hinzufügen",

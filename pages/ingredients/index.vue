@@ -1,26 +1,17 @@
 <script setup lang="ts">
-import { useTableWidths }      from '~/composables/useTableWidths'
-import { useInlineTable }      from '~/composables/useInlineTable'
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const { t }  = useI18n()
-const toast  = useToast()
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type IngredientRow = {
-  id:                     string
-  name:                   string
-  kind:                   string
-  default_unit_id:        string
-  default_unit_code:      string
-  standard_unit_cost:     number | null
-  standard_cost_currency: string
-  produced_by_recipe_id:  string | null
-  comment:                string | null
+  id: string; name: string; kind: string
+  default_unit_id: string; default_unit_code: string
+  standard_unit_cost: number | null; standard_cost_currency: string
+  produced_by_recipe_id: string | null; comment: string | null
 }
-
-type UnitOption    = { id: string; code: string; name: string }
+type UnitOption     = { id: string; code: string; name: string }
 type AllergenOption = { id: string; name: string; comment: string | null }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
@@ -29,269 +20,155 @@ const { canRead, canManage } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data: ingredientData, pending, refresh, error } = await useFetch<{
-  ok: boolean; ingredients: IngredientRow[]
-}>('/api/ingredients', { credentials: 'include' })
+const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredients: IngredientRow[] }>('/api/ingredients', { credentials: 'include' })
+const { data: unitData }                = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
+const { data: allergenData }            = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
 
-const { data: unitData } = await useFetch<{ ok: boolean; units: UnitOption[] }>(
-  '/api/units', { credentials: 'include' }
-)
+const ingredients = computed(() => ingredientData.value?.ingredients ?? [])
+const units       = computed(() => unitData.value?.units ?? [])
+const allergens   = computed(() => allergenData.value?.allergens ?? [])
 
-const { data: allergenData } = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>(
-  '/api/allergens', { credentials: 'include' }
-)
+// ─── list + search ────────────────────────────────────────────────────────────
 
-const units    = computed(() => unitData.value?.units ?? [])
-const allergens = computed(() => allergenData.value?.allergens ?? [])
-const rows     = ref<IngredientRow[]>([])
+const search = ref('')
 
-watchEffect(() => {
-  rows.value = ingredientData.value?.ingredients ?? []
+const filteredIngredients = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  const list = [...ingredients.value].sort((a, b) => a.name.localeCompare(b.name))
+  if (!q) return list
+  return list.filter(i => i.name.toLowerCase().includes(q))
 })
 
-// ─── sort + filter ────────────────────────────────────────────────────────────
+// ─── selection ────────────────────────────────────────────────────────────────
 
-const { filterText, filterColumn, filterColumnOptions, clearFilter,
-        sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<IngredientRow>({
-  rows,
-  filterColumns: [
-    { label: t('common.all'),       value: 'all'               },
-    { label: t('ingredients.name'), value: 'name'              },
-    { label: t('ingredients.kind'), value: 'kind'              },
-    { label: t('ingredients.unit'), value: 'default_unit_code' },
-  ],
-  defaultSortKey: 'name',
-  getSearchValue: (row, col) => String((row as any)[col] ?? ''),
-})
+const selectedId = ref<string | null>(null)
+const isCreating = ref(false)
 
-// ─── error ────────────────────────────────────────────────────────────────────
+const selectedIngredient = computed(() => ingredients.value.find(i => i.id === selectedId.value) ?? null)
 
-function showError(title: string, e: any) {
-  toast.add({ title, description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
+function selectIngredient(id: string) {
+  selectedId.value = id
+  isCreating.value = false
 }
 
-const errorText = computed(() =>
-  error.value ? `${t('ingredients.loadError')}: ${error.value.message}` : null
-)
-
-// ─── modal ────────────────────────────────────────────────────────────────────
-
-const isModalOpen       = ref(false)
-const editingIngredient = ref<IngredientRow | null>(null)
-const isViewMode        = ref(false)
-
-function openNew() {
+function startCreate() {
   if (!canManage.value) return
-  editingIngredient.value = null
-  isViewMode.value        = false
-  isModalOpen.value       = true
+  selectedId.value = null
+  isCreating.value = true
 }
 
-function openView(row: IngredientRow) {
-  editingIngredient.value = row
-  isViewMode.value        = true
-  isModalOpen.value       = true
-}
-
-function openEdit(row: IngredientRow) {
-  editingIngredient.value = row
-  isViewMode.value        = false
-  isModalOpen.value       = true
-}
-
-function onSaved() {
-  isModalOpen.value = false
+function onSaved(id: string) {
+  isCreating.value = false
+  selectedId.value = id
   refresh()
 }
 
-// ─── delete ───────────────────────────────────────────────────────────────────
-
-const isDeleteOpen = ref(false)
-const deletingRow  = ref<IngredientRow | null>(null)
-
-function requestDelete(row: IngredientRow) {
-  if (!canManage.value) return
-  deletingRow.value  = row
-  isDeleteOpen.value = true
+function onDeleted() {
+  selectedId.value = null
+  isCreating.value = false
+  refresh()
 }
 
-async function confirmDelete() {
-  const row = deletingRow.value
-  if (!row) return
-  try {
-    await $fetch(`/api/ingredients/${row.id}`, { method: 'DELETE', credentials: 'include' })
-    toast.add({ title: t('ingredients.deleted') })
-    isDeleteOpen.value = false; deletingRow.value = null
-    await refresh()
-  } catch (e: any) { showError(t('common.deleteFailed'), e) }
+function handleMobileTap(id: string) {
+  navigateTo(`/ingredients/${id}`)
 }
-
-// ─── column widths ────────────────────────────────────────────────────────────
-
-const tableContainer = ref<HTMLElement | null>(null)
-
-const { firstWidth, innerWidths, lastWidth, totalInnerWidth } = useTableWidths(
-  tableContainer,
-  computed(() => ({
-    first: { header: t('ingredients.name'), candidates: rows.value.map(r => r.name) },
-    inner: [
-      { header: t('ingredients.kind'),        candidates: ['purchased', 'produced'] },
-      { header: t('ingredients.unit'),         candidates: [...units.value.map(u => u.code), ...units.value.map(u => `${u.code} – ${u.name}`)] },
-      { header: t('ingredients.unitCost'), candidates: [...rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : ''), '€ 0.00'] },
-    ],
-    last: { header: '', candidates: [], minPx: 88 },
-  }))
-)
 </script>
 
 <template>
-  <div v-if="!canRead" class="p-6 text-red-600">
-    403 – {{ $t('ingredients.noPermission') }}
-  </div>
+  <div v-if="!canRead" class="p-6 text-red-600">403 – {{ $t('ingredients.noPermission') }}</div>
 
-  <AdminTableShell v-else :error-text="errorText">
-    <template #toolbar>
-      <AdminTableToolbar
-        v-model:filter-text="filterText"
-        v-model:filter-column="filterColumn"
-        :filter-column-options="filterColumnOptions"
-        :can-add="canManage"
-        @refresh="refresh()"
-        @add="openNew"
-      />
-    </template>
+  <AppSplitLayout v-else>
 
-    <template #table>
-      <div ref="tableContainer">
-        <table
-          class="table-fixed border-separate border-spacing-0 text-sm"
-          :style="{ width: (firstWidth + totalInnerWidth + lastWidth) + 'px', minWidth: '100%' }"
+    <!-- ─── List panel ─────────────────────────────────────────────────────── -->
+    <template #list>
+      <!-- Toolbar -->
+      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div class="relative flex-1">
+          <UIcon name="i-heroicons-magnifying-glass"
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            v-model="search" type="text"
+            class="w-full rounded border border-gray-300 bg-white pl-7 pr-7 py-1.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-1 focus:ring-gray-400
+                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            :placeholder="$t('common.search') + '…'" />
+          <button v-if="search" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" @click="search = ''">
+            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+          </button>
+        </div>
+        <UButton v-if="canManage" size="xs" icon="i-heroicons-plus" @click="startCreate">{{ $t('ingredients.add') }}</UButton>
+      </div>
+
+      <!-- Name list -->
+      <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-if="filteredIngredients.length === 0" class="px-3 py-3 text-sm text-gray-400 dark:text-gray-600">{{ $t('common.noData') }}</div>
+
+        <!-- TABLET -->
+        <button
+          v-for="i in filteredIngredients" :key="i.id"
+          class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          :class="selectedId === i.id && !isCreating
+            ? 'bg-blue-50 dark:bg-blue-900/20'
+            : 'bg-white dark:bg-gray-900'"
+          @click="selectIngredient(i.id)"
         >
-          <colgroup>
-            <col :style="{ width: firstWidth + 'px' }" />
-            <col :style="{ width: innerWidths[0] + 'px' }" />
-            <col :style="{ width: innerWidths[1] + 'px' }" />
-            <col :style="{ width: innerWidths[2] + 'px' }" />
-            <col :style="{ width: lastWidth + 'px' }" />
-          </colgroup>
+          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+            {{ i.name }}
+          </span>
+          <span
+            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+            :class="i.kind === 'purchased'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+              : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'"
+          >{{ i.kind[0] }}</span>
+        </button>
 
-          <thead class="sticky top-0 z-20 bg-white dark:bg-gray-950">
-            <tr>
-              <!-- Name — sticky left -->
-              <th class="sticky left-0 z-30 px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800 border-r border-gray-200 dark:border-gray-800
-                         bg-white dark:bg-gray-950">
-                <div class="flex items-center justify-between gap-1">
-                  <span>{{ $t('ingredients.name') }}</span>
-                  <AdminSortButton :active="sortKey === 'name'" :dir="sortKey === 'name' ? sortDir : null"
-                    :aria-label="$t('ingredients.sortByName')" @click="toggleSort('name')" />
-                </div>
-              </th>
-              <!-- Kind -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                <div class="flex items-center justify-between gap-1">
-                  <span>{{ $t('ingredients.kind') }}</span>
-                  <AdminSortButton :active="sortKey === 'kind'" :dir="sortKey === 'kind' ? sortDir : null"
-                    :aria-label="$t('ingredients.sortByKind')" @click="toggleSort('kind')" />
-                </div>
-              </th>
-              <!-- Unit -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                <div class="flex items-center justify-between gap-1">
-                  <span>{{ $t('ingredients.unit') }}</span>
-                  <AdminSortButton :active="sortKey === 'default_unit_code'" :dir="sortKey === 'default_unit_code' ? sortDir : null"
-                    :aria-label="$t('ingredients.sortByUnit')" @click="toggleSort('default_unit_code')" />
-                </div>
-              </th>
-              <!-- Cost -->
-              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800">
-                {{ $t('ingredients.unitCost') }}
-              </th>
-              <!-- Actions — sticky right -->
-              <th class="sticky right-0 z-30 px-2 py-1.5 text-right font-medium text-gray-700 dark:text-gray-200
-                         border-b border-gray-200 dark:border-gray-800 border-l border-gray-200 dark:border-gray-800
-                         bg-white dark:bg-gray-950">
-                {{ $t('common.actions') }}
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr v-if="pending">
-              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td>
-            </tr>
-            <tr v-else-if="visibleRows.length === 0">
-              <td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td>
-            </tr>
-
-            <tr v-for="row in visibleRows" :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-900/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40"
-                :class="row.kind === 'produced' ? 'opacity-70' : ''"
-                @click="openView(row)">
-              <!-- Name — sticky left -->
-              <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950
-                         border-r border-gray-200 dark:border-gray-800">
-                <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
-              </td>
-              <!-- Kind -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-800 dark:text-gray-200">{{ row.kind }}</span>
-              </td>
-              <!-- Unit -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-800 dark:text-gray-200">{{ row.default_unit_code }}</span>
-              </td>
-              <!-- Cost -->
-              <td class="px-2 py-1.5 align-middle">
-                <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '–' }}
-                </span>
-              </td>
-              <!-- Actions — sticky right -->
-              <td class="sticky right-0 z-10 px-2 py-1.5 align-middle text-right bg-white dark:bg-gray-950
-                         border-l border-gray-200 dark:border-gray-800">
-                <div class="flex items-center justify-end gap-1">
-                  <UButton
-                    v-if="canManage && row.kind !== 'produced'"
-                    size="xs" color="neutral" variant="ghost"
-                    :aria-label="$t('common.edit')"
-                    icon="i-heroicons-pencil-square"
-                    @click.stop="openEdit(row)"
-                  />
-                  <UButton
-                    v-if="canManage"
-                    size="xs" color="error" variant="ghost"
-                    :aria-label="$t('common.delete')"
-                    icon="i-heroicons-trash"
-                    @click.stop="requestDelete(row)"
-                  />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- MOBILE -->
+        <button
+          v-for="i in filteredIngredients" :key="i.id + '-m'"
+          class="sm:hidden flex w-full items-center gap-2 px-4 py-3 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          @click="handleMobileTap(i.id)"
+        >
+          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100" :class="i.kind === 'produced' ? 'opacity-60' : ''">{{ i.name }}</span>
+          <span
+            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+            :class="i.kind === 'purchased'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+              : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'"
+          >{{ i.kind[0] }}</span>
+          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 flex-none" />
+        </button>
       </div>
     </template>
 
-    <template #footer>
-      <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('ingredients.producedReadOnly') }}</p>
-
-      <AdminDeleteModal v-model:open="isDeleteOpen" :title="$t('ingredients.deleteTitle')" @confirm="confirmDelete">
-        <p>{{ $t('ingredients.deleteConfirmExisting', { name: deletingRow?.name ?? '' }) }}</p>
-      </AdminDeleteModal>
-
-      <AdminIngredientEditModal
-        v-model:open="isModalOpen"
-        :ingredient="editingIngredient"
+    <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
+    <template #detail>
+      <AppIngredientDetail
+        v-if="isCreating"
+        :ingredient="null"
         :units="units"
         :allergens="allergens"
-        :view-mode="isViewMode"
         :can-manage="canManage"
         @saved="onSaved"
+        @deleted="onDeleted"
       />
+
+      <AppIngredientDetail
+        v-else-if="selectedIngredient"
+        :key="selectedIngredient.id"
+        :ingredient="selectedIngredient"
+        :units="units"
+        :allergens="allergens"
+        :can-manage="canManage"
+        @saved="onSaved"
+        @deleted="onDeleted"
+      />
+
+      <div v-else class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20">
+        <UIcon name="i-heroicons-beaker" class="w-12 h-12" />
+        <p class="text-sm">{{ $t('ingredients.selectPrompt') }}</p>
+      </div>
     </template>
-  </AdminTableShell>
+
+  </AppSplitLayout>
 </template>
