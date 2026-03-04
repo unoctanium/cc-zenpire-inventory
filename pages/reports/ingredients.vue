@@ -20,7 +20,7 @@ const { canRead } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data: ingredientData, pending, refresh, error } = await useFetch<{
+const { data: ingredientData, pending, refresh, error } = useFetch<{
   ok: boolean; ingredients: IngredientRow[]
 }>('/api/ingredients', { credentials: 'include' })
 

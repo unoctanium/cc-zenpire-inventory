@@ -16,7 +16,7 @@ const { canRead } = useTablePermissions('unit')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data, pending, refresh, error } = await useFetch<{ ok: boolean; units: UnitRow[] }>(
+const { data, pending, refresh, error } = useFetch<{ ok: boolean; units: UnitRow[] }>(
   '/api/units', { credentials: 'include' }
 )
 

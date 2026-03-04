@@ -83,20 +83,14 @@ const selected = ref<ReportKey | null>(null)
         <p class="text-sm">{{ t('reports.selectPrompt') }}</p>
       </div>
 
-      <!-- Report content — Suspense only wraps the async component -->
-      <Suspense v-else>
-        <RecipesReport      v-if="selected === 'recipes'"       :key="selected" />
+      <!-- Report content -->
+      <template v-else>
+        <RecipesReport      v-if="selected === 'recipes'"            :key="selected" />
         <IngredientsReport  v-else-if="selected === 'ingredients'"   :key="selected" />
         <AllergensReport    v-else-if="selected === 'allergens'"     :key="selected" />
         <AllergenCardReport v-else-if="selected === 'allergen-card'" :key="selected" />
         <UnitsReport        v-else-if="selected === 'units'"         :key="selected" />
-
-        <template #fallback>
-          <div class="flex items-center justify-center py-20 text-gray-400 dark:text-gray-600">
-            <p class="text-sm">{{ t('common.loading') }}</p>
-          </div>
-        </template>
-      </Suspense>
+      </template>
 
     </template>
 
