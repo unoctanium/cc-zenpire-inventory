@@ -20,7 +20,10 @@
       "stock": "Stock",
       "admin": "Admin Settings",
       "settings": "User Settings"
-    }
+    },
+    "more": "More",
+    "moreApps": "More Apps",
+    "language": "Language"
   },
   "auth": {
     "login": "Login",

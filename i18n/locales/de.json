@@ -20,7 +20,10 @@
       "stock": "Lager",
       "admin": "Admin-Einstellungen",
       "settings": "Benutzereinstellungen"
-    }
+    },
+    "more": "Mehr",
+    "moreApps": "Weitere Apps",
+    "language": "Sprache"
   },
   "auth": {
     "login": "Anmelden",

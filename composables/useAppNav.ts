@@ -105,5 +105,7 @@ export function useAppNav() {
     navigateTo(app.to)
   }
 
-  return { barApps, activeApp, activeAppId, sidebarOpen, setApp }
+  const overflowApps = ALL_APPS.filter(a => !a.inTopBar)
+
+  return { barApps, overflowApps, activeApp, activeAppId, sidebarOpen, setApp }
 }

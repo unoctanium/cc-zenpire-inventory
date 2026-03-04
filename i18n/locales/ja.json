@@ -20,7 +20,10 @@
       "stock": "在庫",
       "admin": "管理設定",
       "settings": "ユーザー設定"
-    }
+    },
+    "more": "その他",
+    "moreApps": "その他のアプリ",
+    "language": "言語"
   },
   "auth": {
     "login": "ログイン",
