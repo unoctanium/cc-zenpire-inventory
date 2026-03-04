@@ -13,10 +13,10 @@ async function refresh() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="p-6 space-y-6">
     <div class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-semibold">{{ $t('dashboard.title') }}</h1>
+        <h1 class="text-xl font-semibold">{{ $t('dashboard.title') }}</h1>
         <p class="text-gray-500">{{ $t('dashboard.subtitle') }}</p>
       </div>
       <UButton icon="i-heroicons-arrow-path" color="neutral" variant="soft" :loading="pending" @click="refresh()">

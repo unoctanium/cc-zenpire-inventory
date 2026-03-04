@@ -138,7 +138,9 @@ async function confirmImport() {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="p-6 space-y-4">
+
+    <h1 class="text-xl font-semibold">{{ $t('nav.adminSettings') }}</h1>
 
     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
       {{ $t('devTools.headingSeed') }}
