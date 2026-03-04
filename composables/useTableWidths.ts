@@ -27,7 +27,7 @@ export interface ColInput {
 export interface TableWidthsInput {
   first: ColInput
   inner: ColInput[]
-  last:  ColInput
+  last?: ColInput
 }
 
 const FONT     = '14px ui-sans-serif, system-ui, -apple-system, sans-serif'
@@ -80,7 +80,7 @@ export function useTableWidths(
   })
 
   // Last column: natural width only (max = content, no stretching)
-  const lastWidth = computed(() => naturalWidth(cols.value.last))
+  const lastWidth = computed(() => cols.value.last ? naturalWidth(cols.value.last) : 0)
 
   // Available space for inner columns
   const middleAvail = computed(() =>
