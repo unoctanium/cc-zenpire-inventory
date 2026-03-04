@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import ReportsRecipesTable     from '~/components/reports/RecipesTable.vue'
+import ReportsIngredientsTable from '~/components/reports/IngredientsTable.vue'
+import ReportsAllergensTable   from '~/components/reports/AllergensTable.vue'
+import ReportsAllergenCard     from '~/components/reports/AllergenCard.vue'
+import ReportsUnitsTable       from '~/components/reports/UnitsTable.vue'
+
 const { t } = useI18n()
 
 const REPORTS = [
@@ -17,10 +23,8 @@ const selected = ref<ReportKey | null>(null)
 <template>
   <AppSplitLayout>
 
-    <!-- ─── List panel ─────────────────────────────────────────────────────── -->
     <template #list>
-
-      <!-- TABLET: click to load report inline in detail panel -->
+      <!-- TABLET: click loads report inline -->
       <div class="hidden sm:block divide-y divide-gray-100 dark:divide-gray-800">
         <button
           v-for="r in REPORTS" :key="r.key"
@@ -53,26 +57,21 @@ const selected = ref<ReportKey | null>(null)
           <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 flex-none" />
         </button>
       </div>
-
     </template>
 
-    <!-- ─── Detail panel ───────────────────────────────────────────────────── -->
     <template #detail>
-
-      <!-- Placeholder when nothing selected -->
-      <div v-if="!selected"
-        class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20">
-        <UIcon name="i-heroicons-chart-bar-square" class="w-12 h-12" />
-        <p class="text-sm">{{ t('reports.selectPrompt') }}</p>
+      <div class="h-full">
+        <div v-if="!selected"
+          class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 gap-2 py-20">
+          <UIcon name="i-heroicons-chart-bar-square" class="w-12 h-12" />
+          <p class="text-sm">{{ t('reports.selectPrompt') }}</p>
+        </div>
+        <ReportsRecipesTable      v-else-if="selected === 'recipes'"       :key="selected" />
+        <ReportsIngredientsTable  v-else-if="selected === 'ingredients'"   :key="selected" />
+        <ReportsAllergensTable    v-else-if="selected === 'allergens'"     :key="selected" />
+        <ReportsAllergenCard      v-else-if="selected === 'allergen-card'" :key="selected" />
+        <ReportsUnitsTable        v-else-if="selected === 'units'"         :key="selected" />
       </div>
-
-      <!-- Report components — plain components, no Suspense needed -->
-      <ReportsRecipesTable      v-else-if="selected === 'recipes'"       :key="selected" />
-      <ReportsIngredientsTable  v-else-if="selected === 'ingredients'"   :key="selected" />
-      <ReportsAllergensTable    v-else-if="selected === 'allergens'"     :key="selected" />
-      <ReportsAllergenCard      v-else-if="selected === 'allergen-card'" :key="selected" />
-      <ReportsUnitsTable        v-else-if="selected === 'units'"         :key="selected" />
-
     </template>
 
   </AppSplitLayout>
