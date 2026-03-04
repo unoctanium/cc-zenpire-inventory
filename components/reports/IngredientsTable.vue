@@ -4,6 +4,7 @@ import { useInlineTable }      from '~/composables/useInlineTable'
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const { t } = useI18n()
+const { doPrint } = usePrint()
 
 type IngredientRow = {
   id: string; name: string; kind: string
@@ -75,7 +76,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
           >✕</button>
         </div>
         <div class="flex-1" />
-        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="print()">{{ $t('common.print') }}</UButton>
+        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="doPrint()">{{ $t('common.print') }}</UButton>
         <UButton icon="i-heroicons-arrow-path" color="neutral" variant="soft" @click="refresh()">{{ $t('common.refresh') }}</UButton>
       </div>
     </template>

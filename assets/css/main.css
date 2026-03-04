@@ -9,6 +9,20 @@ html, body {
   height: 100%;
 }
 
+@media print {
+  /* Restore document flow so the print renderer can see all content */
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+    overscroll-behavior: auto !important;
+  }
+  /* Remove splash-screen pseudo-elements */
+  html::before, html::after, body::before {
+    content: none !important;
+    display: none !important;
+  }
+}
+
 :root {
   /* ── App-shell chrome ──────────────────────────────────── */
   --color-app-bar:        #0082c9;

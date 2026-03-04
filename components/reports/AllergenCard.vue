@@ -2,6 +2,7 @@
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const { t } = useI18n()
+const { doPrint } = usePrint()
 
 type AllergenRow = { id: string; name: string }
 type RecipeRow   = { id: string; name: string; allergen_ids: string[] }
@@ -56,7 +57,7 @@ const errorText = computed(() =>
           </button>
         </div>
         <div class="flex-1" />
-        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="print()">{{ $t('common.print') }}</UButton>
+        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="doPrint()">{{ $t('common.print') }}</UButton>
         <UButton color="neutral" variant="ghost" size="sm" icon="i-heroicons-arrow-path"
           :aria-label="$t('common.refresh')" @click="refresh()" />
       </div>
