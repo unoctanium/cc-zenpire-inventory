@@ -12,7 +12,7 @@ const initials = computed(() => initialsFromEmail(email.value))
 const route = useRoute()
 const { barApps, overflowApps, activeApp, setApp } = useAppNav()
 
-const navLinks = computed(() => activeApp.value.links ?? [])
+const navLinks = computed(() => activeApp.value?.links ?? [])
 
 function isLinkActive(to: string) {
   return route.path === to || route.path.startsWith(to + '/')
@@ -84,15 +84,15 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
             :key="app.id"
             :title="t(app.labelKey)"
             class="flex flex-col items-center gap-0.5 w-16 py-2 rounded-xl transition-all active:scale-95 cursor-pointer"
-            :class="activeApp.id === app.id ? '' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'"
-            :style="activeApp.id === app.id ? 'color: var(--color-app-bar)' : ''"
+            :class="activeApp?.id === app.id ? '' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'"
+            :style="activeApp?.id === app.id ? 'color: var(--color-app-bar)' : ''"
             @click="setApp(app)"
           >
             <UIcon :name="app.icon" class="w-6 h-6" />
             <span class="text-[9px] leading-none font-medium">{{ t(app.labelKey) }}</span>
             <div
               class="h-0.5 w-6 rounded-full mt-0.5 transition-all"
-              :style="activeApp.id === app.id ? 'background: var(--color-app-bar)' : 'background: transparent'"
+              :style="activeApp?.id === app.id ? 'background: var(--color-app-bar)' : 'background: transparent'"
             />
           </button>
 
@@ -132,7 +132,7 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
             {{ initials }}
           </button>
           <h1 class="text-base font-semibold text-gray-900 dark:text-white flex-1 truncate">
-            {{ t(activeApp.labelKey) }}
+            {{ activeApp ? t(activeApp.labelKey) : '' }}
           </h1>
         </div>
 
@@ -170,7 +170,7 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
             v-for="app in barApps"
             :key="app.id"
             class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-all cursor-pointer active:opacity-70"
-            :style="activeApp.id === app.id ? 'color: var(--color-app-bar)' : 'color: #9ca3af'"
+            :style="activeApp?.id === app.id ? 'color: var(--color-app-bar)' : 'color: #9ca3af'"
             @click="setApp(app)"
           >
             <UIcon :name="app.icon" class="w-6 h-6" />

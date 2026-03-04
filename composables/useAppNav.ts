@@ -38,27 +38,6 @@ const ALL_APPS = [
       { labelKey: 'nav.apps.stock', to: '/stock' },
     ],
   },
-  {
-    id: 'admin',
-    labelKey: 'nav.apps.admin',
-    icon: 'i-heroicons-cog-6-tooth',
-    to: '/admin/db-tools',
-    inTopBar: false,
-    links: [
-      { labelKey: 'nav.dbTools', to: '/admin/db-tools' },
-      { labelKey: 'nav.rbac',    to: '/admin/rbac'     },
-    ],
-  },
-  {
-    id: 'settings',
-    labelKey: 'nav.apps.settings',
-    icon: 'i-heroicons-user-circle',
-    to: '/settings',
-    inTopBar: false,
-    links: [
-      { labelKey: 'nav.personalSettings', to: '/settings' },
-    ],
-  },
 ]
 
 const ROUTE_MAP: Record<string, string> = {
@@ -69,8 +48,6 @@ const ROUTE_MAP: Record<string, string> = {
   '/allergen-card':      'recipes',
   '/units':              'recipes',
   '/stock':              'stock',
-  '/admin':              'admin',
-  '/settings':           'settings',
   '/':                   'dashboard',
 }
 
@@ -83,7 +60,7 @@ export function useAppNav() {
   const barApps = ALL_APPS.filter(a => a.inTopBar)
 
   const activeApp = computed(
-    () => ALL_APPS.find(a => a.id === activeAppId.value) ?? ALL_APPS[0]
+    () => ALL_APPS.find(a => a.id === activeAppId.value)
   )
 
   watch(
@@ -98,7 +75,9 @@ export function useAppNav() {
         }
       }
       // Root only matches exactly
-      if (path === '/') activeAppId.value = 'dashboard'
+      if (path === '/') { activeAppId.value = 'dashboard'; return }
+      // No match — deselect all bar apps (e.g. /admin, /settings)
+      activeAppId.value = ''
     },
     { immediate: true }
   )
