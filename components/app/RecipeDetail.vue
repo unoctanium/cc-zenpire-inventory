@@ -511,10 +511,8 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weigh
 .meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
 table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;padding:4px 10px 8px 0;border-bottom:1px solid #e5e7eb}
 ol{list-style:none;padding:0}.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
-@media print{.toolbar{display:none}@page{margin:1.5cm}}</style>
-<script>window.onload=function(){window.print()}<\/script></head>
+@media print{@page{margin:1.5cm}}</style></head>
 <body>
-<div class="toolbar"><button class="btn" onclick="window.close()">✕&nbsp;Close</button></div>
 ${imgTag}<h1>${esc(draft.name)}</h1>
 ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 <div class="meta">
@@ -529,11 +527,31 @@ ${steps.value.length > 0 ? `<h2>Steps</h2><ol>${stepItems}</ol>` : ''}
 <div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
 </body></html>`
 
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const url  = URL.createObjectURL(blob)
-  const win  = window.open(url, '_blank')
-  if (!win) { URL.revokeObjectURL(url); toast.add({ title: 'Print blocked', description: 'Please allow pop-ups.', color: 'error' }); return }
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  const isStandalone =
+    (window.navigator as any).standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches
+
+  if (isStandalone) {
+    // iOS PWA: iframe.contentWindow.print() is blocked — open in Safari instead
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const win  = window.open(url, '_blank')
+    if (!win) { URL.revokeObjectURL(url); toast.add({ title: 'Print blocked', description: 'Please allow pop-ups.', color: 'error' }); return }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } else {
+    // Non-PWA: hidden iframe — print dialog opens directly, no new tab shown
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;width:0;height:0;border:0;opacity:0'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument ?? iframe.contentWindow?.document
+    if (!doc) { document.body.removeChild(iframe); return }
+    doc.open(); doc.write(html); doc.close()
+    iframe.onload = () => {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+      setTimeout(() => { try { document.body.removeChild(iframe) } catch {} }, 2000)
+    }
+  }
 }
 </script>
 
