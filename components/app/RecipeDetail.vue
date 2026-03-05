@@ -36,6 +36,9 @@ type ComponentRow = {
   std_cost: number | null; base_unit_factor: number | null; component_unit_factor: number | null
 }
 
+// Local draft component — same shape but id may be null (new, not yet saved)
+type DraftComp = ComponentRow & { _localId: string; id: string | null }
+
 const props = defineProps<{
   recipe:      RecipeRow | null
   units:       UnitOption[]
@@ -55,10 +58,9 @@ const toast  = useToast()
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
-const editMode          = ref(false)
-const showEditSheet     = ref(false)
-const confirmingDelete  = ref(false)
-const editingComponents = ref(false)
+const editMode         = ref(false)
+const showEditSheet    = ref(false)
+const confirmingDelete = ref(false)
 
 const isNew = computed(() => !props.recipe)
 
@@ -83,19 +85,149 @@ const imageVersion   = ref(0)
 
 // ─── sub-data ─────────────────────────────────────────────────────────────────
 
-const components    = ref<ComponentRow[]>([])
-const detailLoading = ref(false)
+const components            = ref<ComponentRow[]>([])
+const detailLoading         = ref(false)
 const loadedProductionNotes = ref('')
+
+// ─── component draft state ────────────────────────────────────────────────────
+
+const draftComps      = ref<DraftComp[]>([])
+const removedCompIds  = ref<string[]>([])
+
+// Local ingredient list (may grow when user creates new ingredients inline)
+const localIngredients = ref<IngredientOption[]>([])
+watch(() => props.ingredients, (v) => { localIngredients.value = [...v] }, { immediate: true })
+
+// ─── component edit sub-sheet ─────────────────────────────────────────────────
+
+const showCompEditSheet = ref(false)
+const editingComp       = ref<DraftComp | null>(null)
+
+function openCompEditSheet(comp: DraftComp | null) {
+  editingComp.value      = comp
+  showCompEditSheet.value = true
+}
+
+function onCompSheetClose() {
+  showCompEditSheet.value = false
+  editingComp.value       = null
+}
+
+function onCompSheetDone(result: {
+  ingredient_id: string | null; sub_recipe_id: string | null
+  name: string; quantity: number
+  unit_id: string; unit_code: string
+  type: 'ingredient' | 'sub_recipe'
+}) {
+  showCompEditSheet.value = false
+  if (editingComp.value) {
+    // Update existing draft
+    const idx = draftComps.value.findIndex(c => c._localId === editingComp.value!._localId)
+    if (idx !== -1) {
+      draftComps.value[idx] = {
+        ...draftComps.value[idx],
+        ingredient_id: result.ingredient_id,
+        sub_recipe_id: result.sub_recipe_id,
+        name:          result.name,
+        quantity:      result.quantity,
+        unit_id:       result.unit_id,
+        unit_code:     result.unit_code,
+        type:          result.type,
+      }
+    }
+  } else {
+    // Add new draft
+    const maxOrder = draftComps.value.reduce((m, c) => Math.max(m, c.sort_order), 0)
+    draftComps.value.push({
+      _localId:      'new-' + Date.now(),
+      id:            null,
+      recipe_id:     savedId.value ?? '',
+      ingredient_id: result.ingredient_id,
+      sub_recipe_id: result.sub_recipe_id,
+      name:          result.name,
+      quantity:      result.quantity,
+      unit_id:       result.unit_id,
+      unit_code:     result.unit_code,
+      sort_order:    maxOrder + 1,
+      type:          result.type,
+      std_cost:      null,
+      base_unit_factor:      null,
+      component_unit_factor: null,
+    })
+  }
+  editingComp.value = null
+}
+
+function onCompSheetRemove() {
+  showCompEditSheet.value = false
+  if (!editingComp.value) return
+  const comp = editingComp.value
+  // Queue DB deletion if it has a real ID
+  if (comp.id) removedCompIds.value.push(comp.id)
+  draftComps.value = draftComps.value.filter(c => c._localId !== comp._localId)
+  editingComp.value = null
+}
+
+function onIngredientCreated(ing: IngredientOption) {
+  if (!localIngredients.value.find(i => i.id === ing.id)) {
+    localIngredients.value.push(ing)
+  }
+}
+
+// ─── swipe-to-delete ─────────────────────────────────────────────────────────
+
+const swipeOffsets: Record<string, number> = reactive({})
+const swipingId        = ref<string | null>(null)
+const swipeTouchStartX = ref(0)
+const didSwipeMove     = ref(false)
+const SWIPE_THRESHOLD  = 55
+
+function onSwipeTouchStart(e: TouchEvent, localId: string) {
+  // Close any other open swipe
+  if (swipingId.value && swipingId.value !== localId) {
+    swipeOffsets[swipingId.value] = 0
+  }
+  swipingId.value        = localId
+  swipeTouchStartX.value = e.touches[0].clientX
+  didSwipeMove.value     = false
+}
+
+function onSwipeTouchMove(e: TouchEvent, localId: string) {
+  if (swipingId.value !== localId) return
+  const dx = e.touches[0].clientX - swipeTouchStartX.value
+  if (Math.abs(dx) > 5) didSwipeMove.value = true
+  swipeOffsets[localId] = Math.max(-80, Math.min(0, dx))
+}
+
+function onSwipeTouchEnd(_e: TouchEvent, localId: string) {
+  if (swipingId.value !== localId) return
+  const offset = swipeOffsets[localId] ?? 0
+  swipeOffsets[localId] = offset < -SWIPE_THRESHOLD ? -80 : 0
+  swipingId.value = null
+}
+
+function onRowClick(comp: DraftComp) {
+  if (didSwipeMove.value) { didSwipeMove.value = false; return }
+  const offset = swipeOffsets[comp._localId] ?? 0
+  if (offset !== 0) { swipeOffsets[comp._localId] = 0; return }
+  openCompEditSheet(comp)
+}
+
+function swipeDeleteComp(comp: DraftComp) {
+  swipeOffsets[comp._localId] = 0
+  if (comp.id) removedCompIds.value.push(comp.id)
+  draftComps.value = draftComps.value.filter(c => c._localId !== comp._localId)
+  delete swipeOffsets[comp._localId]
+}
 
 // ─── reset when recipe prop changes ──────────────────────────────────────────
 
 watch(
   () => props.recipe,
   async (recipe) => {
-    confirmingDelete.value  = false
-    editingComponents.value = false
-    components.value = []
-    hasImage.value   = false
+    confirmingDelete.value = false
+    components.value       = []
+    hasImage.value         = false
 
     if (recipe) {
       editMode.value      = false
@@ -124,6 +256,8 @@ watch(
       draft.standard_unit_cost = ''
       draft.is_active          = true
       draft.is_pre_product     = false
+      draftComps.value         = []
+      removedCompIds.value     = []
     }
   },
   { immediate: true }
@@ -139,11 +273,20 @@ async function loadDetail(id: string) {
     hasImage.value   = res.recipe?.has_image ?? false
     draft.production_notes       = res.recipe?.production_notes ?? ''
     loadedProductionNotes.value  = res.recipe?.production_notes ?? ''
+    // Sync draft comps from fresh DB state (only when not mid-edit)
+    if (!showEditSheet.value) {
+      syncDraftCompsFromDb()
+    }
   } catch (e: any) {
     toast.add({ title: t('recipes.loadError'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
   } finally {
     detailLoading.value = false
   }
+}
+
+function syncDraftCompsFromDb() {
+  draftComps.value     = components.value.map(c => ({ ...c, _localId: c.id }))
+  removedCompIds.value = []
 }
 
 // ─── image ────────────────────────────────────────────────────────────────────
@@ -181,6 +324,38 @@ async function removeImage() {
   }
 }
 
+// ─── save components ──────────────────────────────────────────────────────────
+
+async function saveComponents(recipeId: string) {
+  // Delete removed
+  for (const id of removedCompIds.value) {
+    await $fetch(`/api/recipes/${recipeId}/components/${id}`,
+      { method: 'DELETE', credentials: 'include' })
+  }
+  removedCompIds.value = []
+
+  // Upsert all remaining draft comps
+  for (const comp of draftComps.value) {
+    if (comp.id) {
+      await $fetch(`/api/recipes/${recipeId}/components/${comp.id}`, {
+        method: 'PUT', credentials: 'include',
+        body: { quantity: comp.quantity, unit_id: comp.unit_id },
+      })
+    } else {
+      await $fetch(`/api/recipes/${recipeId}/components`, {
+        method: 'POST', credentials: 'include',
+        body: {
+          ingredient_id: comp.ingredient_id,
+          sub_recipe_id: comp.sub_recipe_id,
+          quantity:      comp.quantity,
+          unit_id:       comp.unit_id,
+          sort_order:    comp.sort_order,
+        },
+      })
+    }
+  }
+}
+
 // ─── save basic fields ────────────────────────────────────────────────────────
 
 async function saveBasic() {
@@ -204,18 +379,20 @@ async function saveBasic() {
     }
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
+      await saveComponents(savedId.value)
       toast.add({ title: t('recipes.updated') })
       editMode.value      = false
       showEditSheet.value = false
+      await loadDetail(savedId.value)
       emit('saved', savedId.value)
     } else {
       const res = await $fetch<{ ok: boolean; recipe: { id: string } }>(
         '/api/recipes', { method: 'POST', credentials: 'include', body }
       )
       savedId.value = res.recipe.id
+      await saveComponents(res.recipe.id)
       toast.add({ title: t('recipes.created') })
       await loadDetail(res.recipe.id)
-      editingComponents.value = true
       emit('saved', res.recipe.id)
     }
   } catch (e: any) {
@@ -226,6 +403,8 @@ async function saveBasic() {
 }
 
 function startEdit() {
+  // Sync draft comps from current DB state before opening edit sheet
+  syncDraftCompsFromDb()
   editMode.value      = true
   showEditSheet.value = true
 }
@@ -233,7 +412,6 @@ function startEdit() {
 function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   if (props.recipe) {
-    // Revert to saved recipe values
     const r = props.recipe
     const loadQty = Number(r.output_quantity) || 1
     draft.name               = r.name
@@ -244,11 +422,10 @@ function cancelEdit() {
     draft.is_active          = r.is_active
     draft.is_pre_product     = r.is_pre_product
     draft.production_notes   = loadedProductionNotes.value
-    // Reset any in-progress component row edits
-    compUiRows.value.forEach(row => { row._mode = 'view'; row._draft = undefined })
-    editMode.value          = false
-    showEditSheet.value     = false
-    editingComponents.value = false
+    // Revert component drafts to DB state
+    syncDraftCompsFromDb()
+    editMode.value      = false
+    showEditSheet.value = false
   }
 }
 
@@ -263,143 +440,6 @@ async function doDelete() {
     emit('deleted')
   } catch (e: any) {
     toast.add({ title: t('common.deleteFailed'), description: e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
-  }
-}
-
-// ─── components section ───────────────────────────────────────────────────────
-
-const compSearch    = ref('')
-const showDropdown  = ref(false)
-const compError     = ref('')
-
-const localIngredients = ref<IngredientOption[]>([])
-watch(() => props.ingredients, (v) => { localIngredients.value = [...v] }, { immediate: true })
-
-type SearchResult = { id: string; name: string; group: 'ingredient' | 'sub_recipe' }
-
-const searchResults = computed((): SearchResult[] => {
-  const q = compSearch.value.toLowerCase().trim()
-  if (!q) return []
-  const matched: SearchResult[] = []
-  for (const ing of localIngredients.value) {
-    if (ing.name.toLowerCase().includes(q)) {
-      matched.push({ id: ing.id, name: ing.name, group: 'ingredient' })
-    }
-  }
-  for (const r of props.allRecipes) {
-    if (r.is_pre_product && r.id !== savedId.value && r.name.toLowerCase().includes(q)) {
-      matched.push({ id: r.id, name: r.name, group: 'sub_recipe' })
-    }
-  }
-  return matched.slice(0, 20)
-})
-
-watch(compSearch, (v) => { showDropdown.value = v.trim().length > 0 && searchResults.value.length > 0 })
-watch(searchResults, (v) => { showDropdown.value = compSearch.value.trim().length > 0 && v.length > 0 })
-
-const pendingComp = ref<{
-  type: 'ingredient' | 'sub_recipe'
-  ref_id: string; name: string; quantity: string; unit_id: string
-} | null>(null)
-
-function selectSearchResult(item: SearchResult) {
-  showDropdown.value = false
-  compSearch.value   = ''
-  let defaultUnitId  = props.units[0]?.id ?? ''
-  if (item.group === 'ingredient') {
-    const ing = props.ingredients.find(i => i.id === item.id)
-    defaultUnitId = ing?.default_unit_id ?? defaultUnitId
-  } else {
-    const rec = props.allRecipes.find(r => r.id === item.id)
-    defaultUnitId = rec?.output_unit_id ?? defaultUnitId
-  }
-  pendingComp.value = { type: item.group, ref_id: item.id, name: item.name, quantity: '', unit_id: defaultUnitId }
-}
-
-async function confirmAddComponent() {
-  const pc = pendingComp.value
-  if (!pc || !savedId.value) return
-  const qty = Number(pc.quantity)
-  if (!(qty > 0)) { compError.value = t('recipes.nameRequired'); return }
-  compError.value = ''
-  try {
-    await $fetch(`/api/recipes/${savedId.value}/components`, {
-      method: 'POST', credentials: 'include',
-      body: {
-        ingredient_id: pc.type === 'ingredient' ? pc.ref_id : null,
-        sub_recipe_id: pc.type === 'sub_recipe'  ? pc.ref_id : null,
-        quantity: qty, unit_id: pc.unit_id,
-      },
-    })
-    pendingComp.value = null
-    await loadDetail(savedId.value)
-  } catch (e: any) { compError.value = e?.data?.statusMessage ?? e?.message ?? String(e) }
-}
-
-function cancelPendingComp() { pendingComp.value = null; compError.value = '' }
-
-const isDeleteCompOpen = ref(false)
-const deletingComp     = ref<ComponentRow | null>(null)
-
-function requestDeleteComp(comp: ComponentRow) { deletingComp.value = comp; isDeleteCompOpen.value = true }
-
-async function confirmDeleteComp() {
-  const comp = deletingComp.value
-  if (!comp || !savedId.value) return
-  try {
-    await $fetch(`/api/recipes/${savedId.value}/components/${comp.id}`,
-      { method: 'DELETE', credentials: 'include' })
-    isDeleteCompOpen.value = false; deletingComp.value = null
-    await loadDetail(savedId.value)
-  } catch (e: any) {
-    toast.add({ title: t('common.deleteFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
-  }
-}
-
-type CompUi = ComponentRow & { _mode: 'view' | 'edit'; _draft?: { quantity: string; unit_id: string } }
-const compUiRows = ref<CompUi[]>([])
-
-watch(components, (v) => {
-  const prev = compUiRows.value
-  compUiRows.value = v.map(c => {
-    const existing = prev.find(r => r.id === c.id)
-    if (existing?._mode === 'edit') return { ...c, _mode: 'edit', _draft: existing._draft }
-    return { ...c, _mode: 'view' as const }
-  })
-}, { immediate: true })
-
-function startEditComp(row: CompUi) { row._mode = 'edit'; row._draft = { quantity: String(row.quantity), unit_id: row.unit_id } }
-function discardComp(row: CompUi)   { row._mode = 'view'; row._draft = undefined }
-
-async function saveComp(row: CompUi) {
-  if (!savedId.value || !row._draft) return
-  const qty = Number(row._draft.quantity)
-  if (!(qty > 0)) { toast.add({ title: t('common.missingFields'), color: 'red' }); return }
-  try {
-    await $fetch(`/api/recipes/${savedId.value}/components/${row.id}`, {
-      method: 'PUT', credentials: 'include',
-      body: { quantity: qty, unit_id: row._draft.unit_id },
-    })
-    row._mode = 'view'; row._draft = undefined
-    await loadDetail(savedId.value)
-  } catch (e: any) {
-    toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
-  }
-}
-
-// ─── new ingredient modal ─────────────────────────────────────────────────────
-
-const isNewIngredientOpen = ref(false)
-
-function onIngredientCreated(ingredient: any) {
-  localIngredients.value.push({
-    id: ingredient.id, name: ingredient.name,
-    kind: ingredient.kind ?? 'purchased',
-    default_unit_id: ingredient.default_unit_id ?? '',
-  })
-  pendingComp.value = {
-    type: 'ingredient', ref_id: ingredient.id, name: ingredient.name,
-    quantity: '', unit_id: ingredient.default_unit_id ?? props.units[0]?.id ?? '',
   }
 }
 
@@ -418,6 +458,16 @@ function formatCost(n: number | null): string {
 
 const totalCost = computed((): number | null => {
   const costs = components.value.map(componentCost).filter((c): c is number => c !== null)
+  if (costs.length === 0) return null
+  return costs.reduce((a, b) => a + b, 0)
+})
+
+// Cost for draft comps (no cost data for new unsaved comps)
+const draftTotalCost = computed((): number | null => {
+  const costs = draftComps.value
+    .filter(c => c.id !== null)  // only saved comps have cost data
+    .map(c => componentCost(c as ComponentRow))
+    .filter((c): c is number => c !== null)
   if (costs.length === 0) return null
   return costs.reduce((a, b) => a + b, 0)
 })
@@ -584,7 +634,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
     </div>
 
-    <!-- ─── Basic fields (new recipe — edit mode inline, parent sheet wraps) ── -->
+    <!-- ─── Basic fields (new recipe — edit mode inline) ─────────────────────── -->
     <div v-if="isNew" class="space-y-3">
 
       <div>
@@ -645,10 +695,10 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
                  dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           :placeholder="$t('recipes.stdCostPlaceholder')" />
         <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
-        <button v-if="totalCost != null" type="button"
+        <button v-if="draftTotalCost != null" type="button"
           class="mt-1 text-xs text-blue-500 hover:underline"
-          @click="draft.standard_unit_cost = totalCost">
-          {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
+          @click="draft.standard_unit_cost = draftTotalCost">
+          {{ $t('recipes.autoFillFromComponents') }} (€ {{ draftTotalCost.toFixed(2) }})
         </button>
       </div>
 
@@ -663,30 +713,73 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
         </label>
       </div>
 
+      <!-- ── Ingredients section (new recipe inline form) ─────────────────── -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {{ $t('recipes.componentsSection') }}
+          </h3>
+        </div>
+
+        <!-- Component rows (swipe-to-delete list) -->
+        <div v-if="draftComps.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-2">
+          <div
+            v-for="comp in draftComps" :key="comp._localId"
+            class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+          >
+            <!-- Sliding row -->
+            <div
+              class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+              :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
+              @touchstart="onSwipeTouchStart($event, comp._localId)"
+              @touchmove="onSwipeTouchMove($event, comp._localId)"
+              @touchend="onSwipeTouchEnd($event, comp._localId)"
+              @click="onRowClick(comp)"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ comp.name }}</div>
+                <div class="text-xs text-gray-400">
+                  {{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
+                </div>
+              </div>
+              <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
+                <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
+              </div>
+            </div>
+            <!-- Delete button (revealed by swipe) -->
+            <button
+              class="absolute right-0 top-0 bottom-0 w-20 bg-red-500 text-white text-sm font-medium active:bg-red-600"
+              @click.stop="swipeDeleteComp(comp)"
+            >{{ $t('common.delete') }}</button>
+          </div>
+        </div>
+
+        <!-- Add button -->
+        <button
+          class="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-[#007AFF] dark:text-blue-400 active:bg-gray-50 dark:active:bg-gray-800"
+          @click="openCompEditSheet(null)"
+        >
+          <UIcon name="i-heroicons-plus-circle" class="w-4 h-4" />
+          {{ $t('recipes.addComponent') }}
+        </button>
+      </div>
+
     </div>
 
-    <!-- ─── Components section (available after first save) ─────────────────── -->
-    <div v-if="savedId" class="pt-2">
+    <!-- ─── Components section (view mode — read only) ───────────────────────── -->
+    <div v-if="savedId && !isNew" class="pt-2">
       <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-2">
         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
           {{ $t('recipes.componentsSection') }}
         </h3>
-        <UButton
-          v-if="!isNew && canManage"
-          size="xs" variant="ghost"
-          :color="editingComponents ? 'primary' : 'neutral'"
-          :icon="editingComponents ? 'i-heroicons-check' : 'i-heroicons-pencil-square'"
-          @click="editingComponents = !editingComponents"
-        >
-          {{ editingComponents ? $t('common.done') : $t('common.edit') }}
-        </UButton>
       </div>
 
       <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
 
       <div v-else>
-        <!-- Component rows -->
-        <div v-if="compUiRows.length > 0" class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2 text-xs">
+        <!-- Component rows (read-only) -->
+        <div v-if="components.length > 0" class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2 text-xs">
           <table class="w-full border-separate border-spacing-0">
             <thead>
               <tr class="bg-white dark:bg-gray-950 text-gray-500 dark:text-gray-400">
@@ -694,126 +787,34 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
                 <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
                 <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
-                <th v-if="editingComponents" class="px-2 py-1 border-b border-gray-200 dark:border-gray-800"></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in compUiRows" :key="row.id" class="border-b border-gray-100 dark:border-gray-900">
+              <tr v-for="row in components" :key="row.id" class="border-b border-gray-100 dark:border-gray-900">
                 <td class="px-2 py-1.5 text-gray-900 dark:text-gray-100">
                   <div class="font-medium">{{ row.name }}</div>
                   <div class="text-gray-400 text-[10px]">{{ row.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
                 </td>
-                <td class="px-2 py-1.5 text-right">
-                  <input v-if="row._mode === 'edit'" v-model="row._draft!.quantity" type="number" min="0.001" step="any"
-                    class="w-20 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs text-right text-gray-900
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
-                  <span v-else class="text-gray-800 dark:text-gray-200">{{ row.quantity }}</span>
-                </td>
-                <td class="px-2 py-1.5">
-                  <select v-if="row._mode === 'edit'" v-model="row._draft!.unit_id"
-                    class="rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-900
-                           focus:outline-none focus:ring-1 focus:ring-gray-400
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
-                    <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
-                  </select>
-                  <span v-else class="text-gray-800 dark:text-gray-200">{{ row.unit_code }}</span>
-                </td>
+                <td class="px-2 py-1.5 text-right text-gray-800 dark:text-gray-200">{{ row.quantity }}</td>
+                <td class="px-2 py-1.5 text-gray-800 dark:text-gray-200">{{ row.unit_code }}</td>
                 <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
-                <td v-if="editingComponents" class="px-2 py-1.5 text-right whitespace-nowrap">
-                  <AdminInlineRowActions
-                    :mode="row._mode"
-                    :can-edit="canManage" :can-delete="canManage"
-                    @edit="startEditComp(row)" @save="saveComp(row)" @discard="discardComp(row)" @delete="requestDeleteComp(row)"
-                  />
-                </td>
               </tr>
             </tbody>
             <tfoot v-if="totalCost != null">
               <tr>
                 <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
                 <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
-                <td v-if="editingComponents"></td>
               </tr>
             </tfoot>
           </table>
         </div>
         <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
-
-        <!-- Component search (edit mode) -->
-        <div v-if="editingComponents" class="space-y-2">
-          <div class="relative">
-            <input
-              v-model="compSearch"
-              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                     focus:outline-none focus:ring-1 focus:ring-gray-400
-                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-              :placeholder="$t('recipes.searchIngredientOrRecipe')"
-              autocomplete="off"
-              @blur="setTimeout(() => showDropdown = false, 150)"
-              @focus="showDropdown = searchResults.length > 0 && compSearch.trim().length > 0"
-            />
-            <div v-if="showDropdown"
-              class="absolute z-30 left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 shadow-lg max-h-48 overflow-y-auto">
-              <button
-                v-for="item in searchResults" :key="item.id"
-                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-                @mousedown.prevent="selectSearchResult(item)"
-              >
-                <span class="flex-1 text-gray-900 dark:text-gray-100">{{ item.name }}</span>
-                <span class="text-xs text-gray-400">{{ item.group === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Pending component row -->
-          <div v-if="pendingComp" class="rounded border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-2 space-y-2">
-            <div class="text-xs font-medium text-blue-700 dark:text-blue-300">{{ pendingComp.name }}</div>
-            <div class="flex gap-2 items-end">
-              <div class="flex-1">
-                <label class="block text-xs text-gray-500 mb-0.5">{{ $t('recipes.qty') }}</label>
-                <input v-model="pendingComp.quantity" type="number" min="0.001" step="any"
-                  class="w-full rounded border border-gray-300 bg-white px-1.5 py-0.5 text-sm text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-400
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" />
-              </div>
-              <div class="flex-1">
-                <label class="block text-xs text-gray-500 mb-0.5">{{ $t('recipes.unit') }}</label>
-                <select v-model="pendingComp.unit_id"
-                  class="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-sm text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-400
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
-                  <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
-                </select>
-              </div>
-              <UButton size="xs" @click="confirmAddComponent">{{ $t('common.add') }}</UButton>
-              <UButton size="xs" color="neutral" variant="ghost" @click="cancelPendingComp">{{ $t('common.cancel') }}</UButton>
-            </div>
-            <p v-if="compError" class="text-xs text-red-600">{{ compError }}</p>
-          </div>
-
-          <UButton size="xs" color="neutral" variant="soft" icon="i-heroicons-plus" @click="isNewIngredientOpen = true">
-            {{ $t('recipes.addIngredient') }}
-          </UButton>
-        </div>
       </div>
     </div>
 
-    <!-- ─── Modals ────────────────────────────────────────────────────────────── -->
-
-    <AdminDeleteModal v-model:open="isDeleteCompOpen" :title="$t('recipes.deleteComponentTitle')" @confirm="confirmDeleteComp">
-      <p>{{ $t('recipes.deleteComponentConfirm', { name: deletingComp?.name ?? '' }) }}</p>
-    </AdminDeleteModal>
-
-    <AdminRecipeNewIngredientModal
-      v-model:open="isNewIngredientOpen"
-      :units="units"
-      @created="onIngredientCreated"
-    />
-
   </div>
 
-  <!-- Edit sheet (existing recipe) -->
+  <!-- ─── Edit sheet (existing recipe) ──────────────────────────────────────── -->
   <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
     <!-- Sticky iOS nav bar -->
     <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
@@ -897,6 +898,59 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
         </div>
       </div>
 
+      <!-- ── Ingredients section (edit sheet) ─────────────────────────────── -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {{ $t('recipes.componentsSection') }}
+          </h3>
+        </div>
+
+        <!-- Component rows (swipe-to-delete list) -->
+        <div v-if="draftComps.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-2">
+          <div
+            v-for="comp in draftComps" :key="comp._localId"
+            class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+          >
+            <!-- Sliding row -->
+            <div
+              class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+              :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
+              @touchstart="onSwipeTouchStart($event, comp._localId)"
+              @touchmove="onSwipeTouchMove($event, comp._localId)"
+              @touchend="onSwipeTouchEnd($event, comp._localId)"
+              @click="onRowClick(comp)"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ comp.name }}</div>
+                <div class="text-xs text-gray-400">
+                  {{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
+                </div>
+              </div>
+              <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
+                <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
+              </div>
+            </div>
+            <!-- Delete button (revealed by swipe) -->
+            <button
+              class="absolute right-0 top-0 bottom-0 w-20 bg-red-500 text-white text-sm font-medium active:bg-red-600"
+              @click.stop="swipeDeleteComp(comp)"
+            >{{ $t('common.delete') }}</button>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
+
+        <!-- Add button -->
+        <button
+          class="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-[#007AFF] dark:text-blue-400 active:bg-gray-50 dark:active:bg-gray-800"
+          @click="openCompEditSheet(null)"
+        >
+          <UIcon name="i-heroicons-plus-circle" class="w-4 h-4" />
+          {{ $t('recipes.addComponent') }}
+        </button>
+      </div>
+
       <!-- Image (in edit sheet) -->
       <AdminImageUpload
         v-if="savedId"
@@ -910,7 +964,20 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
     </div>
   </AppBottomSheet>
 
-  <!-- iOS delete alert -->
+  <!-- ─── Component edit sub-sheet ──────────────────────────────────────────── -->
+  <AppComponentEditSheet
+    :open="showCompEditSheet"
+    :component="editingComp"
+    :ingredients="localIngredients"
+    :all-recipes="props.allRecipes"
+    :units="units"
+    @done="onCompSheetDone"
+    @remove="onCompSheetRemove"
+    @close="onCompSheetClose"
+    @ingredient-created="onIngredientCreated"
+  />
+
+  <!-- ─── iOS delete alert ──────────────────────────────────────────────────── -->
   <Teleport to="body">
     <Transition name="ios-alert">
       <div

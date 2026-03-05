@@ -68,7 +68,9 @@
     "print": "印刷",
     "uploadImage":  "画像をアップロード",
     "replaceImage": "画像を置き換え",
-    "removeImage":  "画像を削除"
+    "removeImage":  "画像を削除",
+    "back":   "戻る",
+    "change": "変更"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -191,7 +193,13 @@
     "cost": "コスト",
     "totalCost": "合計コスト",
     "deleteComponentTitle": "構成要素を削除",
-    "deleteComponentConfirm": "{name} をこのレシピから削除しますか？"
+    "deleteComponentConfirm": "{name} をこのレシピから削除しますか？",
+    "addComponent": "+ 食材を追加",
+    "removeIngredient": "食材を削除",
+    "ingredientSearchPlaceholder": "食材を検索…",
+    "createIngredient": "＋ \"{name}\" を作成",
+    "selectIngredient": "最初に食材またはサブレシピを選択してください。",
+    "noSearchResults": "結果なし。別の名前をお試しください。"
   },
   "production": {
     "title": "製造",

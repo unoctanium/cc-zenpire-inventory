@@ -68,7 +68,9 @@
     "print": "Drucken",
     "uploadImage":  "Bild hochladen",
     "replaceImage": "Bild ersetzen",
-    "removeImage":  "Bild entfernen"
+    "removeImage":  "Bild entfernen",
+    "back":   "Zurück",
+    "change": "Ändern"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -191,7 +193,13 @@
     "cost": "Kosten",
     "totalCost": "Gesamtkosten",
     "deleteComponentTitle": "Komponente entfernen",
-    "deleteComponentConfirm": "{name} aus diesem Rezept entfernen?"
+    "deleteComponentConfirm": "{name} aus diesem Rezept entfernen?",
+    "addComponent": "+ Zutat hinzufügen",
+    "removeIngredient": "Zutat entfernen",
+    "ingredientSearchPlaceholder": "Zutaten suchen…",
+    "createIngredient": "＋ \"{name}\" erstellen",
+    "selectIngredient": "Bitte zuerst eine Zutat oder ein Teilrezept auswählen.",
+    "noSearchResults": "Keine Ergebnisse. Anderen Namen versuchen."
   },
   "production": {
     "title": "Produktion",

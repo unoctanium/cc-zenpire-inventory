@@ -68,7 +68,9 @@
     "print": "Print",
     "uploadImage":  "Upload image",
     "replaceImage": "Replace image",
-    "removeImage":  "Remove image"
+    "removeImage":  "Remove image",
+    "back":   "Back",
+    "change": "Change"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -191,7 +193,13 @@
     "cost": "Cost",
     "totalCost": "Total cost",
     "deleteComponentTitle": "Delete component",
-    "deleteComponentConfirm": "Remove {name} from this recipe?"
+    "deleteComponentConfirm": "Remove {name} from this recipe?",
+    "addComponent": "+ Add Ingredient",
+    "removeIngredient": "Remove Ingredient",
+    "ingredientSearchPlaceholder": "Search ingredients…",
+    "createIngredient": "＋ Create \"{name}\"",
+    "selectIngredient": "Select an ingredient or sub-recipe first.",
+    "noSearchResults": "No results. Try a different name."
   },
   "production": {
     "title": "Production",
