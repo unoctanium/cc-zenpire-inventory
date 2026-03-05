@@ -302,10 +302,10 @@ function done() {
             class="flex items-center gap-3 px-4 py-3 border-t border-gray-100 dark:border-gray-800"
           >
             <div class="flex-1">
-              <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+              <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">
                 {{ selectedType === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}
               </div>
-              <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedName }}</div>
+              <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ selectedName }}</div>
             </div>
             <button
               class="text-sm text-[#007AFF] dark:text-blue-400 active:opacity-50"
@@ -317,7 +317,7 @@ function done() {
           <div class="px-4 pt-4 pb-3 space-y-3 border-t border-gray-100 dark:border-gray-800">
             <div class="flex gap-2">
               <div class="flex-1">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                <label class="ios-label">
                   {{ $t('recipes.qty') }} *
                 </label>
                 <input
@@ -325,21 +325,17 @@ function done() {
                   id="comp-sheet-qty"
                   v-model="quantity"
                   type="number" min="0.001" step="any"
-                  class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-400
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  class="ios-input"
                   :placeholder="$t('recipes.outputQtyPlaceholder')"
                 />
               </div>
               <div class="flex-1">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                <label class="ios-label">
                   {{ $t('recipes.unit') }}
                 </label>
                 <select
                   v-model="unit_id"
-                  class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                         focus:outline-none focus:ring-1 focus:ring-gray-400
-                         dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  class="ios-input"
                 >
                   <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
                 </select>

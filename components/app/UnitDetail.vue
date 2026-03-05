@@ -162,59 +162,51 @@ async function doDelete() {
 
 
     <!-- View mode (existing) -->
-    <div v-if="!isNew" class="space-y-3">
+    <div v-if="!isNew" class="space-y-5">
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('units.code') }}</div>
-        <div class="text-sm font-mono font-semibold text-gray-900 dark:text-gray-100">{{ unit?.code }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('units.code') }}</div>
+        <div class="text-[17px] font-mono font-semibold text-gray-900 dark:text-gray-100">{{ unit?.code }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('units.name') }}</div>
-        <div class="text-sm text-gray-900 dark:text-gray-100">{{ unit?.name }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('units.name') }}</div>
+        <div class="text-[17px] text-gray-900 dark:text-gray-100">{{ unit?.name }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('units.type') }}</div>
-        <div class="text-sm text-gray-900 dark:text-gray-100">{{ unit?.unit_type }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('units.type') }}</div>
+        <div class="text-[17px] text-gray-900 dark:text-gray-100">{{ unit?.unit_type }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('units.factor') }}</div>
-        <div class="text-sm text-gray-900 dark:text-gray-100">{{ unit?.factor }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('units.factor') }}</div>
+        <div class="text-[17px] text-gray-900 dark:text-gray-100">{{ unit?.factor }}</div>
       </div>
       <p class="text-xs text-gray-400 dark:text-gray-600">{{ $t('units.usedByOthers') }}</p>
     </div>
 
     <!-- Create mode (new — inline, parent already provides the sheet) -->
-    <div v-if="isNew" class="space-y-3">
+    <div v-if="isNew" class="space-y-5">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.code') }} *</label>
+        <label class="ios-label">{{ $t('units.code') }} *</label>
         <input v-model="draft.code"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="e.g. g" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.name') }} *</label>
+        <label class="ios-label">{{ $t('units.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="e.g. Gram" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.type') }} *</label>
+        <label class="ios-label">{{ $t('units.type') }} *</label>
         <select v-model="draft.unit_type"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          class="ios-input">
           <option v-for="o in unitTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.factor') }} *</label>
+        <label class="ios-label">{{ $t('units.factor') }} *</label>
         <input v-model.number="draft.factor" type="number" min="0.000001" step="any"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="1" />
       </div>
     </div>
@@ -231,36 +223,28 @@ async function doDelete() {
     </div>
     <div class="p-4 space-y-4">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.code') }} *</label>
+        <label class="ios-label">{{ $t('units.code') }} *</label>
         <input v-model="draft.code"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="e.g. g" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.name') }} *</label>
+        <label class="ios-label">{{ $t('units.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="e.g. Gram" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.type') }} *</label>
+        <label class="ios-label">{{ $t('units.type') }} *</label>
         <select v-model="draft.unit_type"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          class="ios-input">
           <option v-for="o in unitTypeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('units.factor') }} *</label>
+        <label class="ios-label">{{ $t('units.factor') }} *</label>
         <input v-model.number="draft.factor" type="number" min="0.000001" step="any"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           placeholder="1" />
       </div>
     </div>

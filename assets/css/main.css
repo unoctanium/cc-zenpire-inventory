@@ -145,6 +145,46 @@ html.splash-done::after {
   to   { transform: scale(1);    opacity: 1; }
 }
 
+/* ── Prevent iOS auto-zoom on form field focus ──────────────────────────────
+   iOS Safari zooms in when a focused input/select/textarea has font-size < 16px.
+   font-size: max(16px, 1em) ensures minimum 16px without shrinking larger text.
+   ──────────────────────────────────────────────────────────────────────────── */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+/* ── iOS-style form fields ─────────────────────────────────────────────────── */
+.ios-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(107 114 128); /* gray-500 */
+  margin-bottom: 4px;
+}
+.dark .ios-label { color: rgb(156 163 175); /* gray-400 */ }
+
+.ios-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgb(209 213 219); /* gray-300 */
+  background: white;
+  padding: 11px 12px;
+  font-size: 17px;
+  color: rgb(17 24 39); /* gray-900 */
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ios-input:focus {
+  border-color: rgba(0, 122, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+.dark .ios-input {
+  border-color: rgb(55 65 81); /* gray-700 */
+  background: rgb(31 41 55); /* gray-800 */
+  color: rgb(243 244 246); /* gray-100 */
+}
+
 /* ── App data tables: taller rows (≈150%) + subtle row dividers ────────────
    Targets all our tables (table-fixed text-sm for page tables,
    table-fixed text-xs for modal sub-tables). Outside @layer so these

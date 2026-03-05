@@ -573,31 +573,31 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
     />
 
     <!-- ─── Basic fields (view mode) ─────────────────────────────────────────── -->
-    <div v-if="!isNew" class="space-y-3">
+    <div v-if="!isNew" class="space-y-5">
 
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.name') }}</div>
-        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ draft.name }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.name') }}</div>
+        <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ draft.name }}</div>
       </div>
 
       <div v-if="draft.description">
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.description') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ draft.description }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.description') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ draft.description }}</div>
       </div>
 
       <div v-if="draft.production_notes">
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.productionNotes') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ draft.production_notes }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.productionNotes') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ draft.production_notes }}</div>
       </div>
 
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.output') }}</div>
-        <div class="text-sm text-gray-900 dark:text-gray-100">{{ draft.output_quantity }} {{ outputUnitCode }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.output') }}</div>
+        <div class="text-[17px] text-gray-900 dark:text-gray-100">{{ draft.output_quantity }} {{ outputUnitCode }}</div>
       </div>
 
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.batchCostLabel') }}</div>
-        <div class="text-sm text-gray-900 dark:text-gray-100">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.batchCostLabel') }}</div>
+        <div class="text-[17px] text-gray-900 dark:text-gray-100">
           {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
              ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}`
              : '—' }}
@@ -609,7 +609,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
       <div class="flex gap-4">
         <div>
-          <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.active') }}</div>
+          <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.active') }}</div>
           <span
             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
             :class="draft.is_active
@@ -620,7 +620,7 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
           </span>
         </div>
         <div>
-          <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('recipes.preProduct') }}</div>
+          <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('recipes.preProduct') }}</div>
           <span
             v-if="draft.is_pre_product"
             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
@@ -635,64 +635,52 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
     </div>
 
     <!-- ─── Basic fields (new recipe — edit mode inline) ─────────────────────── -->
-    <div v-if="isNew" class="space-y-3">
+    <div v-if="isNew" class="space-y-5">
 
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.name') }} *</label>
+        <label class="ios-label">{{ $t('recipes.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.description') }}</label>
+        <label class="ios-label">{{ $t('recipes.description') }}</label>
         <textarea v-model="draft.description" rows="2"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('recipes.descPlaceholder')" />
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.productionNotes') }}</label>
+        <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
         <textarea v-model="draft.production_notes" rows="3"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('recipes.productionNotesPlaceholder')" />
       </div>
 
       <div class="flex gap-2">
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.output') }} *</label>
+          <label class="ios-label">{{ $t('recipes.output') }} *</label>
           <input v-model="draft.output_quantity" type="number" min="0.001" step="any"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="ios-input"
             :placeholder="$t('recipes.outputQtyPlaceholder')" />
         </div>
         <div class="flex-1">
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">&nbsp;</label>
+          <label class="ios-label">&nbsp;</label>
           <select v-model="draft.output_unit_id"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+            class="ios-input">
             <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
           </select>
         </div>
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+        <label class="ios-label">
           {{ $t('recipes.batchCostLabel') }}
           <span class="font-normal normal-case tracking-normal ml-1">({{ draft.output_quantity || '?' }} {{ outputUnitCode || '?' }})</span>
         </label>
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="any"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('recipes.stdCostPlaceholder')" />
         <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
         <button v-if="draftTotalCost != null" type="button"
@@ -705,11 +693,11 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
       <div class="flex gap-6">
         <label class="flex items-center gap-2 cursor-pointer">
           <input v-model="draft.is_active" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
+          <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">
           <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
+          <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
         </label>
       </div>
 
@@ -825,59 +813,47 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
     <div class="p-4 space-y-4">
       <!-- Basic fields -->
-      <div class="space-y-3">
+      <div class="space-y-5">
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.name') }} *</label>
+          <label class="ios-label">{{ $t('recipes.name') }} *</label>
           <input v-model="draft.name"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="ios-input"
             :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.description') }}</label>
+          <label class="ios-label">{{ $t('recipes.description') }}</label>
           <textarea v-model="draft.description" rows="2"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="ios-input resize-none"
             :placeholder="$t('recipes.descPlaceholder')" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.productionNotes') }}</label>
+          <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
           <textarea v-model="draft.production_notes" rows="3"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="ios-input resize-none"
             :placeholder="$t('recipes.productionNotesPlaceholder')" />
         </div>
         <div class="flex gap-2">
           <div class="flex-1">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('recipes.output') }} *</label>
+            <label class="ios-label">{{ $t('recipes.output') }} *</label>
             <input v-model="draft.output_quantity" type="number" min="0.001" step="any"
-              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                     focus:outline-none focus:ring-1 focus:ring-gray-400
-                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              class="ios-input"
               :placeholder="$t('recipes.outputQtyPlaceholder')" />
           </div>
           <div class="flex-1">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">&nbsp;</label>
+            <label class="ios-label">&nbsp;</label>
             <select v-model="draft.output_unit_id"
-              class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                     focus:outline-none focus:ring-1 focus:ring-gray-400
-                     dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+              class="ios-input">
               <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
             </select>
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+          <label class="ios-label">
             {{ $t('recipes.batchCostLabel') }}
             <span class="font-normal normal-case tracking-normal ml-1">({{ draft.output_quantity || '?' }} {{ outputUnitCode || '?' }})</span>
           </label>
           <input v-model="draft.standard_unit_cost" type="number" min="0" step="any"
-            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                   focus:outline-none focus:ring-1 focus:ring-gray-400
-                   dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            class="ios-input"
             :placeholder="$t('recipes.stdCostPlaceholder')" />
           <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-0.5">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
           <button v-if="totalCost != null" type="button"
@@ -889,11 +865,11 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
         <div class="flex gap-6">
           <label class="flex items-center gap-2 cursor-pointer">
             <input v-model="draft.is_active" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
+            <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
+            <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
           </label>
         </div>
       </div>

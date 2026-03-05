@@ -137,33 +137,29 @@ async function doDelete() {
 
 
     <!-- View mode (existing) -->
-    <div v-if="!isNew" class="space-y-3">
+    <div v-if="!isNew" class="space-y-5">
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('allergens.name') }}</div>
-        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ allergen?.name }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('allergens.name') }}</div>
+        <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ allergen?.name }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">{{ $t('allergens.comment') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ allergen?.comment || '—' }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('allergens.comment') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ allergen?.comment || '—' }}</div>
       </div>
     </div>
 
     <!-- Create mode (new — inline, parent already provides the sheet) -->
-    <div v-if="isNew" class="space-y-3">
+    <div v-if="isNew" class="space-y-5">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
+        <label class="ios-label">{{ $t('allergens.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.comment') }}</label>
+        <label class="ios-label">{{ $t('allergens.comment') }}</label>
         <textarea v-model="draft.comment" rows="2"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('allergens.commentPlaceholder')" />
       </div>
     </div>
@@ -180,19 +176,15 @@ async function doDelete() {
     </div>
     <div class="p-4 space-y-4">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
+        <label class="ios-label">{{ $t('allergens.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.comment') }}</label>
+        <label class="ios-label">{{ $t('allergens.comment') }}</label>
         <textarea v-model="draft.comment" rows="2"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('allergens.commentPlaceholder')" />
       </div>
     </div>

@@ -328,11 +328,11 @@ async function doDelete() {
     <!-- View fields (existing ingredient) -->
     <template v-if="!isNew">
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.name') }}</div>
-        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ingredient?.name }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.name') }}</div>
+        <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ ingredient?.name }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.kind') }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.kind') }}</div>
         <span
           class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
           :class="ingredient!.kind === 'purchased'
@@ -341,21 +341,21 @@ async function doDelete() {
         >{{ ingredient!.kind }}</span>
       </div>
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.unit') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300">{{ ingredient?.default_unit_code }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.unit') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300">{{ ingredient?.default_unit_code }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.unitCost') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.unitCost') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300">
           {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost.toFixed(6)}` : '—' }}
         </div>
       </div>
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{{ $t('ingredients.comment') }}</div>
-        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ ingredient?.comment || '—' }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.comment') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ ingredient?.comment || '—' }}</div>
       </div>
       <div>
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.allergens') }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.allergens') }}</div>
         <div v-if="loadingDetail" class="text-sm text-gray-400">{{ $t('common.loading') }}</div>
         <div v-else-if="selectedAllergenIds.length === 0" class="text-sm text-gray-400">—</div>
         <div v-else class="flex flex-wrap gap-1">
@@ -371,43 +371,35 @@ async function doDelete() {
     <!-- Create mode (new — inline, parent already provides the sheet) -->
     <template v-if="isNew">
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.name') }} *</label>
+        <label class="ios-label">{{ $t('ingredients.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unit') }} *</label>
+        <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
         <select v-model="draft.default_unit_id"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          class="ios-input">
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unitCost') }}</label>
+        <label class="ios-label">{{ $t('ingredients.unitCost') }}</label>
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.comment') }}</label>
+        <label class="ios-label">{{ $t('ingredients.comment') }}</label>
         <textarea v-model="draft.comment" rows="2"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('ingredients.commentPlaceholder')" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ $t('ingredients.allergens') }}</label>
+        <label class="ios-label">{{ $t('ingredients.allergens') }}</label>
         <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
         <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
-          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 cursor-pointer">
+          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
             <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
               class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
             {{ al.name }}
@@ -436,43 +428,35 @@ async function doDelete() {
         @remove="removeImage"
       />
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.name') }} *</label>
+        <label class="ios-label">{{ $t('ingredients.name') }} *</label>
         <input v-model="draft.name"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
       </div>
       <div v-if="!isProduced">
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unit') }} *</label>
+        <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
         <select v-model="draft.default_unit_id"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+          class="ios-input">
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
         </select>
       </div>
       <div v-if="!isProduced">
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.unitCost') }}</label>
+        <label class="ios-label">{{ $t('ingredients.unitCost') }}</label>
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('ingredients.comment') }}</label>
+        <label class="ios-label">{{ $t('ingredients.comment') }}</label>
         <textarea v-model="draft.comment" rows="2"
-          class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900
-                 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none
-                 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          class="ios-input resize-none"
           :placeholder="$t('ingredients.commentPlaceholder')" />
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ $t('ingredients.allergens') }}</label>
+        <label class="ios-label">{{ $t('ingredients.allergens') }}</label>
         <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
         <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
-          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 cursor-pointer">
+          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
             <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
               class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
             {{ al.name }}
