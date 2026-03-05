@@ -55,11 +55,26 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
 </script>
 
 <template>
+  <div>
+  <!-- iOS nav bar -->
+  <div class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 relative flex items-center justify-end px-2 min-h-[44px]">
+    <span class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-20 truncate pointer-events-none">{{ $t('nav.recipes') }}</span>
+    <div class="relative z-10 flex items-center">
+      <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="refresh()">
+        <UIcon name="i-heroicons-arrow-path" class="w-5 h-5" />
+      </button>
+      <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="doPrint()">
+        <UIcon name="i-heroicons-printer" class="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+
   <div v-if="!canRead" class="p-6 text-red-600">
     403 – {{ $t('recipes.noPermission') }}
   </div>
 
-  <AdminTableShell v-else :error-text="errorText">
+  <div v-else class="p-4">
+  <AdminTableShell :error-text="errorText">
     <template #toolbar>
       <div class="flex items-center gap-2">
         <div class="flex items-stretch">
@@ -81,9 +96,6 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
             @click="filterText = ''"
           >✕</button>
         </div>
-        <div class="flex-1" />
-        <UButton icon="i-heroicons-printer" color="neutral" variant="soft" @click="doPrint()">{{ $t('common.print') }}</UButton>
-        <UButton icon="i-heroicons-arrow-path" color="neutral" variant="soft" @click="refresh()">{{ $t('common.refresh') }}</UButton>
       </div>
     </template>
 
@@ -167,4 +179,6 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
       </div>
     </template>
   </AdminTableShell>
+  </div>
+  </div>
 </template>

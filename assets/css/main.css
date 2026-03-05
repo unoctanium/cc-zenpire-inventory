@@ -129,6 +129,22 @@ html.splash-done::after {
   display: none;
 }
 
+/* ── iOS Alert (delete confirmation modal) ──────────────────────────────────
+   Backdrop fades, card springs in with a slight overshoot (iOS feel).
+   ──────────────────────────────────────────────────────────────────────── */
+.ios-alert-enter-active { transition: opacity 0.2s ease; }
+.ios-alert-leave-active { transition: opacity 0.15s ease; }
+.ios-alert-enter-from,
+.ios-alert-leave-to { opacity: 0; }
+
+.ios-alert-enter-active .ios-alert-card {
+  animation: ios-alert-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes ios-alert-in {
+  from { transform: scale(1.14); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
 /* ── App data tables: taller rows (≈150%) + subtle row dividers ────────────
    Targets all our tables (table-fixed text-sm for page tables,
    table-fixed text-xs for modal sub-tables). Outside @layer so these

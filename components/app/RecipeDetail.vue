@@ -489,37 +489,28 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
   <div class="p-4 space-y-4">
 
     <!-- ─── Header ──────────────────────────────────────────────────────────── -->
-    <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
-      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        <template v-if="isNew">{{ $t('recipes.newTitle') }}</template>
-        <template v-else>{{ $t('recipes.viewTitle') }}</template>
-      </h2>
-      <div v-if="!isNew" class="flex items-center gap-1">
-        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">
-          {{ $t('common.edit') }}
-        </UButton>
-        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printRecipe">
-          {{ $t('common.print') }}
-        </UButton>
-        <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">
-          {{ $t('common.delete') }}
-        </UButton>
+    <!-- New mode: sticky iOS nav bar -->
+    <div v-if="isNew" class="sticky top-0 z-10 -mx-4 -mt-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
+      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('recipes.newTitle') }}</span>
+      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="saveBasic">{{ $t('common.save') }}</button>
+    </div>
+    <!-- View mode: iOS nav bar -->
+    <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-2 min-h-[44px]">
+      <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ draft.name }}</h2>
+      <div class="relative z-10 flex items-center">
+        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
+          <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+        </button>
+        <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printRecipe">
+          <UIcon name="i-heroicons-printer" class="w-5 h-5" />
+        </button>
+        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-red-500 active:opacity-50" @click="confirmingDelete = true">
+          <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+        </button>
       </div>
     </div>
 
-    <!-- ─── Inline delete confirmation ──────────────────────────────────────── -->
-    <div
-      v-if="confirmingDelete"
-      class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 flex items-center justify-between gap-3"
-    >
-      <p class="text-sm text-red-700 dark:text-red-300">
-        {{ $t('recipes.deleteConfirmExisting', { name: recipe?.name ?? '' }) }}
-      </p>
-      <div class="flex gap-2 flex-none">
-        <UButton size="xs" color="neutral" variant="soft" @click="confirmingDelete = false">{{ $t('common.cancel') }}</UButton>
-        <UButton size="xs" color="error" @click="doDelete">{{ $t('common.delete') }}</UButton>
-      </div>
-    </div>
 
     <!-- ─── Image ────────────────────────────────────────────────────────────── -->
     <AdminImageUpload
@@ -670,12 +661,6 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
           <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
           <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
         </label>
-      </div>
-
-      <!-- Save / Cancel -->
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
-        <UButton :loading="saving" @click="saveBasic">{{ $t('common.save') }}</UButton>
       </div>
 
     </div>
@@ -830,11 +815,14 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
   <!-- Edit sheet (existing recipe) -->
   <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
-    <div class="p-4 space-y-4">
-      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
-        {{ $t('recipes.editTitle') }} — {{ draft.name }}
-      </h3>
+    <!-- Sticky iOS nav bar -->
+    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
+      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('recipes.editTitle') }} — {{ draft.name }}</span>
+      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="saveBasic">{{ $t('common.save') }}</button>
+    </div>
 
+    <div class="p-4 space-y-4">
       <!-- Basic fields -->
       <div class="space-y-3">
         <div>
@@ -907,10 +895,6 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
             <span class="text-sm text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
           </label>
         </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-          <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
-          <UButton :loading="saving" @click="saveBasic">{{ $t('common.save') }}</UButton>
-        </div>
       </div>
 
       <!-- Image (in edit sheet) -->
@@ -925,4 +909,33 @@ ${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-w
 
     </div>
   </AppBottomSheet>
+
+  <!-- iOS delete alert -->
+  <Teleport to="body">
+    <Transition name="ios-alert">
+      <div
+        v-if="confirmingDelete"
+        class="fixed inset-0 z-[200] flex items-center justify-center"
+        style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px)"
+      >
+        <div class="ios-alert-card w-[270px] rounded-[13px] bg-white dark:bg-[#1c1c1e] shadow-2xl overflow-hidden">
+          <div class="px-4 pt-5 pb-4 text-center">
+            <h3 class="text-[17px] font-semibold text-gray-900 dark:text-white leading-snug">
+              {{ $t('recipes.deleteConfirmExisting', { name: recipe?.name ?? '' }) }}
+            </h3>
+          </div>
+          <div class="border-t border-gray-300/60 dark:border-gray-600/60 grid grid-cols-2 divide-x divide-gray-300/60 dark:divide-gray-600/60">
+            <button
+              class="py-[11px] text-[17px] text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              @click="confirmingDelete = false"
+            >{{ $t('common.cancel') }}</button>
+            <button
+              class="py-[11px] text-[17px] font-semibold text-red-500 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              @click="doDelete"
+            >{{ $t('common.delete') }}</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>

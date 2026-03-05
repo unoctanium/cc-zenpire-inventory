@@ -113,26 +113,28 @@ async function doDelete() {
 <template>
   <div class="p-4 space-y-4">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
-      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-        {{ isNew ? $t('allergens.add') : allergen!.name }}
-      </h2>
-      <div v-if="!isNew" class="flex items-center gap-1">
-        <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-printer" @click="printAllergen">{{ $t('common.print') }}</UButton>
-        <UButton v-if="canManage" size="xs" color="neutral" variant="ghost" icon="i-heroicons-pencil-square" @click="startEdit">{{ $t('common.edit') }}</UButton>
-        <UButton v-if="canManage" size="xs" color="error" variant="ghost" icon="i-heroicons-trash" @click="confirmingDelete = true">{{ $t('common.delete') }}</UButton>
+    <!-- New mode: sticky iOS nav bar -->
+    <div v-if="isNew" class="sticky top-0 z-10 -mx-4 -mt-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
+      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('allergens.add') }}</span>
+      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
+    </div>
+    <!-- View mode: iOS nav bar -->
+    <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-2 min-h-[44px]">
+      <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ allergen?.name }}</h2>
+      <div class="relative z-10 flex items-center">
+        <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printAllergen">
+          <UIcon name="i-heroicons-printer" class="w-5 h-5" />
+        </button>
+        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
+          <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+        </button>
+        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-red-500 active:opacity-50" @click="confirmingDelete = true">
+          <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+        </button>
       </div>
     </div>
 
-    <!-- Delete confirmation -->
-    <div v-if="confirmingDelete" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 flex items-center justify-between gap-3">
-      <p class="text-sm text-red-700 dark:text-red-300">{{ $t('allergens.deleteConfirmExisting', { name: allergen?.name ?? '' }) }}</p>
-      <div class="flex gap-2 flex-none">
-        <UButton size="xs" color="neutral" variant="soft" @click="confirmingDelete = false">{{ $t('common.cancel') }}</UButton>
-        <UButton size="xs" color="error" @click="doDelete">{{ $t('common.delete') }}</UButton>
-      </div>
-    </div>
 
     <!-- View mode (existing) -->
     <div v-if="!isNew" class="space-y-3">
@@ -164,20 +166,19 @@ async function doDelete() {
                  dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           :placeholder="$t('allergens.commentPlaceholder')" />
       </div>
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
-        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
-      </div>
     </div>
 
   </div>
 
   <!-- Edit sheet (existing allergen) -->
   <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
-    <div class="p-4 space-y-4 max-w-sm">
-      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 pb-2 border-b border-gray-200 dark:border-gray-800">
-        {{ $t('common.edit') }} — {{ allergen?.name }}
-      </h3>
+    <!-- Sticky iOS nav bar -->
+    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
+      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('common.edit') }} — {{ allergen?.name }}</span>
+      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
+    </div>
+    <div class="p-4 space-y-4">
       <div>
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ $t('allergens.name') }} *</label>
         <input v-model="draft.name"
@@ -194,10 +195,35 @@ async function doDelete() {
                  dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           :placeholder="$t('allergens.commentPlaceholder')" />
       </div>
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-800">
-        <UButton color="neutral" variant="soft" @click="cancelEdit">{{ $t('common.cancel') }}</UButton>
-        <UButton :loading="saving" @click="save">{{ $t('common.save') }}</UButton>
-      </div>
     </div>
   </AppBottomSheet>
+
+  <!-- iOS delete alert -->
+  <Teleport to="body">
+    <Transition name="ios-alert">
+      <div
+        v-if="confirmingDelete"
+        class="fixed inset-0 z-[200] flex items-center justify-center"
+        style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px)"
+      >
+        <div class="ios-alert-card w-[270px] rounded-[13px] bg-white dark:bg-[#1c1c1e] shadow-2xl overflow-hidden">
+          <div class="px-4 pt-5 pb-4 text-center">
+            <h3 class="text-[17px] font-semibold text-gray-900 dark:text-white leading-snug">
+              {{ $t('allergens.deleteConfirmExisting', { name: allergen?.name ?? '' }) }}
+            </h3>
+          </div>
+          <div class="border-t border-gray-300/60 dark:border-gray-600/60 grid grid-cols-2 divide-x divide-gray-300/60 dark:divide-gray-600/60">
+            <button
+              class="py-[11px] text-[17px] text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              @click="confirmingDelete = false"
+            >{{ $t('common.cancel') }}</button>
+            <button
+              class="py-[11px] text-[17px] font-semibold text-red-500 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              @click="doDelete"
+            >{{ $t('common.delete') }}</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
