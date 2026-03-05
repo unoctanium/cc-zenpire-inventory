@@ -31,7 +31,7 @@ function onSaved() {
 }
 
 function onDeleted() {
-  navigateTo('/recipes')
+  navigateTo('/production')
 }
 </script>
 
