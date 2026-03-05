@@ -12,13 +12,13 @@ const ALL_APPS = [
     menuLinks: [] as AppMenuLink[],
   },
   {
-    id: 'recipes',
-    labelKey: 'nav.apps.recipes',
+    id: 'production',
+    labelKey: 'nav.apps.production',
     icon: 'i-heroicons-book-open',
-    to: '/recipes',
+    to: '/production',
     inTopBar: true,
     links: [
-      { labelKey: 'nav.recipes',     to: '/recipes'     },
+      { labelKey: 'nav.production',  to: '/production'  },
       { labelKey: 'nav.ingredients', to: '/ingredients' },
       { labelKey: 'nav.allergens',   to: '/allergens'   },
       { labelKey: 'nav.units',       to: '/units'       },
@@ -55,11 +55,11 @@ const ALL_APPS = [
 
 const ROUTE_MAP: Record<string, string> = {
   '/reports':            'reports',
-  '/recipes':            'recipes',
-  '/ingredients':        'recipes',
-  '/allergens':          'recipes',
-  '/allergen-card':      'recipes',
-  '/units':              'recipes',
+  '/production':         'production',
+  '/ingredients':        'production',
+  '/allergens':          'production',
+  '/allergen-card':      'production',
+  '/units':              'production',
   '/stock':              'stock',
   '/':                   'dashboard',
 }

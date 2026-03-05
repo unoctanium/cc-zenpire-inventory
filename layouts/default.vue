@@ -55,7 +55,7 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
 const backNav = computed(() => {
   const p = route.path
   if (p.startsWith('/reports/'))    return { label: t('nav.apps.reports'), to: '/reports' }
-  if (/^\/recipes\/.+/.test(p))     return { label: t('nav.recipes'),      to: '/recipes' }
+  if (/^\/production\/.+/.test(p))  return { label: t('nav.production'),   to: '/production' }
   if (/^\/ingredients\/.+/.test(p)) return { label: t('nav.ingredients'),  to: '/ingredients' }
   if (/^\/units\/.+/.test(p))       return { label: t('nav.units'),        to: '/units' }
   if (/^\/allergens\/.+/.test(p))   return { label: t('nav.allergens'),    to: '/allergens' }

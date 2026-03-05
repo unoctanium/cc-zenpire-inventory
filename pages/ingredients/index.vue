@@ -108,13 +108,13 @@ function handleMobileTap(id: string) {
         <!-- TABLET -->
         <button
           v-for="i in filteredIngredients" :key="i.id"
-          class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="hidden sm:flex w-full items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           :class="selectedId === i.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectIngredient(i.id)"
         >
-          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+          <span class="flex-1 text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate" :class="i.kind === 'produced' ? 'opacity-60' : ''">
             {{ i.name }}
           </span>
           <span
@@ -128,17 +128,17 @@ function handleMobileTap(id: string) {
         <!-- MOBILE -->
         <button
           v-for="i in filteredIngredients" :key="i.id + '-m'"
-          class="sm:hidden flex w-full items-center gap-2 px-4 py-3 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="sm:hidden flex w-full items-center gap-2 px-4 py-4 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           @click="handleMobileTap(i.id)"
         >
-          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100" :class="i.kind === 'produced' ? 'opacity-60' : ''">{{ i.name }}</span>
+          <span class="flex-1 text-[17px] font-medium text-gray-900 dark:text-gray-100" :class="i.kind === 'produced' ? 'opacity-60' : ''">{{ i.name }}</span>
           <span
             class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
             :class="i.kind === 'purchased'
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
               : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'"
           >{{ i.kind[0] }}</span>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 flex-none" />
+          <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-300 flex-none" />
         </button>
       </div>
     </template>

@@ -18,6 +18,7 @@
     "apps": {
       "dashboard": "ダッシュボード",
       "recipes": "レシピ",
+      "production": "製造",
       "reports": "レポート",
       "stock": "在庫",
       "admin": "管理設定",

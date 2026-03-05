@@ -96,24 +96,24 @@ function handleMobileTap(id: string) {
         <!-- TABLET -->
         <button
           v-for="a in filteredAllergens" :key="a.id"
-          class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="hidden sm:flex w-full items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           :class="selectedId === a.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectAllergen(a)"
         >
-          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ a.name }}</span>
+          <span class="flex-1 text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ a.name }}</span>
           <span v-if="a.comment" class="text-xs text-gray-400 truncate max-w-[80px]">{{ a.comment }}</span>
         </button>
 
         <!-- MOBILE -->
         <button
           v-for="a in filteredAllergens" :key="a.id + '-m'"
-          class="sm:hidden flex w-full items-center gap-2 px-4 py-3 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="sm:hidden flex w-full items-center gap-2 px-4 py-4 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           @click="handleMobileTap(a.id)"
         >
-          <span class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ a.name }}</span>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400 flex-none" />
+          <span class="flex-1 text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ a.name }}</span>
+          <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-300 flex-none" />
         </button>
       </div>
     </template>

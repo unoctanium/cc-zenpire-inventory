@@ -18,6 +18,7 @@
     "apps": {
       "dashboard": "Dashboard",
       "recipes": "Rezepte",
+      "production": "Produktion",
       "reports": "Berichte",
       "stock": "Lager",
       "admin": "Admin-Einstellungen",
