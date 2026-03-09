@@ -83,6 +83,7 @@ const ALL_APPS = [
     links: [
       { labelKey: 'nav.adminDb',     to: '/admin/db'     },
       { labelKey: 'nav.adminStores', to: '/admin/stores' },
+      { labelKey: 'nav.adminUsers',  to: '/admin/users'  },
     ] as AppLink[],
     menuLinks: [] as AppMenuLink[],
   },
