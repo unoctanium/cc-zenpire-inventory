@@ -293,6 +293,20 @@
     "noPermission": "このページへのアクセス権限がありません。",
     "selectPrompt": "クライアントを選択"
   },
+  "settings": {
+    "title": "ユーザー設定",
+    "firstName": "名",
+    "lastName": "姓",
+    "telephone": "電話番号",
+    "saved": "プロフィールを保存しました",
+    "changePassword": "パスワードを変更",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "パスワードを確認",
+    "passwordMismatch": "パスワードが一致しません。",
+    "passwordTooShort": "パスワードは6文字以上必要です。",
+    "passwordChanged": "パスワードが正常に変更されました。",
+    "passwordChangeFailed": "パスワードの変更に失敗しました。"
+  },
   "devTools": {
     "title": "開発ツール",
     "subtitle": "DEV_MODE=1 の場合のみ使用可能",

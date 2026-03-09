@@ -295,6 +295,20 @@
     "noPermission": "You do not have permission to access this page.",
     "selectPrompt": "Select a client"
   },
+  "settings": {
+    "title": "User Settings",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "telephone": "Telephone",
+    "saved": "Profile saved",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordChanged": "Password changed successfully.",
+    "passwordChangeFailed": "Failed to change password."
+  },
   "devTools": {
     "title": "Dev Tools",
     "subtitle": "Only available when DEV_MODE=1",
