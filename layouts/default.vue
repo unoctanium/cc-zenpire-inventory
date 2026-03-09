@@ -61,6 +61,7 @@ const FLAG: Record<string, string> = { en: '🇺🇸', de: '🇩🇪', ja: '🇯
 const backNav = computed(() => {
   const p = route.path
   if (p.startsWith('/reports/'))    return { label: t('nav.apps.reports'), to: '/reports' }
+  if (p.startsWith('/admin/'))      return { label: t('nav.adminSettings'), to: '/admin'   }
   if (/^\/production\/.+/.test(p))  return { label: t('nav.recipe'),       to: '/production' }
   if (/^\/ingredients\/.+/.test(p)) return { label: t('nav.ingredients'),  to: '/ingredients' }
   if (/^\/units\/.+/.test(p))       return { label: t('nav.units'),        to: '/units' }
@@ -332,7 +333,7 @@ function openSubNavMore(event: MouseEvent) {
             <div class="flex-1 overflow-y-auto py-2">
               <NuxtLink
                 v-if="isAdmin"
-                to="/admin/seed"
+                to="/admin"
                 class="w-full flex items-center gap-3 pl-8 pr-5 py-3.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
                 @click="userDrawerOpen = false"
               >
