@@ -78,21 +78,18 @@ const ALL_APPS = [
     id: 'admin',
     labelKey: 'nav.apps.admin',
     icon: 'i-heroicons-cog-6-tooth',
-    to: '/admin',
+    to: '/admin/seed',
     inTopBar: false,
-    links: [] as AppLink[],
-    menuLinks: [
-      { labelKey: 'nav.adminSeed',         to: '/admin/seed',          icon: 'i-heroicons-circle-stack'       },
-      { labelKey: 'nav.adminImportExport', to: '/admin/import-export', icon: 'i-heroicons-arrows-right-left'  },
-      { labelKey: 'nav.adminStores',       to: '/admin/stores',        icon: 'i-heroicons-building-storefront' },
-    ] as AppMenuLink[],
+    links: [
+      { labelKey: 'nav.adminSeed',          to: '/admin/seed'          },
+      { labelKey: 'nav.adminImportExport',  to: '/admin/import-export' },
+      { labelKey: 'nav.adminStores',        to: '/admin/stores'        },
+    ] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
   },
 ]
 
 const ROUTE_MAP: Record<string, string> = {
-  '/admin/seed':         'admin',
-  '/admin/import-export': 'admin',
-  '/admin/stores':       'admin',
   '/admin':              'admin',
   '/superadmin':         'admin',
   '/reports':            'reports',
