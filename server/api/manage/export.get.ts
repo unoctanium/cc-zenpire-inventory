@@ -13,9 +13,7 @@ import { supabaseAdmin }      from '~/server/utils/supabase'
  *   app:         'zenpire-inventory',
  *   exported_at: <ISO string>,
  *   tables: {
- *     unit, allergen, ingredient, recipe, recipe_component, recipe_step,
- *     supplier, supplier_offer, supplier_offer_price,
- *     ingredient_supplier_offer, ingredient_stock
+ *     unit, allergen, ingredient, recipe, recipe_component
  *   }
  * }
  *
@@ -46,22 +44,12 @@ export default defineEventHandler(async (event) => {
     ingredient,
     recipe,
     recipe_component,
-    supplier,
-    supplier_offer,
-    supplier_offer_price,
-    ingredient_supplier_offer,
-    ingredient_stock,
   ] = await Promise.all([
     fetchTable('unit'),
     fetchTable('allergen'),
     fetchTable('ingredient'),
     fetchTable('recipe'),
     fetchTable('recipe_component'),
-    fetchTable('supplier'),
-    fetchTable('supplier_offer'),
-    fetchTable('supplier_offer_price'),
-    fetchTable('ingredient_supplier_offer'),
-    fetchTable('ingredient_stock'),
   ])
 
   return {
@@ -79,11 +67,6 @@ export default defineEventHandler(async (event) => {
       recipe,
       // 4. join/child tables
       recipe_component,
-      supplier,
-      supplier_offer,
-      supplier_offer_price,
-      ingredient_supplier_offer,
-      ingredient_stock,
     },
   }
 })

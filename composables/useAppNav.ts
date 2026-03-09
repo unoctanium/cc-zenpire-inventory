@@ -18,7 +18,7 @@ const ALL_APPS = [
     to: '/production',
     inTopBar: true,
     links: [
-      { labelKey: 'nav.production',  to: '/production'  },
+      { labelKey: 'nav.recipes',     to: '/production'  },
       { labelKey: 'nav.ingredients', to: '/ingredients' },
       { labelKey: 'nav.allergens',   to: '/allergens'   },
       { labelKey: 'nav.units',       to: '/units'       },

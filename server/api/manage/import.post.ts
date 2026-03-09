@@ -4,8 +4,6 @@ import { supabaseAdmin }      from '~/server/utils/supabase'
 const EXPECTED_TABLES = [
   'unit', 'allergen', 'ingredient', 'recipe',
   'recipe_component',
-  'supplier', 'supplier_offer', 'supplier_offer_price',
-  'ingredient_supplier_offer', 'ingredient_stock',
 ] as const
 
 type TableName = typeof EXPECTED_TABLES[number]
@@ -20,7 +18,7 @@ type TableName = typeof EXPECTED_TABLES[number]
  *   Pass 1: unit, allergen
  *   Pass 2: ingredient (produced_by_recipe_id forced to null)
  *   Pass 3: recipe
- *   Pass 4: join/child tables (recipe_component, supplier, etc.)
+ *   Pass 4: join/child tables (recipe_component)
  *   Pass 5: patch ingredient.produced_by_recipe_id for rows that had a non-null value
  *
  * NOTE: Keep this file in sync with export.get.ts and export-plain.get.ts whenever
@@ -80,12 +78,7 @@ export default defineEventHandler(async (event) => {
   await insert('recipe', tables.recipe)
 
   // --- Step 5: Pass 4 — join/child tables ---
-  await insert('recipe_component',         tables.recipe_component)
-  await insert('supplier',                 tables.supplier)
-  await insert('supplier_offer',           tables.supplier_offer)
-  await insert('supplier_offer_price',     tables.supplier_offer_price)
-  await insert('ingredient_supplier_offer', tables.ingredient_supplier_offer)
-  await insert('ingredient_stock',         tables.ingredient_stock)
+  await insert('recipe_component', tables.recipe_component)
 
   // --- Step 6: Pass 5 — patch produced_by_recipe_id ---
   for (const row of ingredientsWithRecipeLink) {

@@ -29,22 +29,12 @@ export default defineEventHandler(async (event) => {
     ingredientRaw,
     recipeRaw,
     recipe_component,
-    supplier,
-    supplier_offer,
-    supplier_offer_price,
-    ingredient_supplier_offer,
-    ingredient_stock,
   ] = await Promise.all([
     fetchTable('unit'),
     fetchTable('allergen'),
     fetchTable('ingredient'),
     fetchTable('recipe'),
     fetchTable('recipe_component'),
-    fetchTable('supplier'),
-    fetchTable('supplier_offer'),
-    fetchTable('supplier_offer_price'),
-    fetchTable('ingredient_supplier_offer'),
-    fetchTable('ingredient_stock'),
   ])
 
   const ingredient = (ingredientRaw as any[]).map(r => ({ ...r, image_data: null, image_mime: null }))
@@ -61,11 +51,6 @@ export default defineEventHandler(async (event) => {
       ingredient,
       recipe,
       recipe_component,
-      supplier,
-      supplier_offer,
-      supplier_offer_price,
-      ingredient_supplier_offer,
-      ingredient_stock,
     },
   }
 })
