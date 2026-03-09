@@ -4,7 +4,7 @@ import { requirePermission } from '~/server/utils/require-permission'
 import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'recipe.manage')
+  await requirePermission(event, 'store.manage')
   const { clientId } = await resolveAppUser(event)
 
   const id = getRouterParam(event, 'id')
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
   const admin = supabaseAdmin()
   const { error } = await admin
-    .from('recipe')
+    .from('store')
     .delete()
     .eq('id', id)
     .eq('client_id', clientId)

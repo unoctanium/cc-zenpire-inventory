@@ -1,9 +1,11 @@
 import { createError, readBody } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
+import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'recipe.manage')
+  const { clientId } = await resolveAppUser(event)
 
   const body = await readBody(event)
   const name               = String(body?.name             ?? '').trim()
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('recipe')
-    .insert({ name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product })
+    .insert({ client_id: clientId, name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product })
     .select('id, name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product, created_at, updated_at')
     .single()
 

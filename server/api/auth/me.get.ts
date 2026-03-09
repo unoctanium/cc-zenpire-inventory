@@ -10,52 +10,34 @@ export default defineEventHandler(async (event) => {
   }
 
   const authUserId = userData.user.id
-  const email = userData.user.email ?? null
-  const admin = supabaseAdmin()
+  const admin      = supabaseAdmin()
 
-  // ensure app_user exists
-  const { data: existing, error: selErr } = await admin
+  const { data: appUser, error: auErr } = await admin
     .from('app_user')
-    .select('id')
+    .select('id, client_id')
     .eq('auth_user_id', authUserId)
     .maybeSingle()
 
-  if (selErr) throw createError({ statusCode: 500, statusMessage: selErr.message })
+  if (auErr) throw createError({ statusCode: 500, statusMessage: auErr.message })
+  if (!appUser) throw createError({ statusCode: 403, statusMessage: 'No account found. Contact your administrator.' })
 
-  let appUserId = existing?.id
+  const [permsRes, storesRes] = await Promise.all([
+    admin.from('v_user_permissions').select('permission_code').eq('auth_user_id', authUserId),
+    admin.from('store').select('id, name, address').eq('client_id', appUser.client_id).order('name'),
+  ])
 
-  if (!appUserId) {
-    const { data: created, error: insErr } = await admin
-      .from('app_user')
-      .insert({
-        auth_user_id: authUserId,
-        email: email ?? '(unknown)',
-        display_name: email ?? '(unknown)',
-        is_active: true,
-      })
-      .select('id')
-      .single()
+  if (permsRes.error) throw createError({ statusCode: 500, statusMessage: permsRes.error.message })
 
-    if (insErr) throw createError({ statusCode: 500, statusMessage: insErr.message })
-    appUserId = created.id
-  }
-
-  const { data: perms, error: permErr } = await admin
-    .from('v_user_permissions')
-    .select('permission_code')
-    .eq('auth_user_id', authUserId)
-
-  const isAdmin = (perms ?? []).some((p) => p.permission_code === 'admin')   
-
-  if (permErr) throw createError({ statusCode: 500, statusMessage: permErr.message })
-
+  const permissions = (permsRes.data ?? []).map((p) => p.permission_code).sort()
 
   return {
-    ok: true,
-    email,
-    app_user_id: appUserId,
-    permissions: (perms ?? []).map((p) => p.permission_code).sort(),
-    is_admin: isAdmin,
+    ok:           true,
+    email:        userData.user.email ?? null,
+    app_user_id:  appUser.id,
+    client_id:    appUser.client_id,
+    permissions,
+    is_admin:     permissions.includes('admin'),
+    is_superadmin: permissions.includes('superadmin'),
+    stores:       storesRes.data ?? [],
   }
-
 })

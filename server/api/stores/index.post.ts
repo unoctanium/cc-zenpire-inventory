@@ -1,30 +1,25 @@
-import { createError, readBody, getRouterParam } from 'h3'
+import { createError, readBody } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
 import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'recipe.manage')
+  await requirePermission(event, 'store.manage')
   const { clientId } = await resolveAppUser(event)
-
-  const id = getRouterParam(event, 'id')
-  if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
 
   const body    = await readBody(event)
   const name    = String(body?.name    ?? '').trim()
-  const comment = body?.comment != null ? String(body.comment).trim() || null : null
+  const address = body?.address ? String(body.address).trim() || null : null
 
   if (!name) throw createError({ statusCode: 400, statusMessage: 'Missing name' })
 
   const admin = supabaseAdmin()
   const { data, error } = await admin
-    .from('allergen')
-    .update({ name, comment, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('client_id', clientId)
-    .select('id, name, comment, created_at, updated_at')
+    .from('store')
+    .insert({ client_id: clientId, name, address })
+    .select('id, name, address, created_at')
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })
-  return { ok: true, allergen: data }
+  return { ok: true, store: data }
 })

@@ -1,9 +1,14 @@
+export type StoreItem = { id: string; name: string; address: string | null }
+
 export type AuthState = {
   ok: boolean
   email: string
   app_user_id: string
+  client_id: string
   permissions: string[]
   is_admin: boolean
+  is_superadmin: boolean
+  stores: StoreItem[]
 } | null
 
 export const useAuth = () => useState<AuthState>('auth', () => null)

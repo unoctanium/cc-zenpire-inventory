@@ -1,9 +1,11 @@
 import { createError } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
+import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'admin')
+  const { clientId } = await resolveAppUser(event)
 
   const admin = supabaseAdmin()
 
@@ -11,6 +13,7 @@ export default defineEventHandler(async (event) => {
     admin
       .from('app_user')
       .select('id, auth_user_id, email, display_name, is_active, created_at, user_role(role(id, code, name))')
+      .eq('client_id', clientId)
       .order('email'),
     admin
       .from('role')

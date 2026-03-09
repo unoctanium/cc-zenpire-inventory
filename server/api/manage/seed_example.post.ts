@@ -3,12 +3,15 @@ import { requireAdminDev } from '~/server/utils/require-admin-dev'
 type U = { id: string; code: string }
 
 export default defineEventHandler(async (event) => {
-  const { admin } = await requireAdminDev(event)
+  const { admin, clientId } = await requireAdminDev(event)
 
   // -----------------------
   // Units — resolve IDs (seed_initial must have run first)
   // -----------------------
-  const { data: units, error: uErr } = await admin.from('unit').select('id, code')
+  const { data: units, error: uErr } = await admin
+    .from('unit')
+    .select('id, code')
+    .eq('client_id', clientId)
   if (uErr) throw createError({ statusCode: 500, statusMessage: uErr.message })
 
   const unitId = new Map<string, string>((units as U[]).map((u) => [u.code, u.id]))
@@ -36,12 +39,21 @@ export default defineEventHandler(async (event) => {
   const ingredientIds: Record<string, string> = {}
 
   for (const i of ingredientDefs) {
-    const { data: ex } = await admin.from('ingredient').select('id').eq('name', i.name).maybeSingle()
+    const { data: ex } = await admin
+      .from('ingredient')
+      .select('id')
+      .eq('name', i.name)
+      .eq('client_id', clientId)
+      .maybeSingle()
     if (ex?.id) {
       ingredientIds[i.name] = ex.id
       continue
     }
-    const { data: created } = await admin.from('ingredient').insert(i).select('id').single()
+    const { data: created } = await admin
+      .from('ingredient')
+      .insert({ client_id: clientId, ...i })
+      .select('id')
+      .single()
     ingredientIds[i.name] = created!.id
   }
 
@@ -51,7 +63,12 @@ export default defineEventHandler(async (event) => {
 
   // Dashi — pre-product
   let dashiId: string
-  const { data: exDashi } = await admin.from('recipe').select('id').eq('name', 'Dashi').maybeSingle()
+  const { data: exDashi } = await admin
+    .from('recipe')
+    .select('id')
+    .eq('name', 'Dashi')
+    .eq('client_id', clientId)
+    .maybeSingle()
   if (exDashi?.id) {
     dashiId = exDashi.id
     await admin.from('recipe').update({
@@ -65,6 +82,7 @@ export default defineEventHandler(async (event) => {
     }).eq('id', dashiId)
   } else {
     const { data: created } = await admin.from('recipe').insert({
+      client_id: clientId,
       name: 'Dashi',
       description: 'Japanese soup stock',
       production_notes: 'Simmer nori in cold water for 30 min. Remove nori before boiling. Cool and store.',
@@ -92,7 +110,12 @@ export default defineEventHandler(async (event) => {
 
   // Ramen — main recipe
   let ramenId: string
-  const { data: exRamen } = await admin.from('recipe').select('id').eq('name', 'Ramen').maybeSingle()
+  const { data: exRamen } = await admin
+    .from('recipe')
+    .select('id')
+    .eq('name', 'Ramen')
+    .eq('client_id', clientId)
+    .maybeSingle()
   if (exRamen?.id) {
     ramenId = exRamen.id
     await admin.from('recipe').update({
@@ -105,6 +128,7 @@ export default defineEventHandler(async (event) => {
     }).eq('id', ramenId)
   } else {
     const { data: created } = await admin.from('recipe').insert({
+      client_id: clientId,
       name: 'Ramen',
       description: 'Classic Japanese ramen bowl',
       production_notes: 'Cook noodles al dente. Heat dashi to 80°C. Assemble: noodles in bowl, ladle 200 ml dashi, garnish.',

@@ -1,19 +1,19 @@
 import { requireAdminDev } from '~/server/utils/require-admin-dev'
 
 export default defineEventHandler(async (event) => {
-  const { admin } = await requireAdminDev(event)
+  const { admin, clientId } = await requireAdminDev(event)
 
   // ── Units ────────────────────────────────────────────────────────────────────
 
   const baseUnits = [
-    { code: 'g',   name: 'Gram',       unit_type: 'mass',   factor: 1    },
-    { code: 'kg',  name: 'Kilogram',   unit_type: 'mass',   factor: 1000 },
-    { code: 'ml',  name: 'Milliliter', unit_type: 'volume', factor: 1    },
-    { code: 'l',   name: 'Liter',      unit_type: 'volume', factor: 1000 },
-    { code: 'pcs', name: 'Pieces',     unit_type: 'count',  factor: 1    },
+    { client_id: clientId, code: 'g',   name: 'Gram',       unit_type: 'mass',   factor: 1    },
+    { client_id: clientId, code: 'kg',  name: 'Kilogram',   unit_type: 'mass',   factor: 1000 },
+    { client_id: clientId, code: 'ml',  name: 'Milliliter', unit_type: 'volume', factor: 1    },
+    { client_id: clientId, code: 'l',   name: 'Liter',      unit_type: 'volume', factor: 1000 },
+    { client_id: clientId, code: 'pcs', name: 'Pieces',     unit_type: 'count',  factor: 1    },
   ]
 
-  const { error: uErr } = await admin.from('unit').upsert(baseUnits, { onConflict: 'code' })
+  const { error: uErr } = await admin.from('unit').upsert(baseUnits, { onConflict: 'client_id,code' })
   if (uErr) throw createError({ statusCode: 500, statusMessage: uErr.message })
 
   // ── EU Allergens (14 mandatory) ───────────────────────────────────────────────
@@ -38,13 +38,18 @@ export default defineEventHandler(async (event) => {
   const seededAllergens: string[] = []
 
   for (const a of allergenDefs) {
-    const { data: ex } = await admin.from('allergen').select('id').ilike('name', a.name).maybeSingle()
+    const { data: ex } = await admin
+      .from('allergen')
+      .select('id')
+      .ilike('name', a.name)
+      .eq('client_id', clientId)
+      .maybeSingle()
     if (ex?.id) {
       await admin.from('allergen').update({ comment: a.comment }).eq('id', ex.id)
       seededAllergens.push(a.name)
       continue
     }
-    const { error: aErr } = await admin.from('allergen').insert(a)
+    const { error: aErr } = await admin.from('allergen').insert({ client_id: clientId, ...a })
     if (aErr) throw createError({ statusCode: 500, statusMessage: aErr.message })
     seededAllergens.push(a.name)
   }

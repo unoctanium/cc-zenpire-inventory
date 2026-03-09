@@ -29,7 +29,7 @@ export async function requireAdminDev(event: any) {
 
   const { data: au, error: auErr } = await admin
     .from('app_user')
-    .select('id')
+    .select('id, client_id')
     .eq('auth_user_id', userData.user.id)
     .single()
 
@@ -37,5 +37,5 @@ export async function requireAdminDev(event: any) {
     throw createError({ statusCode: 500, statusMessage: 'Could not resolve app_user' })
   }
 
-  return { admin, appUserId: au.id as string }
+  return { admin, appUserId: au.id as string, clientId: au.client_id as string }
 }

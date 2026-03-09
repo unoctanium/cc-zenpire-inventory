@@ -45,6 +45,7 @@ const ALL_APPS = [
     links: [
       { labelKey: 'nav.adminSeed',          to: '/admin/seed'          },
       { labelKey: 'nav.adminImportExport',  to: '/admin/import-export' },
+      { labelKey: 'nav.adminStores',        to: '/admin/stores'        },
     ] as AppLink[],
     menuLinks: [] as AppMenuLink[],
   },
@@ -67,6 +68,7 @@ const ALL_APPS = [
 
 const ROUTE_MAP: Record<string, string> = {
   '/admin':              'admin',
+  '/superadmin':         'admin',
   '/reports':            'reports',
   '/production':         'production',
   '/ingredients':        'production',

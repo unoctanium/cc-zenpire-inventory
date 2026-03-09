@@ -1,5 +1,6 @@
 import { requirePermission } from '~/server/utils/require-permission'
 import { supabaseAdmin }      from '~/server/utils/supabase'
+import { resolveAppUser }     from '~/server/utils/resolve-app-user'
 
 const EXPECTED_TABLES = [
   'unit', 'allergen', 'ingredient', 'recipe',
@@ -11,7 +12,8 @@ type TableName = typeof EXPECTED_TABLES[number]
 /**
  * POST /api/manage/import
  *
- * Replaces all business data with the contents of a previously exported JSON file.
+ * Replaces all business data for the current client with the contents of a
+ * previously exported JSON file.
  * Requires the `admin.export` permission.
  *
  * Import order handles the circular FK between ingredient and recipe:
@@ -26,6 +28,7 @@ type TableName = typeof EXPECTED_TABLES[number]
  */
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'admin.export')
+  const { clientId } = await resolveAppUser(event)
 
   const body = await readBody(event)
 
@@ -51,6 +54,11 @@ export default defineEventHandler(async (event) => {
   const tables = body.tables as Record<TableName, any[]>
   const admin  = supabaseAdmin()
 
+  // Override client_id on all rows to ensure they belong to this client
+  function withClient(rows: any[]) {
+    return rows.map(r => ({ ...r, client_id: clientId }))
+  }
+
   async function insert(table: TableName, rows: any[]) {
     if (rows.length === 0) return
     const { error } = await admin.from(table).insert(rows)
@@ -59,25 +67,38 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // --- Step 1: Purge ---
-  const { error: purgeError } = await admin.rpc('fn_dev_purge_all')
-  if (purgeError) {
-    throw createError({ statusCode: 500, statusMessage: `Purge failed: ${purgeError.message}` })
+  // --- Step 1: Purge current client's data in reverse dependency order ---
+  const recipeIds = await admin
+    .from('recipe').select('id').eq('client_id', clientId)
+    .then(r => (r.data ?? []).map((x: any) => x.id))
+  const ingredientIds = await admin
+    .from('ingredient').select('id').eq('client_id', clientId)
+    .then(r => (r.data ?? []).map((x: any) => x.id))
+
+  if (recipeIds.length > 0) {
+    await admin.from('recipe_component').delete().in('recipe_id', recipeIds)
   }
+  if (ingredientIds.length > 0) {
+    await admin.from('ingredient_allergen').delete().in('ingredient_id', ingredientIds)
+  }
+  await admin.from('recipe').delete().eq('client_id', clientId)
+  await admin.from('ingredient').delete().eq('client_id', clientId)
+  await admin.from('allergen').delete().eq('client_id', clientId)
+  await admin.from('unit').delete().eq('client_id', clientId)
 
   // --- Step 2: Pass 1 — no-dep tables ---
-  await insert('unit',     tables.unit)
-  await insert('allergen', tables.allergen)
+  await insert('unit',     withClient(tables.unit))
+  await insert('allergen', withClient(tables.allergen))
 
   // --- Step 3: Pass 2 — ingredient with produced_by_recipe_id nulled out ---
   const ingredientsWithRecipeLink = tables.ingredient.filter(r => r.produced_by_recipe_id != null)
-  const ingredientsNulled = tables.ingredient.map(r => ({ ...r, produced_by_recipe_id: null }))
+  const ingredientsNulled = withClient(tables.ingredient.map(r => ({ ...r, produced_by_recipe_id: null })))
   await insert('ingredient', ingredientsNulled)
 
   // --- Step 4: Pass 3 — recipe ---
-  await insert('recipe', tables.recipe)
+  await insert('recipe', withClient(tables.recipe))
 
-  // --- Step 5: Pass 4 — join/child tables ---
+  // --- Step 5: Pass 4 — join/child tables (no client_id column) ---
   await insert('recipe_component', tables.recipe_component)
 
   // --- Step 6: Pass 5 — patch produced_by_recipe_id ---

@@ -3,10 +3,15 @@ import { useAuth } from '~/composables/useAuth'
 
 const { locale, locales, setLocale, t } = useI18n({ useScope: 'global' })
 
-const auth     = useAuth()
-const isAuthed = computed(() => Boolean(auth.value?.ok))
-const email    = computed(() => auth.value?.email ?? '')
-const isAdmin  = computed(() => Boolean(auth.value?.is_admin))
+const auth          = useAuth()
+const isAuthed      = computed(() => Boolean(auth.value?.ok))
+const email         = computed(() => auth.value?.email ?? '')
+const isAdmin       = computed(() => Boolean(auth.value?.is_admin))
+const isSuperadmin  = computed(() => Boolean(auth.value?.is_superadmin))
+const stores        = computed(() => auth.value?.stores ?? [])
+
+const { currentStore, setStore } = useCurrentStore()
+const storePickerOpen = ref(false)
 const initials = computed(() => initialsFromEmail(email.value))
 
 const route = useRoute()
@@ -290,6 +295,35 @@ function openSubNavMore(event: MouseEvent) {
                 >
                   {{ FLAG[loc.code] ?? loc.code }}
                 </button>
+              </div>
+            </div>
+
+            <!-- Store selector -->
+            <div v-if="stores.length > 0" class="px-6 py-3 border-b border-gray-100">
+              <p class="text-xs text-gray-400 mb-1">{{ $t('stores.currentStore') }}</p>
+              <div class="relative">
+                <button
+                  class="w-full flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  @click="storePickerOpen = !storePickerOpen"
+                >
+                  <span class="truncate font-medium">{{ currentStore?.name ?? $t('stores.noStore') }}</span>
+                  <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 text-gray-400 flex-none" />
+                </button>
+                <div
+                  v-if="storePickerOpen"
+                  class="absolute left-0 right-0 top-full mt-1 z-10 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+                >
+                  <button
+                    v-for="store in stores"
+                    :key="store.id"
+                    class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-left"
+                    :class="currentStore?.id === store.id ? 'font-semibold' : 'text-gray-700'"
+                    :style="currentStore?.id === store.id ? 'color: var(--color-app-bar)' : ''"
+                    @click="setStore(store); storePickerOpen = false"
+                  >
+                    {{ store.name }}
+                  </button>
+                </div>
               </div>
             </div>
 

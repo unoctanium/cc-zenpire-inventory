@@ -1,9 +1,11 @@
 import { createError, readBody, getRouterParam } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
+import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'unit.manage')
+  const { clientId } = await resolveAppUser(event)
 
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
@@ -26,6 +28,7 @@ export default defineEventHandler(async (event) => {
     .from('unit')
     .update({ code, name, unit_type, factor })
     .eq('id', id)
+    .eq('client_id', clientId)
     .select('id, code, name, unit_type, factor')
     .single()
 

@@ -1,16 +1,19 @@
 import { createError } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
+import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
   await requireAnyPermission(event, ['recipe.manage', 'recipe.read'])
+  const { clientId } = await resolveAppUser(event)
 
   const admin = supabaseAdmin()
 
-  // Fetch all allergens
+  // Fetch all allergens for this client
   const { data: allergenData, error: allergenErr } = await admin
     .from('allergen')
     .select('id, name')
+    .eq('client_id', clientId)
     .order('name', { ascending: true })
 
   if (allergenErr) throw createError({ statusCode: 500, statusMessage: allergenErr.message })
@@ -30,6 +33,7 @@ export default defineEventHandler(async (event) => {
         )
       )
     `)
+    .eq('client_id', clientId)
     .order('name', { ascending: true })
 
   if (recipeErr) throw createError({ statusCode: 500, statusMessage: recipeErr.message })

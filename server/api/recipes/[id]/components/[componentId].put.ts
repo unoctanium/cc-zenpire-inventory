@@ -1,15 +1,24 @@
 import { createError, readBody, getRouterParam } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requirePermission } from '~/server/utils/require-permission'
+import { resolveAppUser } from '~/server/utils/resolve-app-user'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'recipe.manage')
+  const { clientId } = await resolveAppUser(event)
 
   const recipe_id    = getRouterParam(event, 'id')
   const component_id = getRouterParam(event, 'componentId')
   if (!recipe_id || !component_id) {
     throw createError({ statusCode: 400, statusMessage: 'Missing recipe id or component id' })
   }
+
+  const admin = supabaseAdmin()
+
+  // Verify recipe belongs to this client
+  const { data: recipeCheck } = await admin
+    .from('recipe').select('id').eq('id', recipe_id).eq('client_id', clientId).maybeSingle()
+  if (!recipeCheck) throw createError({ statusCode: 403, statusMessage: 'FORBIDDEN' })
 
   const body     = await readBody(event)
   const quantity = Number(body?.quantity)
@@ -18,7 +27,6 @@ export default defineEventHandler(async (event) => {
   if (!(quantity > 0)) throw createError({ statusCode: 400, statusMessage: 'quantity must be > 0' })
   if (!unit_id)        throw createError({ statusCode: 400, statusMessage: 'unit_id is required' })
 
-  const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('recipe_component')
     .update({ quantity, unit_id })

@@ -1,5 +1,6 @@
 import { requirePermission } from '~/server/utils/require-permission'
 import { supabaseAdmin }      from '~/server/utils/supabase'
+import { resolveAppUser }     from '~/server/utils/resolve-app-user'
 
 /**
  * GET /api/manage/export
@@ -26,13 +27,24 @@ import { supabaseAdmin }      from '~/server/utils/supabase'
  */
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'admin.export')
+  const { clientId } = await resolveAppUser(event)
 
   const admin = supabaseAdmin()
 
   async function fetchTable(name: string) {
-    const { data, error } = await admin.from(name).select('*')
+    const { data, error } = await admin.from(name).select('*').eq('client_id', clientId)
     if (error) {
       throw createError({ statusCode: 500, statusMessage: `Export failed on table ${name}: ${error.message}` })
+    }
+    return data ?? []
+  }
+
+  // recipe_component has no client_id — fetch via recipe IDs
+  async function fetchComponents(recipeIds: string[]) {
+    if (recipeIds.length === 0) return []
+    const { data, error } = await admin.from('recipe_component').select('*').in('recipe_id', recipeIds)
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: `Export failed on table recipe_component: ${error.message}` })
     }
     return data ?? []
   }
@@ -43,14 +55,14 @@ export default defineEventHandler(async (event) => {
     allergen,
     ingredient,
     recipe,
-    recipe_component,
   ] = await Promise.all([
     fetchTable('unit'),
     fetchTable('allergen'),
     fetchTable('ingredient'),
     fetchTable('recipe'),
-    fetchTable('recipe_component'),
   ])
+
+  const recipe_component = await fetchComponents((recipe as any[]).map((r: any) => r.id))
 
   return {
     version:     1,
