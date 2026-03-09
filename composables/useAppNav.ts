@@ -1,7 +1,10 @@
 type AppLink     = { labelKey: string; to: string }
 type AppMenuLink = { labelKey: string; to: string; icon: string }
-type AppDef      = { id: string; labelKey: string; icon: string; to: string; inTopBar: boolean; adminOnly?: boolean; links: AppLink[]; menuLinks: AppMenuLink[] }
 
+const MAX_BAR_ICONS = 4
+
+// inTopBar: true  → can appear as icon in bar/tabbar (first 4) or in More popup (5th+)
+// inTopBar: false → never in bar/tabbar/More — only accessible via avatar drawer
 const ALL_APPS = [
   {
     id: 'dashboard',
@@ -38,20 +41,6 @@ const ALL_APPS = [
     menuLinks: [] as AppMenuLink[],
   },
   {
-    id: 'admin',
-    labelKey: 'nav.apps.admin',
-    icon: 'i-heroicons-cog-6-tooth',
-    to: '/admin/seed',
-    inTopBar: true,
-    adminOnly: true,
-    links: [
-      { labelKey: 'nav.adminSeed',          to: '/admin/seed'          },
-      { labelKey: 'nav.adminImportExport',  to: '/admin/import-export' },
-      { labelKey: 'nav.adminStores',        to: '/admin/stores'        },
-    ] as AppLink[],
-    menuLinks: [] as AppMenuLink[],
-  },
-  {
     id: 'reports',
     labelKey: 'nav.apps.reports',
     icon: 'i-heroicons-chart-bar-square',
@@ -65,6 +54,38 @@ const ALL_APPS = [
       { labelKey: 'nav.allergenMatrix', to: '/reports/allergen-card', icon: 'i-heroicons-table-cells'          },
       { labelKey: 'nav.units',          to: '/reports/units',         icon: 'i-heroicons-scale'                },
     ] as AppMenuLink[],
+  },
+  {
+    id: 'test1',
+    labelKey: 'nav.apps.test1',
+    icon: 'i-heroicons-beaker',
+    to: '/test1',
+    inTopBar: true,
+    links:     [] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
+  },
+  {
+    id: 'test2',
+    labelKey: 'nav.apps.test2',
+    icon: 'i-heroicons-puzzle-piece',
+    to: '/test2',
+    inTopBar: true,
+    links:     [] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
+  },
+  // ── Drawer-only apps (never shown in bar, tabbar, or More popup) ──────────
+  {
+    id: 'admin',
+    labelKey: 'nav.apps.admin',
+    icon: 'i-heroicons-cog-6-tooth',
+    to: '/admin/seed',
+    inTopBar: false,
+    links: [
+      { labelKey: 'nav.adminSeed',          to: '/admin/seed'          },
+      { labelKey: 'nav.adminImportExport',  to: '/admin/import-export' },
+      { labelKey: 'nav.adminStores',        to: '/admin/stores'        },
+    ] as AppLink[],
+    menuLinks: [] as AppMenuLink[],
   },
 ]
 
@@ -87,7 +108,10 @@ export function useAppNav() {
   const activeAppId = useState<string>('activeAppId', () => 'dashboard')
   const sidebarOpen = useState<boolean>('sidebarOpen', () => true)
 
-  const barApps = ALL_APPS.filter(a => a.inTopBar)
+  // Only inTopBar apps go into bar/tabbar/More
+  const inBarApps    = ALL_APPS.filter(a => a.inTopBar)
+  const barApps      = inBarApps.slice(0, MAX_BAR_ICONS)
+  const overflowApps = inBarApps.slice(MAX_BAR_ICONS)
 
   const activeApp = computed(
     () => ALL_APPS.find(a => a.id === activeAppId.value)
@@ -97,16 +121,13 @@ export function useAppNav() {
     () => route.path,
     (path) => {
       for (const [prefix, appId] of Object.entries(ROUTE_MAP)) {
-        // Skip the root prefix last — it would match everything via startsWith
         if (prefix === '/') continue
         if (path === prefix || path.startsWith(prefix + '/')) {
           activeAppId.value = appId
           return
         }
       }
-      // Root only matches exactly
       if (path === '/') { activeAppId.value = 'dashboard'; return }
-      // No match — deselect all bar apps (e.g. /admin, /settings)
       activeAppId.value = ''
     },
     { immediate: true }
@@ -116,8 +137,6 @@ export function useAppNav() {
     activeAppId.value = app.id
     navigateTo(app.to)
   }
-
-  const overflowApps = ALL_APPS.filter(a => !a.inTopBar)
 
   return { barApps, overflowApps, activeApp, activeAppId, sidebarOpen, setApp }
 }
