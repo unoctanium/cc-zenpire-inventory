@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { fetchAuth } from '~/composables/useAuth'
+
 const { t } = useI18n()
 const auth = useAuth()
+const { currentStore } = useCurrentStore()
 
 const canManage = computed(() => Boolean(auth.value?.permissions?.includes('store.manage')))
 
@@ -11,23 +14,22 @@ const stores = computed(() => data.value?.stores ?? [])
 
 // ─── selection / form ─────────────────────────────────────────────────────────
 
-const selectedId = ref<string | null>(null)
-const isNew      = ref(false)
-
-const form = reactive({ name: '', address: '' })
-const saving  = ref(false)
-const deleting = ref(false)
+const selectedId    = ref<string | null>(null)
+const isNew         = ref(false)
+const form          = reactive({ name: '', address: '' })
+const saving        = ref(false)
+const deleting      = ref(false)
 const confirmDelete = ref(false)
-const error   = ref('')
+const error         = ref('')
 
 const selectedStore = computed(() => stores.value.find(s => s.id === selectedId.value) ?? null)
 
 function selectStore(store: StoreRow) {
-  isNew.value   = false
+  isNew.value      = false
   selectedId.value = store.id
-  form.name     = store.name
-  form.address  = store.address ?? ''
-  error.value   = ''
+  form.name        = store.name
+  form.address     = store.address ?? ''
+  error.value      = ''
   confirmDelete.value = false
 }
 
@@ -44,19 +46,23 @@ async function save() {
   if (!form.name.trim()) { error.value = t('stores.nameRequired'); return }
   saving.value = true
   error.value  = ''
+  const wasNew = isNew.value
   try {
     const body = { name: form.name.trim(), address: form.address.trim() || null }
-    if (isNew.value) {
+    if (wasNew) {
       const res = await $fetch<{ ok: boolean; store: StoreRow }>('/api/stores', { method: 'POST', body, credentials: 'include' })
       await refresh()
+      // Refresh auth so the new store appears in the header dropdown immediately
+      await fetchAuth()
       selectedId.value = res.store.id
       isNew.value = false
       selectStore(res.store)
     } else {
       await $fetch(`/api/stores/${selectedId.value}`, { method: 'PUT', body, credentials: 'include' })
       await refresh()
+      await fetchAuth()
     }
-    useToast().add({ title: isNew.value ? t('stores.created') : t('stores.updated'), color: 'success' })
+    useToast().add({ title: wasNew ? t('stores.created') : t('stores.updated'), color: 'success' })
   } catch (e: any) {
     error.value = e?.data?.statusMessage ?? e?.message ?? t('common.saveFailed')
   } finally {
@@ -66,14 +72,17 @@ async function save() {
 
 async function doDelete() {
   if (!selectedId.value) return
+  const deletingActiveStore = currentStore.value?.id === selectedId.value
   deleting.value = true
   try {
     await $fetch(`/api/stores/${selectedId.value}`, { method: 'DELETE', credentials: 'include' })
     await refresh()
+    await fetchAuth()
     selectedId.value = null
     isNew.value = false
     confirmDelete.value = false
     useToast().add({ title: t('stores.deleted'), color: 'success' })
+    if (deletingActiveStore) navigateTo('/')
   } catch (e: any) {
     error.value = e?.data?.statusMessage ?? e?.message ?? t('common.deleteFailed')
   } finally {
@@ -88,6 +97,13 @@ async function doDelete() {
   <AppSplitLayout v-else>
 
     <!-- ─── List panel ─────────────────────────────────────────────────────── -->
+    <template #search>
+      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1">{{ $t('stores.title') }}</span>
+        <UButton size="xs" variant="soft" icon="i-heroicons-plus" @click="startNew">{{ $t('stores.add') }}</UButton>
+      </div>
+    </template>
+
     <template #list>
       <div class="flex flex-col h-full">
         <div
@@ -108,13 +124,6 @@ async function doDelete() {
         <div v-if="stores.length === 0" class="px-4 py-6 text-sm text-gray-400 text-center">
           {{ $t('common.noData') }}
         </div>
-      </div>
-    </template>
-
-    <template #search>
-      <div class="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1">{{ $t('stores.title') }}</span>
-        <UButton size="xs" variant="soft" icon="i-heroicons-plus" @click="startNew">{{ $t('stores.add') }}</UButton>
       </div>
     </template>
 
@@ -160,25 +169,67 @@ async function doDelete() {
             v-if="!isNew"
             color="error"
             variant="soft"
-            :loading="deleting"
             @click="confirmDelete = true"
           >
             {{ $t('common.delete') }}
           </UButton>
         </div>
-
-        <!-- Delete confirm -->
-        <div v-if="confirmDelete" class="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950 p-4 space-y-3">
-          <p class="text-sm text-red-700 dark:text-red-300">
-            {{ $t('stores.deleteConfirmExisting', { name: selectedStore?.name }) }}
-          </p>
-          <div class="flex gap-2">
-            <UButton color="error" size="sm" :loading="deleting" @click="doDelete">{{ $t('common.delete') }}</UButton>
-            <UButton variant="soft" size="sm" @click="confirmDelete = false">{{ $t('common.cancel') }}</UButton>
-          </div>
-        </div>
       </div>
     </template>
 
   </AppSplitLayout>
+
+  <!-- iOS-style action sheet for delete confirm -->
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-opacity duration-200 ease-out"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-150 ease-in"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="confirmDelete"
+        class="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center"
+        style="background: rgba(0,0,0,0.4)"
+        @click.self="confirmDelete = false"
+      >
+        <!-- Sheet -->
+        <Transition
+          enter-active-class="transition-transform duration-250 ease-out"
+          enter-from-class="translate-y-full sm:translate-y-0 sm:scale-95 sm:opacity-0"
+          leave-active-class="transition-transform duration-200 ease-in"
+          leave-to-class="translate-y-full sm:translate-y-0 sm:scale-95 sm:opacity-0"
+        >
+          <div
+            class="w-full sm:w-80 mx-auto mb-4 sm:mb-0 px-4 sm:px-0"
+            @click.stop
+          >
+            <!-- Action group -->
+            <div class="rounded-2xl overflow-hidden" style="background: rgba(250,250,250,0.97)">
+              <div class="px-4 py-4 text-center border-b border-gray-200">
+                <p class="text-xs text-gray-500">{{ $t('stores.deleteTitle') }}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-0.5">{{ selectedStore?.name }}</p>
+              </div>
+              <button
+                class="w-full py-4 text-base font-semibold text-red-500 active:bg-gray-100 transition-colors"
+                :disabled="deleting"
+                @click="doDelete"
+              >
+                {{ deleting ? '…' : $t('common.delete') }}
+              </button>
+            </div>
+            <!-- Cancel button (separate, iOS style) -->
+            <div class="rounded-2xl overflow-hidden mt-2" style="background: rgba(250,250,250,0.97)">
+              <button
+                class="w-full py-4 text-base font-bold text-gray-900 active:bg-gray-100 transition-colors"
+                @click="confirmDelete = false"
+              >
+                {{ $t('common.cancel') }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+  </Teleport>
 </template>

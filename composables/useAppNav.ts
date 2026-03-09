@@ -1,5 +1,6 @@
 type AppLink     = { labelKey: string; to: string }
 type AppMenuLink = { labelKey: string; to: string; icon: string }
+type AppDef      = { id: string; labelKey: string; icon: string; to: string; inTopBar: boolean; adminOnly?: boolean; links: AppLink[]; menuLinks: AppMenuLink[] }
 
 const ALL_APPS = [
   {
@@ -41,7 +42,8 @@ const ALL_APPS = [
     labelKey: 'nav.apps.admin',
     icon: 'i-heroicons-cog-6-tooth',
     to: '/admin/seed',
-    inTopBar: false,
+    inTopBar: true,
+    adminOnly: true,
     links: [
       { labelKey: 'nav.adminSeed',          to: '/admin/seed'          },
       { labelKey: 'nav.adminImportExport',  to: '/admin/import-export' },

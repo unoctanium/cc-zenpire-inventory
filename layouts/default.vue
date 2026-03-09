@@ -17,6 +17,10 @@ const initials = computed(() => initialsFromEmail(email.value))
 const route = useRoute()
 const { barApps, overflowApps, activeApp, setApp } = useAppNav()
 
+// Filter bar apps: hide adminOnly apps from non-admins
+const visibleBarApps      = computed(() => barApps.filter((a: any) => !a.adminOnly || isAdmin.value))
+const visibleOverflowApps = computed(() => overflowApps.filter((a: any) => !a.adminOnly || isAdmin.value))
+
 const navLinks = computed(() => activeApp.value?.links ?? [])
 
 function isLinkActive(to: string) {
@@ -115,7 +119,7 @@ function openSubNavMore(event: MouseEvent) {
 
           <!-- App icons -->
           <button
-            v-for="app in barApps"
+            v-for="app in visibleBarApps"
             :key="app.id"
             :title="t(app.labelKey)"
             class="flex flex-col items-center gap-0.5 w-16 py-2 rounded-xl transition-all active:scale-95 cursor-pointer"
@@ -133,7 +137,7 @@ function openSubNavMore(event: MouseEvent) {
 
           <!-- More button -->
           <button
-            v-if="overflowApps.length"
+            v-if="visibleOverflowApps.length"
             :title="t('nav.more')"
             class="flex flex-col items-center gap-0.5 w-16 py-2 rounded-xl text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer"
             @click="openMorePopup"
@@ -223,7 +227,7 @@ function openSubNavMore(event: MouseEvent) {
           style="padding-bottom: env(safe-area-inset-bottom)"
         >
           <button
-            v-for="app in barApps"
+            v-for="app in visibleBarApps"
             :key="app.id"
             class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-all cursor-pointer active:opacity-70"
             :style="activeApp?.id === app.id ? 'color: var(--color-app-bar)' : 'color: #9ca3af'"
@@ -233,7 +237,7 @@ function openSubNavMore(event: MouseEvent) {
             <span class="text-[10px] font-medium">{{ t(app.labelKey) }}</span>
           </button>
           <button
-            v-if="overflowApps.length"
+            v-if="visibleOverflowApps.length"
             class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-gray-400 cursor-pointer"
             @click="openMorePopup"
           >
@@ -319,7 +323,7 @@ function openSubNavMore(event: MouseEvent) {
                     class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-left"
                     :class="currentStore?.id === store.id ? 'font-semibold' : 'text-gray-700'"
                     :style="currentStore?.id === store.id ? 'color: var(--color-app-bar)' : ''"
-                    @click="setStore(store); storePickerOpen = false"
+                    @click="setStore(store); storePickerOpen = false; userDrawerOpen = false; navigateTo('/')"
                   >
                     {{ store.name }}
                   </button>
@@ -329,23 +333,6 @@ function openSubNavMore(event: MouseEvent) {
 
             <!-- Nav links -->
             <div class="flex-1 overflow-y-auto py-2">
-              <NuxtLink
-                v-if="isAdmin"
-                to="/admin/seed"
-                class="w-full flex items-center gap-3 pl-8 pr-5 py-3.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
-                @click="userDrawerOpen = false"
-              >
-                <UIcon name="i-heroicons-cog-6-tooth" class="w-5 h-5 text-gray-400 flex-none" />
-                {{ t('nav.adminSettings') }}
-              </NuxtLink>
-              <NuxtLink
-                to="/settings"
-                class="w-full flex items-center gap-3 pl-8 pr-5 py-3.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
-                @click="userDrawerOpen = false"
-              >
-                <UIcon name="i-heroicons-user-circle" class="w-5 h-5 text-gray-400 flex-none" />
-                {{ t('nav.userSettings') }}
-              </NuxtLink>
               <NuxtLink
                 to="/logout"
                 class="w-full flex items-center gap-3 pl-8 pr-5 py-3.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -377,7 +364,7 @@ function openSubNavMore(event: MouseEvent) {
             {{ t('nav.moreApps') }}
           </p>
           <button
-            v-for="app in overflowApps"
+            v-for="app in visibleOverflowApps"
             :key="app.id"
             class="w-full flex items-center gap-3 px-6 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
             @click="setApp(app); morePopupOpen = false"
