@@ -1,3 +1,3 @@
 <script setup lang="ts">
-await navigateTo('/admin/db-tools', { replace: true })
+await navigateTo('/admin/seed', { replace: true })
 </script>

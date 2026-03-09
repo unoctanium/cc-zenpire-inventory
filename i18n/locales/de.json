@@ -11,6 +11,8 @@
     "devTools": "Entwickler-Tools",
     "adminSettings": "Admin-Einstellungen",
     "dbTools": "DB-Tools",
+    "adminSeed": "DB Seed",
+    "adminImportExport": "Import / Export",
     "personalSettings": "Persönliche Einstellungen",
     "recipe": "Rezept",
     "production": "Produktion",

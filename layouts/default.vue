@@ -297,7 +297,7 @@ function openSubNavMore(event: MouseEvent) {
             <div class="flex-1 overflow-y-auto py-2">
               <NuxtLink
                 v-if="isAdmin"
-                to="/admin/db-tools"
+                to="/admin/seed"
                 class="w-full flex items-center gap-3 pl-8 pr-5 py-3.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100"
                 @click="userDrawerOpen = false"
               >

@@ -11,6 +11,8 @@
     "devTools": "開発ツール",
     "adminSettings": "管理設定",
     "dbTools": "DBツール",
+    "adminSeed": "DBシード",
+    "adminImportExport": "インポート/エクスポート",
     "personalSettings": "個人設定",
     "recipe": "レシピ",
     "production": "製造",
