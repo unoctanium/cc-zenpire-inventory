@@ -11,6 +11,7 @@
     "devTools": "開発ツール",
     "adminSettings": "管理設定",
     "dbTools": "DBツール",
+    "adminDb": "DB",
     "adminSeed": "DBシード",
     "adminImportExport": "インポート/エクスポート",
     "adminStores": "店舗",

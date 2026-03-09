@@ -11,6 +11,7 @@
     "devTools": "Entwickler-Tools",
     "adminSettings": "Admin-Einstellungen",
     "dbTools": "DB-Tools",
+    "adminDb": "DB",
     "adminSeed": "DB Seed",
     "adminImportExport": "Import / Export",
     "adminStores": "Filialen",
