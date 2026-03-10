@@ -13,7 +13,7 @@ type RecipeRow = {
   is_active: boolean; is_pre_product: boolean
   component_count: number; created_at: string; updated_at: string
 }
-type UnitOption       = { id: string; code: string; name: string }
+type UnitOption       = { id: string; code: string; name: string; unit_type: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
 type AllergenOption   = { id: string; name: string }
 

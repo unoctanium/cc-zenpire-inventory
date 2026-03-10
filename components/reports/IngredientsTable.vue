@@ -8,10 +8,13 @@ const { doPrint } = usePrint()
 
 type IngredientRow = {
   id: string; article_id: string | null; name: string; kind: string
-  default_unit_id: string; default_unit_code: string
+  default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
 }
+
+function costScale(t: string)  { return (t === 'mass' || t === 'volume') ? 100 : 1 }
+function costUnit(t: string)   { return t === 'mass' ? '100g' : t === 'volume' ? '100ml' : 'pcs' }
 
 const { canRead } = useTablePermissions('recipe')
 
@@ -43,7 +46,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
       { header: t('ingredients.articleId'), candidates: rows.value.map(r => r.article_id ?? '') },
       { header: t('ingredients.kind'),      candidates: ['purchased', 'produced'] },
       { header: t('ingredients.unit'),     candidates: rows.value.map(r => r.default_unit_code) },
-      { header: t('ingredients.unitCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : '—') },
+      { header: t('ingredients.unitCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * costScale(r.default_unit_type)).toFixed(4)} / ${costUnit(r.default_unit_type)}` : '—') },
     ],
   }))
 )
@@ -151,7 +154,9 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
               <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.default_unit_code }}</span></td>
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">
-                  {{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '–' }}
+                  {{ row.standard_unit_cost != null
+                      ? `€ ${(row.standard_unit_cost * costScale(row.default_unit_type)).toFixed(4)} / ${costUnit(row.default_unit_type)}`
+                      : '–' }}
                 </span>
               </td>
             </tr>

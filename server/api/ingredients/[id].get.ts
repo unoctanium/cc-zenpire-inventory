@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       id, article_id, name, kind, default_unit_id, standard_unit_cost,
       standard_cost_currency, produced_by_recipe_id, comment,
       image_data,
-      unit:default_unit_id ( code ),
+      unit:default_unit_id ( code, unit_type ),
       ingredient_allergen ( allergen_id )
     `)
     .eq('id', id)
@@ -48,6 +48,7 @@ export default defineEventHandler(async (event) => {
       kind:                   data.kind,
       default_unit_id:        data.default_unit_id,
       default_unit_code:      (data as any).unit?.code ?? '',
+      default_unit_type:      (data as any).unit?.unit_type ?? 'count',
       standard_unit_cost:     data.standard_unit_cost,
       standard_cost_currency: data.standard_cost_currency ?? 'EUR',
       produced_by_recipe_id:  data.produced_by_recipe_id,

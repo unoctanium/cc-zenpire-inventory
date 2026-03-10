@@ -7,11 +7,11 @@ const { t }  = useI18n()
 
 type IngredientRow = {
   id: string; article_id: string | null; name: string; kind: string
-  default_unit_id: string; default_unit_code: string
+  default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
 }
-type UnitOption     = { id: string; code: string; name: string }
+type UnitOption     = { id: string; code: string; name: string; unit_type: string }
 type AllergenOption = { id: string; name: string; comment: string | null }
 
 // ─── permissions ──────────────────────────────────────────────────────────────

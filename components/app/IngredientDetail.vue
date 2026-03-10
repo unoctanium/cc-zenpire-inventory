@@ -18,13 +18,25 @@
 
 type IngredientRow = {
   id: string; article_id: string | null; name: string; kind: string
-  default_unit_id: string; default_unit_code: string
+  default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
 }
 
-type UnitOption     = { id: string; code: string; name: string }
+type UnitOption     = { id: string; code: string; name: string; unit_type: string }
 type AllergenOption = { id: string; name: string; comment: string | null }
+
+// ─── cost scale helpers ───────────────────────────────────────────────────────
+// standard_unit_cost is stored per base unit (per g or per ml).
+// We display and accept input as per 100g / per 100ml for readability.
+function costScale(unitType: string): number {
+  return (unitType === 'mass' || unitType === 'volume') ? 100 : 1
+}
+function costDisplayUnit(unitType: string): string {
+  if (unitType === 'mass')   return '100g'
+  if (unitType === 'volume') return '100ml'
+  return 'pcs'
+}
 
 const props = defineProps<{
   ingredient: IngredientRow | null
@@ -50,6 +62,13 @@ const showEditSheet = ref(false)
 
 const isNew      = computed(() => !props.ingredient)
 const isProduced = computed(() => props.ingredient?.kind === 'produced')
+
+// Unit type of the currently selected unit (reactive while user changes unit in form)
+const currentUnitType = computed(() =>
+  props.units.find(u => u.id === draft.default_unit_id)?.unit_type ?? 'count'
+)
+const currentCostScale = computed(() => costScale(currentUnitType.value))
+const currentCostLabel = computed(() => costDisplayUnit(currentUnitType.value))
 
 // ─── draft ────────────────────────────────────────────────────────────────────
 
@@ -84,7 +103,9 @@ watch(
       draft.article_id         = ing.article_id ?? ''
       draft.name               = ing.name
       draft.default_unit_id    = ing.default_unit_id
-      draft.standard_unit_cost = ing.standard_unit_cost ?? ''
+      draft.standard_unit_cost = ing.standard_unit_cost != null
+        ? ing.standard_unit_cost * costScale(ing.default_unit_type)
+        : ''
       draft.comment            = ing.comment ?? ''
 
       // Lazy-load allergens + image flag
@@ -95,6 +116,11 @@ watch(
         )
         draft.article_id          = detail.ingredient.article_id ?? ''
         draft.comment             = detail.ingredient.comment ?? ''
+        // Re-apply scale after detail fetch (has more precise unit_type info)
+        if (detail.ingredient.standard_unit_cost != null) {
+          draft.standard_unit_cost = detail.ingredient.standard_unit_cost
+            * costScale(detail.ingredient.default_unit_type)
+        }
         selectedAllergenIds.value = detail.ingredient.allergen_ids ?? []
         hasImage.value            = detail.ingredient.has_image ?? false
       } catch { /* non-fatal */ } finally {
@@ -163,12 +189,14 @@ async function save() {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.nameAndUnitRequired'), color: 'red' })
     return
   }
-  const costStr   = String(draft.standard_unit_cost ?? '').trim()
-  const costValue = costStr === '' ? null : Number(costStr)
-  if (costStr !== '' && isNaN(costValue as number)) {
+  const costStr        = String(draft.standard_unit_cost ?? '').trim()
+  const costDisplay    = costStr === '' ? null : Number(costStr)
+  if (costStr !== '' && isNaN(costDisplay as number)) {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.invalidCost'), color: 'red' })
     return
   }
+  // Convert display value back to per-base-unit for storage
+  const costValue = costDisplay != null ? costDisplay / currentCostScale.value : null
 
   saving.value = true
   try {
@@ -216,7 +244,9 @@ function cancelEdit() {
     draft.article_id         = props.ingredient.article_id ?? ''
     draft.name               = props.ingredient.name
     draft.default_unit_id    = props.ingredient.default_unit_id
-    draft.standard_unit_cost = props.ingredient.standard_unit_cost ?? ''
+    draft.standard_unit_cost = props.ingredient.standard_unit_cost != null
+      ? props.ingredient.standard_unit_cost * costScale(props.ingredient.default_unit_type)
+      : ''
     draft.comment            = props.ingredient.comment ?? ''
   }
   editMode.value      = false
@@ -362,9 +392,14 @@ async function doDelete() {
         <div class="text-[17px] text-gray-700 dark:text-gray-300">{{ ingredient?.default_unit_code }}</div>
       </div>
       <div>
-        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.unitCost') }}</div>
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+          {{ $t('ingredients.unitCost') }}
+          <span class="text-gray-400 font-normal">/ {{ costDisplayUnit(ingredient!.default_unit_type) }}</span>
+        </div>
         <div class="text-[17px] text-gray-700 dark:text-gray-300">
-          {{ ingredient?.standard_unit_cost != null ? `€ ${ingredient.standard_unit_cost.toFixed(6)}` : '—' }}
+          {{ ingredient?.standard_unit_cost != null
+              ? `€ ${(ingredient.standard_unit_cost * costScale(ingredient.default_unit_type)).toFixed(4)}`
+              : '—' }}
         </div>
       </div>
       <div>
@@ -407,8 +442,8 @@ async function doDelete() {
         </select>
       </div>
       <div>
-        <label class="ios-label">{{ $t('ingredients.unitCost') }}</label>
-        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
+        <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
+        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
       </div>
@@ -470,8 +505,8 @@ async function doDelete() {
         </select>
       </div>
       <div v-if="!isProduced">
-        <label class="ios-label">{{ $t('ingredients.unitCost') }}</label>
-        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.000001"
+        <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
+        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
       </div>

@@ -6,11 +6,21 @@ export default defineEventHandler(async (event) => {
   // ── Units ────────────────────────────────────────────────────────────────────
 
   const baseUnits = [
-    { client_id: clientId, code: 'g',   name: 'Gram',       unit_type: 'mass',   factor: 1    },
-    { client_id: clientId, code: 'kg',  name: 'Kilogram',   unit_type: 'mass',   factor: 1000 },
-    { client_id: clientId, code: 'ml',  name: 'Milliliter', unit_type: 'volume', factor: 1    },
-    { client_id: clientId, code: 'l',   name: 'Liter',      unit_type: 'volume', factor: 1000 },
-    { client_id: clientId, code: 'pcs', name: 'Pieces',     unit_type: 'count',  factor: 1    },
+    // Mass
+    { client_id: clientId, code: 'mg',      name: 'Milligram',  unit_type: 'mass',   factor: 0.001 },
+    { client_id: clientId, code: 'g',        name: 'Gram',       unit_type: 'mass',   factor: 1     },
+    { client_id: clientId, code: 'kg',       name: 'Kilogram',   unit_type: 'mass',   factor: 1000  },
+    // Volume
+    { client_id: clientId, code: 'ml',       name: 'Milliliter', unit_type: 'volume', factor: 1     },
+    { client_id: clientId, code: 'cl',       name: 'Centiliter', unit_type: 'volume', factor: 10    },
+    { client_id: clientId, code: 'l',        name: 'Liter',      unit_type: 'volume', factor: 1000  },
+    { client_id: clientId, code: 'tsp',      name: 'Teaspoon',   unit_type: 'volume', factor: 5     },
+    { client_id: clientId, code: 'tbsp',     name: 'Tablespoon', unit_type: 'volume', factor: 15    },
+    { client_id: clientId, code: 'cup',      name: 'Cup',        unit_type: 'volume', factor: 240   },
+    // Count
+    { client_id: clientId, code: 'pcs',      name: 'Piece',      unit_type: 'count',  factor: 1     },
+    { client_id: clientId, code: 'portion',  name: 'Portion',    unit_type: 'count',  factor: 1     },
+    { client_id: clientId, code: 'dozen',    name: 'Dozen',      unit_type: 'count',  factor: 12    },
   ]
 
   const { error: uErr } = await admin.from('unit').upsert(baseUnits, { onConflict: 'client_id,code' })

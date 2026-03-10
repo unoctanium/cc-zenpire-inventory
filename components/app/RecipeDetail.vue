@@ -25,7 +25,7 @@ type RecipeRow = {
   component_count: number; created_at: string; updated_at: string
 }
 
-type UnitOption       = { id: string; code: string; name: string }
+type UnitOption       = { id: string; code: string; name: string; unit_type: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
 type AllergenOption   = { id: string; name: string }
 
@@ -489,11 +489,25 @@ const outputUnitCode = computed(() =>
   props.units.find(u => u.id === draft.output_unit_id)?.code ?? ''
 )
 
+const outputUnitType = computed(() =>
+  props.units.find(u => u.id === draft.output_unit_id)?.unit_type ?? 'count'
+)
+
+const costDisplayScale = computed(() =>
+  (outputUnitType.value === 'mass' || outputUnitType.value === 'volume') ? 100 : 1
+)
+
+const costDisplayLabel = computed(() => {
+  if (outputUnitType.value === 'mass')   return '100g'
+  if (outputUnitType.value === 'volume') return '100ml'
+  return outputUnitCode.value
+})
+
 const perUnitCost = computed((): number | null => {
   const batch = Number(draft.standard_unit_cost)
   const qty   = Number(draft.output_quantity)
   if (!batch || !qty) return null
-  return batch / qty
+  return (batch / qty) * costDisplayScale.value
 })
 
 // ─── print ────────────────────────────────────────────────────────────────────
@@ -655,7 +669,7 @@ function onBannerFileChange(e: Event) {
                ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}` : '—' }}
           </div>
           <div v-if="perUnitCost != null" class="text-[11px] text-gray-400 mt-0.5">
-            € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}
+            € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}
           </div>
         </div>
       </div>
@@ -773,7 +787,7 @@ function onBannerFileChange(e: Event) {
             <input v-model="draft.standard_unit_cost" type="number" min="0" step="any" class="ios-input" :placeholder="$t('recipes.stdCostPlaceholder')" />
           </div>
         </div>
-        <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
+        <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}</p>
         <button v-if="draftTotalCost != null" type="button" class="mt-1 text-xs text-blue-500 hover:underline" @click="draft.standard_unit_cost = draftTotalCost">
           {{ $t('recipes.autoFillFromComponents') }} (€ {{ draftTotalCost.toFixed(2) }})
         </button>
@@ -899,7 +913,7 @@ function onBannerFileChange(e: Event) {
             <input v-model="draft.standard_unit_cost" type="number" min="0" step="any" class="ios-input" :placeholder="$t('recipes.stdCostPlaceholder')" />
           </div>
         </div>
-        <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ outputUnitCode }}</p>
+        <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}</p>
         <button v-if="totalCost != null" type="button" class="mt-1 text-xs text-blue-500 hover:underline" @click="draft.standard_unit_cost = totalCost">
           {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
         </button>
