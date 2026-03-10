@@ -52,11 +52,8 @@ export function usePrint() {
   function printHtml(html: string) {
     if (typeof window === 'undefined') return
 
-    if (isIOSStandalone()) {
-      const blob = new Blob([html], { type: 'text/html' })
-      const url  = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    if (isIOSStandalone() && navigator.share) {
+      navigator.share({ url: window.location.href, title: document.title }).catch(() => {})
       return
     }
 
