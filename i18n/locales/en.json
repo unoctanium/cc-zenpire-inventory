@@ -160,7 +160,9 @@
     "purchasePriceSection": "Purchase price",
     "purchaseQty": "Qty",
     "purchaseUnit": "Unit",
-    "purchasePriceLabel": "Price"
+    "purchasePriceLabel": "Price",
+    "yield": "Yield",
+    "afterYield": "after yield"
   },
   "recipes": {
     "selectPrompt": "Select a recipe to view details",

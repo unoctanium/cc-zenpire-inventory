@@ -21,6 +21,7 @@ type IngredientRow = {
   default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
+  yield_pct: number
   purchase_quantity: number | null; purchase_unit_id: string | null
   purchase_unit_code: string | null; purchase_price: number | null
   purchase_price_currency: string
@@ -89,6 +90,17 @@ const purchaseDerivedCostDisplay = computed((): number | null => {
   return (price / (qty * unit.factor)) * currentCostScale.value
 })
 
+// Effective cost after yield (in display units) — shown in edit form as hint
+const effectiveCostDisplay = computed((): number | null => {
+  const baseCost = hasPurchaseInput.value
+    ? purchaseDerivedCostDisplay.value
+    : (String(draft.standard_unit_cost ?? '').trim() === '' ? null : Number(draft.standard_unit_cost))
+  if (baseCost == null) return null
+  const yld = Number(draft.yield_pct)
+  if (!yld || yld === 100) return null  // no need to show when yield is 100%
+  return baseCost / (yld / 100)
+})
+
 // ─── draft ────────────────────────────────────────────────────────────────────
 
 const draft = reactive({
@@ -97,6 +109,7 @@ const draft = reactive({
   default_unit_id:    '',
   standard_unit_cost: '' as string | number,
   comment:            '',
+  yield_pct:          100 as string | number,
   purchase_quantity:  '' as string | number,
   purchase_unit_id:   '',
   purchase_price:     '' as string | number,
@@ -129,6 +142,7 @@ watch(
         ? ing.standard_unit_cost * costScale(ing.default_unit_type)
         : ''
       draft.comment            = ing.comment ?? ''
+      draft.yield_pct          = ing.yield_pct ?? 100
       draft.purchase_quantity  = ing.purchase_quantity ?? ''
       draft.purchase_unit_id   = ing.purchase_unit_id ?? ''
       draft.purchase_price     = ing.purchase_price ?? ''
@@ -146,6 +160,7 @@ watch(
           draft.standard_unit_cost = detail.ingredient.standard_unit_cost
             * costScale(detail.ingredient.default_unit_type)
         }
+        draft.yield_pct           = detail.ingredient.yield_pct ?? 100
         draft.purchase_quantity   = detail.ingredient.purchase_quantity ?? ''
         draft.purchase_unit_id    = detail.ingredient.purchase_unit_id ?? ''
         draft.purchase_price      = detail.ingredient.purchase_price ?? ''
@@ -162,6 +177,10 @@ watch(
       draft.default_unit_id    = props.units[0]?.id ?? ''
       draft.standard_unit_cost = ''
       draft.comment            = ''
+      draft.yield_pct          = 100
+      draft.purchase_quantity  = ''
+      draft.purchase_unit_id   = ''
+      draft.purchase_price     = ''
     }
   },
   { immediate: true }
@@ -238,6 +257,7 @@ async function save() {
       standard_unit_cost: costValue,
       comment:            draft.comment.trim() || null,
       allergen_ids:       selectedAllergenIds.value,
+      yield_pct:          Number(draft.yield_pct) || 100,
       purchase_quantity:  draft.purchase_quantity !== '' ? Number(draft.purchase_quantity) : null,
       purchase_unit_id:   draft.purchase_unit_id   || null,
       purchase_price:     draft.purchase_price !== '' ? Number(draft.purchase_price) : null,
@@ -282,6 +302,7 @@ function cancelEdit() {
       ? props.ingredient.standard_unit_cost * costScale(props.ingredient.default_unit_type)
       : ''
     draft.comment            = props.ingredient.comment ?? ''
+    draft.yield_pct          = props.ingredient.yield_pct ?? 100
     draft.purchase_quantity  = props.ingredient.purchase_quantity ?? ''
     draft.purchase_unit_id   = props.ingredient.purchase_unit_id ?? ''
     draft.purchase_price     = props.ingredient.purchase_price ?? ''
@@ -437,7 +458,18 @@ async function doDelete() {
           {{ ingredient?.standard_unit_cost != null
               ? `€ ${(ingredient.standard_unit_cost * costScale(ingredient.default_unit_type)).toFixed(4)}`
               : '—' }}
+          <template v-if="ingredient?.yield_pct != null && ingredient.yield_pct < 100 && ingredient.standard_unit_cost != null">
+            <span class="text-gray-400 text-sm mx-1">→</span>
+            <span class="text-orange-600 dark:text-orange-400">
+              € {{ (ingredient.standard_unit_cost / (ingredient.yield_pct / 100) * costScale(ingredient.default_unit_type)).toFixed(4) }}
+            </span>
+            <span class="text-[12px] text-gray-400 ml-1">{{ $t('ingredients.afterYield') }}</span>
+          </template>
         </div>
+      </div>
+      <div v-if="ingredient?.yield_pct != null && ingredient.yield_pct < 100">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.yield') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300">{{ ingredient.yield_pct }} %</div>
       </div>
       <div v-if="ingredient?.purchase_quantity != null && ingredient.purchase_price != null">
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.purchasePrice') }}</div>
@@ -515,6 +547,13 @@ async function doDelete() {
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
+      </div>
+      <div>
+        <label class="ios-label">{{ $t('ingredients.yield') }} %</label>
+        <input v-model="draft.yield_pct" type="number" min="1" max="100" step="1" class="ios-input" placeholder="100" />
+        <p v-if="effectiveCostDisplay != null" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+          → {{ $t('ingredients.afterYield') }}: € {{ effectiveCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+        </p>
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.comment') }}</label>
@@ -602,6 +641,14 @@ async function doDelete() {
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"
           :placeholder="$t('ingredients.costPlaceholder')" />
+      </div>
+      <!-- Yield percentage (purchased ingredients only) -->
+      <div v-if="!isProduced">
+        <label class="ios-label">{{ $t('ingredients.yield') }} %</label>
+        <input v-model="draft.yield_pct" type="number" min="1" max="100" step="1" class="ios-input" placeholder="100" />
+        <p v-if="effectiveCostDisplay != null" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+          → {{ $t('ingredients.afterYield') }}: € {{ effectiveCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+        </p>
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.comment') }}</label>

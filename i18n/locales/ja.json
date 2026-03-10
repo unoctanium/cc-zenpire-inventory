@@ -158,7 +158,9 @@
     "purchasePriceSection": "購入価格",
     "purchaseQty": "数量",
     "purchaseUnit": "単位",
-    "purchasePriceLabel": "価格"
+    "purchasePriceLabel": "価格",
+    "yield": "歩留まり",
+    "afterYield": "歩留まり後"
   },
   "recipes": {
     "selectPrompt": "レシピを選択して詳細を表示",

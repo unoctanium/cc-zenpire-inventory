@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
   const purchase_quantity = body?.purchase_quantity != null && body.purchase_quantity !== '' ? Number(body.purchase_quantity) : null
   const purchase_unit_id  = body?.purchase_unit_id  ? String(body.purchase_unit_id).trim() || null : null
   const purchase_price    = body?.purchase_price    != null && body.purchase_price !== '' ? Number(body.purchase_price) : null
+  const yield_pct         = body?.yield_pct != null && body.yield_pct !== '' ? Number(body.yield_pct) : 100
 
   if (!name || !default_unit_id) {
     throw createError({ statusCode: 400, statusMessage: 'Missing name or default_unit_id' })
@@ -42,6 +43,7 @@ export default defineEventHandler(async (event) => {
     .from('ingredient')
     .update({
       name, article_id, default_unit_id, standard_unit_cost, comment,
+      yield_pct,
       purchase_quantity, purchase_unit_id, purchase_price, purchase_price_currency: 'EUR',
     })
     .eq('id', id)

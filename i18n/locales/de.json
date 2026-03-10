@@ -158,7 +158,9 @@
     "purchasePriceSection": "Einkaufspreis",
     "purchaseQty": "Menge",
     "purchaseUnit": "Einheit",
-    "purchasePriceLabel": "Preis"
+    "purchasePriceLabel": "Preis",
+    "yield": "Ausbeute",
+    "afterYield": "nach Ausbeute"
   },
   "recipes": {
     "selectPrompt": "Rezept auswählen",

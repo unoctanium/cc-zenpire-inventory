@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   const purchase_quantity = body?.purchase_quantity != null && body.purchase_quantity !== '' ? Number(body.purchase_quantity) : null
   const purchase_unit_id  = body?.purchase_unit_id  ? String(body.purchase_unit_id).trim() || null : null
   const purchase_price    = body?.purchase_price    != null && body.purchase_price !== '' ? Number(body.purchase_price) : null
+  const yield_pct         = body?.yield_pct != null && body.yield_pct !== '' ? Number(body.yield_pct) : 100
 
   if (!name || !default_unit_id) {
     throw createError({ statusCode: 400, statusMessage: 'Missing name or default_unit_id' })
@@ -46,6 +47,7 @@ export default defineEventHandler(async (event) => {
       standard_unit_cost,
       standard_cost_currency: 'EUR',
       comment,
+      yield_pct,
       purchase_quantity,
       purchase_unit_id,
       purchase_price,
