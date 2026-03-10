@@ -153,7 +153,12 @@
     "noAllergens": "Noch keine Allergene definiert.",
     "producedByRecipe": "Hergestellt durch Rezept",
     "viewRecipe": "Rezept anzeigen",
-    "allergensFromRecipe": "Aus Rezeptkomponenten abgeleitet — im Rezept bearbeiten"
+    "allergensFromRecipe": "Aus Rezeptkomponenten abgeleitet — im Rezept bearbeiten",
+    "purchasePrice": "Einkaufspreis",
+    "purchasePriceSection": "Einkaufspreis",
+    "purchaseQty": "Menge",
+    "purchaseUnit": "Einheit",
+    "purchasePriceLabel": "Preis"
   },
   "recipes": {
     "selectPrompt": "Rezept auswählen",

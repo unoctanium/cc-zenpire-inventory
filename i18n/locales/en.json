@@ -155,7 +155,12 @@
     "noAllergens": "No allergens defined yet.",
     "producedByRecipe": "Produced by recipe",
     "viewRecipe": "View recipe",
-    "allergensFromRecipe": "Derived from recipe components — edit in the recipe"
+    "allergensFromRecipe": "Derived from recipe components — edit in the recipe",
+    "purchasePrice": "Purchase price",
+    "purchasePriceSection": "Purchase price",
+    "purchaseQty": "Qty",
+    "purchaseUnit": "Unit",
+    "purchasePriceLabel": "Price"
   },
   "recipes": {
     "selectPrompt": "Select a recipe to view details",

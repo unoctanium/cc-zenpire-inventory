@@ -18,6 +18,8 @@ export default defineEventHandler(async (event) => {
   const g   = unitId.get('g')
   const ml  = unitId.get('ml')
   const pcs = unitId.get('pcs')
+  const kg  = unitId.get('kg')
+  const l   = unitId.get('l')
 
   if (!g || !ml || !pcs) {
     throw createError({
@@ -28,12 +30,26 @@ export default defineEventHandler(async (event) => {
 
   // -----------------------
   // Ingredients
+  // purchase_quantity / purchase_unit_id / purchase_price demonstrate auto-cost derivation:
+  //   standard_unit_cost = purchase_price / (purchase_quantity * unit.factor)
   // -----------------------
   const ingredientDefs = [
-    { name: 'Rice',      default_unit_id: g,   kind: 'purchased', standard_unit_cost: 0.002  },
-    { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased', standard_unit_cost: 0.003  },
-    { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased', standard_unit_cost: 0.08   },
-    { name: 'Noodles',   default_unit_id: g,   kind: 'purchased', standard_unit_cost: 0.003  },
+    // 1 kg Rice @ €1.80  →  €1.80 / 1000 g = €0.0018 / g
+    { name: 'Rice',      default_unit_id: g,   kind: 'purchased',
+      purchase_quantity: 1, purchase_unit_id: kg, purchase_price: 1.80,
+      standard_unit_cost: 1.80 / 1000 },
+    // 1 l Vinegar @ €2.40  →  €2.40 / 1000 ml = €0.0024 / ml
+    { name: 'Vinegar',   default_unit_id: ml,  kind: 'purchased',
+      purchase_quantity: 1, purchase_unit_id: l, purchase_price: 2.40,
+      standard_unit_cost: 2.40 / 1000 },
+    // 10 pcs Nori Leaf @ €1.20  →  €1.20 / 10 = €0.12 / pcs
+    { name: 'Nori Leaf', default_unit_id: pcs, kind: 'purchased',
+      purchase_quantity: 10, purchase_unit_id: pcs, purchase_price: 1.20,
+      standard_unit_cost: 1.20 / 10 },
+    // 500 g Noodles @ €1.50  →  €1.50 / 500 g = €0.003 / g
+    { name: 'Noodles',   default_unit_id: g,   kind: 'purchased',
+      purchase_quantity: 500, purchase_unit_id: g, purchase_price: 1.50,
+      standard_unit_cost: 1.50 / 500 },
   ]
 
   const ingredientIds: Record<string, string> = {}

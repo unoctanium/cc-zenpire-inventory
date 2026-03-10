@@ -153,7 +153,12 @@
     "noAllergens": "まだアレルゲンが定義されていません。",
     "producedByRecipe": "製造レシピ",
     "viewRecipe": "レシピを表示",
-    "allergensFromRecipe": "レシピ構成要素から導出されます — レシピで編集してください"
+    "allergensFromRecipe": "レシピ構成要素から導出されます — レシピで編集してください",
+    "purchasePrice": "購入価格",
+    "purchasePriceSection": "購入価格",
+    "purchaseQty": "数量",
+    "purchaseUnit": "単位",
+    "purchasePriceLabel": "価格"
   },
   "recipes": {
     "selectPrompt": "レシピを選択して詳細を表示",

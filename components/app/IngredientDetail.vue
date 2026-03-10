@@ -21,6 +21,9 @@ type IngredientRow = {
   default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
+  purchase_quantity: number | null; purchase_unit_id: string | null
+  purchase_unit_code: string | null; purchase_price: number | null
+  purchase_price_currency: string
 }
 
 type UnitOption     = { id: string; code: string; name: string; unit_type: string }
@@ -70,6 +73,22 @@ const currentUnitType = computed(() =>
 const currentCostScale = computed(() => costScale(currentUnitType.value))
 const currentCostLabel = computed(() => costDisplayUnit(currentUnitType.value))
 
+// Whether all three purchase fields are filled in the draft
+const hasPurchaseInput = computed(() => {
+  const qty   = String(draft.purchase_quantity ?? '').trim()
+  const price = String(draft.purchase_price    ?? '').trim()
+  return qty !== '' && draft.purchase_unit_id !== '' && price !== ''
+})
+
+// Derived cost (display units) from purchase fields — shown as hint in edit form
+const purchaseDerivedCostDisplay = computed((): number | null => {
+  const qty   = Number(draft.purchase_quantity)
+  const price = Number(draft.purchase_price)
+  const unit  = props.units.find(u => u.id === draft.purchase_unit_id)
+  if (!qty || !price || !unit?.factor) return null
+  return (price / (qty * unit.factor)) * currentCostScale.value
+})
+
 // ─── draft ────────────────────────────────────────────────────────────────────
 
 const draft = reactive({
@@ -78,6 +97,9 @@ const draft = reactive({
   default_unit_id:    '',
   standard_unit_cost: '' as string | number,
   comment:            '',
+  purchase_quantity:  '' as string | number,
+  purchase_unit_id:   '',
+  purchase_price:     '' as string | number,
 })
 
 const selectedAllergenIds = ref<string[]>([])
@@ -107,6 +129,9 @@ watch(
         ? ing.standard_unit_cost * costScale(ing.default_unit_type)
         : ''
       draft.comment            = ing.comment ?? ''
+      draft.purchase_quantity  = ing.purchase_quantity ?? ''
+      draft.purchase_unit_id   = ing.purchase_unit_id ?? ''
+      draft.purchase_price     = ing.purchase_price ?? ''
 
       // Lazy-load allergens + image flag
       try {
@@ -121,6 +146,9 @@ watch(
           draft.standard_unit_cost = detail.ingredient.standard_unit_cost
             * costScale(detail.ingredient.default_unit_type)
         }
+        draft.purchase_quantity   = detail.ingredient.purchase_quantity ?? ''
+        draft.purchase_unit_id    = detail.ingredient.purchase_unit_id ?? ''
+        draft.purchase_price      = detail.ingredient.purchase_price ?? ''
         selectedAllergenIds.value = detail.ingredient.allergen_ids ?? []
         hasImage.value            = detail.ingredient.has_image ?? false
       } catch { /* non-fatal */ } finally {
@@ -195,8 +223,11 @@ async function save() {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.invalidCost'), color: 'red' })
     return
   }
-  // Convert display value back to per-base-unit for storage
-  const costValue = costDisplay != null ? costDisplay / currentCostScale.value : null
+  // Convert display value back to per-base-unit for storage.
+  // When purchase fields are all filled, the server will derive cost — skip manual value.
+  const costValue = hasPurchaseInput.value
+    ? null
+    : (costDisplay != null ? costDisplay / currentCostScale.value : null)
 
   saving.value = true
   try {
@@ -207,6 +238,9 @@ async function save() {
       standard_unit_cost: costValue,
       comment:            draft.comment.trim() || null,
       allergen_ids:       selectedAllergenIds.value,
+      purchase_quantity:  draft.purchase_quantity !== '' ? Number(draft.purchase_quantity) : null,
+      purchase_unit_id:   draft.purchase_unit_id   || null,
+      purchase_price:     draft.purchase_price !== '' ? Number(draft.purchase_price) : null,
     }
     if (props.ingredient) {
       await $fetch(`/api/ingredients/${props.ingredient.id}`, { method: 'PUT', credentials: 'include', body })
@@ -248,6 +282,9 @@ function cancelEdit() {
       ? props.ingredient.standard_unit_cost * costScale(props.ingredient.default_unit_type)
       : ''
     draft.comment            = props.ingredient.comment ?? ''
+    draft.purchase_quantity  = props.ingredient.purchase_quantity ?? ''
+    draft.purchase_unit_id   = props.ingredient.purchase_unit_id ?? ''
+    draft.purchase_price     = props.ingredient.purchase_price ?? ''
   }
   editMode.value      = false
   showEditSheet.value = false
@@ -402,6 +439,14 @@ async function doDelete() {
               : '—' }}
         </div>
       </div>
+      <div v-if="ingredient?.purchase_quantity != null && ingredient.purchase_price != null">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.purchasePrice') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300">
+          {{ ingredient.purchase_quantity }} {{ ingredient.purchase_unit_code }}
+          <span class="text-gray-400 mx-1">@</span>
+          € {{ ingredient.purchase_price.toFixed(2) }}
+        </div>
+      </div>
       <div>
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.comment') }}</div>
         <div class="text-[17px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ ingredient?.comment || '—' }}</div>
@@ -436,12 +481,36 @@ async function doDelete() {
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
-        <select v-model="draft.default_unit_id"
-          class="ios-input">
+        <select v-model="draft.default_unit_id" class="ios-input">
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
         </select>
       </div>
-      <div>
+      <!-- Purchase price section -->
+      <div class="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 space-y-3">
+        <div class="text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('ingredients.purchasePriceSection') }}</div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchaseQty') }}</label>
+            <input v-model="draft.purchase_quantity" type="number" min="0" step="any" class="ios-input" placeholder="1" />
+          </div>
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchaseUnit') }}</label>
+            <select v-model="draft.purchase_unit_id" class="ios-input">
+              <option value="">—</option>
+              <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchasePriceLabel') }} (€)</label>
+            <input v-model="draft.purchase_price" type="number" min="0" step="any" class="ios-input" placeholder="0.00" />
+          </div>
+        </div>
+        <p v-if="purchaseDerivedCostDisplay != null" class="text-xs text-gray-500 dark:text-gray-400">
+          = € {{ purchaseDerivedCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+        </p>
+      </div>
+      <!-- Manual cost fallback (only when no purchase fields filled) -->
+      <div v-if="!hasPurchaseInput">
         <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"
@@ -499,12 +568,36 @@ async function doDelete() {
       </div>
       <div v-if="!isProduced">
         <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
-        <select v-model="draft.default_unit_id"
-          class="ios-input">
+        <select v-model="draft.default_unit_id" class="ios-input">
           <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
         </select>
       </div>
-      <div v-if="!isProduced">
+      <!-- Purchase price section (purchased ingredients only) -->
+      <div v-if="!isProduced" class="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 space-y-3">
+        <div class="text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('ingredients.purchasePriceSection') }}</div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchaseQty') }}</label>
+            <input v-model="draft.purchase_quantity" type="number" min="0" step="any" class="ios-input" placeholder="1" />
+          </div>
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchaseUnit') }}</label>
+            <select v-model="draft.purchase_unit_id" class="ios-input">
+              <option value="">—</option>
+              <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('ingredients.purchasePriceLabel') }} (€)</label>
+            <input v-model="draft.purchase_price" type="number" min="0" step="any" class="ios-input" placeholder="0.00" />
+          </div>
+        </div>
+        <p v-if="purchaseDerivedCostDisplay != null" class="text-xs text-gray-500 dark:text-gray-400">
+          = € {{ purchaseDerivedCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+        </p>
+      </div>
+      <!-- Manual cost fallback (only when no purchase fields filled) -->
+      <div v-if="!isProduced && !hasPurchaseInput">
         <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
         <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
           class="ios-input"

@@ -17,7 +17,9 @@ export default defineEventHandler(async (event) => {
       id, article_id, name, kind, default_unit_id, standard_unit_cost,
       standard_cost_currency, produced_by_recipe_id, comment,
       image_data,
+      purchase_quantity, purchase_unit_id, purchase_price, purchase_price_currency,
       unit:default_unit_id ( code, unit_type ),
+      purchase_unit:purchase_unit_id ( code, unit_type ),
       ingredient_allergen ( allergen_id )
     `)
     .eq('id', id)
@@ -42,19 +44,24 @@ export default defineEventHandler(async (event) => {
   return {
     ok: true,
     ingredient: {
-      id:                     data.id,
-      article_id:             (data as any).article_id ?? null,
-      name:                   data.name,
-      kind:                   data.kind,
-      default_unit_id:        data.default_unit_id,
-      default_unit_code:      (data as any).unit?.code ?? '',
-      default_unit_type:      (data as any).unit?.unit_type ?? 'count',
-      standard_unit_cost:     data.standard_unit_cost,
-      standard_cost_currency: data.standard_cost_currency ?? 'EUR',
-      produced_by_recipe_id:  data.produced_by_recipe_id,
-      comment:                data.comment ?? null,
-      has_image:              !!data.image_data,
-      allergen_ids:           allergenIds,
+      id:                      data.id,
+      article_id:              (data as any).article_id ?? null,
+      name:                    data.name,
+      kind:                    data.kind,
+      default_unit_id:         data.default_unit_id,
+      default_unit_code:       (data as any).unit?.code ?? '',
+      default_unit_type:       (data as any).unit?.unit_type ?? 'count',
+      standard_unit_cost:      data.standard_unit_cost,
+      standard_cost_currency:  data.standard_cost_currency ?? 'EUR',
+      produced_by_recipe_id:   data.produced_by_recipe_id,
+      comment:                 data.comment ?? null,
+      has_image:               !!data.image_data,
+      allergen_ids:            allergenIds,
+      purchase_quantity:       (data as any).purchase_quantity ?? null,
+      purchase_unit_id:        (data as any).purchase_unit_id ?? null,
+      purchase_unit_code:      (data as any).purchase_unit?.code ?? null,
+      purchase_price:          (data as any).purchase_price ?? null,
+      purchase_price_currency: (data as any).purchase_price_currency ?? 'EUR',
     },
   }
 })
