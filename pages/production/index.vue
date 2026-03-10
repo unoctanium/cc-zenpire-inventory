@@ -15,7 +15,7 @@ type RecipeRow = {
 }
 type UnitOption       = { id: string; code: string; name: string; unit_type: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string; default_unit_type: string }
-type AllergenOption   = { id: string; name: string }
+type AllergenOption   = { id: string; name: string; code: string | null }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 

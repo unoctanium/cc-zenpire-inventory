@@ -12,7 +12,7 @@ type IngredientRow = {
   produced_by_recipe_id: string | null; comment: string | null
 }
 type UnitOption     = { id: string; code: string; name: string; unit_type: string }
-type AllergenOption = { id: string; name: string; comment: string | null }
+type AllergenOption = { id: string; name: string; code: string | null; comment: string | null }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 

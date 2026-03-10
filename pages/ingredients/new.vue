@@ -2,7 +2,7 @@
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 type UnitOption     = { id: string; code: string; name: string }
-type AllergenOption = { id: string; name: string; comment: string | null }
+type AllergenOption = { id: string; name: string; code: string | null; comment: string | null }
 
 const { canManage } = useTablePermissions('recipe')
 

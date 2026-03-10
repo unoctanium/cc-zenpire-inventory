@@ -28,7 +28,7 @@ type IngredientRow = {
 }
 
 type UnitOption     = { id: string; code: string; name: string; unit_type: string }
-type AllergenOption = { id: string; name: string; comment: string | null }
+type AllergenOption = { id: string; name: string; code: string | null; comment: string | null }
 
 // ─── cost scale helpers ───────────────────────────────────────────────────────
 // standard_unit_cost is stored per base unit (per g or per ml).
@@ -491,8 +491,9 @@ async function doDelete() {
           <span
             v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))"
             :key="al.id"
-            class="rounded-full px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-          >{{ al.name }}</span>
+            class="rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+            :title="al.name"
+          >{{ al.code ?? al.name }}</span>
         </div>
       </div>
     </template>
@@ -664,8 +665,9 @@ async function doDelete() {
           <div v-else class="flex flex-wrap gap-1.5">
             <span
               v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))" :key="al.id"
-              class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-            >{{ al.name }}</span>
+              class="rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+              :title="al.name"
+            >{{ al.code ?? al.name }}</span>
           </div>
           <p class="text-[11px] text-gray-400 dark:text-gray-600 mt-1.5">{{ $t('ingredients.allergensFromRecipe') }}</p>
         </template>
