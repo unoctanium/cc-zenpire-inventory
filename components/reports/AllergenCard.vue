@@ -4,7 +4,7 @@ import { useTablePermissions } from '~/composables/useTablePermissions'
 const { t } = useI18n()
 const { doPrint } = usePrint()
 
-type AllergenRow = { id: string; name: string }
+type AllergenRow = { id: string; name: string; code: string | null }
 type RecipeRow   = { id: string; name: string; allergen_ids: string[] }
 
 const { canRead } = useTablePermissions('recipe')
@@ -98,7 +98,7 @@ const errorText = computed(() =>
                 <div class="flex items-end justify-center" style="height: 120px;">
                   <span class="text-xs whitespace-nowrap"
                     style="writing-mode: vertical-rl; transform: rotate(180deg); display: block; text-align: left;">
-                    {{ allergen.name }}
+                    {{ allergen.name }}{{ allergen.code ? ` (${allergen.code})` : '' }}
                   </span>
                 </div>
               </th>

@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   // Fetch all allergens for this client
   const { data: allergenData, error: allergenErr } = await admin
     .from('allergen')
-    .select('id, name')
+    .select('id, name, code')
     .eq('client_id', clientId)
     .order('name', { ascending: true })
 
