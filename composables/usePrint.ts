@@ -1,6 +1,15 @@
 const PRINT_ID = '__zp_print'
 
 /**
+ * Returns true when running as an iOS home-screen PWA (standalone mode).
+ * window.print() is silently ignored in this context.
+ */
+function isIOSStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  return !!(window.navigator as any).standalone
+}
+
+/**
  * Scope plain CSS selectors to #PRINT_ID so injected print styles
  * don't bleed into the host app.  @-rules (e.g. @media, @page) are
  * left as-is because they are block-level and don't need prefixing.
@@ -29,20 +38,27 @@ function scopeStyles(css: string): string {
 
 export function usePrint() {
   /**
-   * Print an arbitrary HTML string without opening an iframe or a new
-   * window — both of which trigger Safari's "blocked from automatic
-   * printing" popup.
+   * Print an arbitrary HTML string.
    *
-   * Strategy:
-   *   1. Parse the HTML with DOMParser.
-   *   2. Inject the body content into a hidden #__zp_print div.
-   *   3. Inject scoped styles + @media print rules that hide the app
-   *      and reveal only #__zp_print.
-   *   4. Call window.print() on the main window (no cross-frame call).
-   *   5. Clean up via the afterprint event.
+   * iOS standalone (home-screen PWA): window.print() is silently ignored.
+   * Workaround: open the HTML as a blob URL in a new tab, which escapes the
+   * PWA and opens Safari, where the user can Print via the share sheet.
+   *
+   * Desktop / iOS Safari (browser): inject body content into a hidden
+   * #__zp_print div, apply @media print rules that hide the app, then
+   * call window.print() on the main window (avoids cross-frame popup).
+   * Cleaned up via the afterprint event.
    */
   function printHtml(html: string) {
     if (typeof window === 'undefined') return
+
+    if (isIOSStandalone()) {
+      const blob = new Blob([html], { type: 'text/html' })
+      const url  = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      return
+    }
 
     const printDoc = new DOMParser().parseFromString(html, 'text/html')
     const rawCss   = Array.from(printDoc.querySelectorAll('style'))
@@ -70,11 +86,18 @@ export function usePrint() {
 
   /**
    * Print the current page.
-   * Calls window.print() directly — works in all browsers.
-   * iOS 16.4+ supports window.print() in WKWebView (PWA mode).
+   *
+   * iOS standalone: window.print() is silently ignored.
+   * Open the page URL in a new tab so the user can print from Safari.
+   *
+   * All other contexts: window.print() directly.
    */
   function doPrint() {
     if (typeof window === 'undefined') return
+    if (isIOSStandalone()) {
+      window.open(window.location.href, '_blank')
+      return
+    }
     window.print()
   }
 
