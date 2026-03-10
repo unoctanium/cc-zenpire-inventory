@@ -19,9 +19,9 @@
  *   ingredientCreated(ing)  — new ingredient was POST-ed; parent adds to list
  */
 
-type UnitOption       = { id: string; code: string; name: string }
-type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
-type RecipeRow        = { id: string; name: string; is_pre_product: boolean; output_unit_id: string }
+type UnitOption       = { id: string; code: string; name: string; unit_type: string }
+type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string; default_unit_type: string }
+type RecipeRow        = { id: string; name: string; is_pre_product: boolean; output_unit_id: string; output_unit_type: string }
 
 type DraftComp = {
   _localId: string
@@ -30,6 +30,7 @@ type DraftComp = {
   quantity: number; unit_id: string; unit_code: string
   sort_order: number; type: 'ingredient' | 'sub_recipe'; name: string
   std_cost: number | null; base_unit_factor: number | null; component_unit_factor: number | null
+  yield_pct: number
 }
 
 type DoneResult = {
@@ -125,6 +126,23 @@ const showSearchPane = computed(() =>
   !selectedName.value || searchQuery.value.trim().length > 0
 )
 
+// Unit-type enforcement: only show units compatible with the selected ingredient/sub-recipe
+const allowedUnitType = computed((): string | null => {
+  if (selectedIngredientId.value) {
+    return props.ingredients.find(i => i.id === selectedIngredientId.value)?.default_unit_type ?? null
+  }
+  if (selectedSubRecipeId.value) {
+    return props.allRecipes.find(r => r.id === selectedSubRecipeId.value)?.output_unit_type ?? null
+  }
+  return null
+})
+
+const filteredUnits = computed(() => {
+  const type = allowedUnitType.value
+  if (!type) return props.units
+  return props.units.filter(u => u.unit_type === type)
+})
+
 function selectResult(item: SearchResult) {
   selectedType.value = item.type
   selectedName.value = item.name
@@ -156,6 +174,7 @@ async function createIngredient() {
     const ing: IngredientOption = {
       id: res.ingredient.id, name: res.ingredient.name,
       kind: 'purchased', default_unit_id: res.ingredient.default_unit_id ?? defaultUnitId,
+      default_unit_type: res.ingredient.default_unit_type ?? 'count',
     }
     emit('ingredientCreated', ing)
     selectedIngredientId.value = ing.id
@@ -337,7 +356,7 @@ function done() {
                   v-model="unit_id"
                   class="ios-input"
                 >
-                  <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+                  <option v-for="u in filteredUnits" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
                 </select>
               </div>
             </div>

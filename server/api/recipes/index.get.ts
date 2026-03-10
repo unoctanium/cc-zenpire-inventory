@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
       is_pre_product,
       created_at,
       updated_at,
-      unit:output_unit_id ( code )
+      unit:output_unit_id ( code, unit_type )
     `)
     .eq('client_id', clientId)
     .order('name', { ascending: true })
@@ -65,6 +65,7 @@ export default defineEventHandler(async (event) => {
       output_quantity:    r.output_quantity,
       output_unit_id:     r.output_unit_id,
       output_unit_code:   r.unit?.code ?? '',
+      output_unit_type:   r.unit?.unit_type ?? 'count',
       standard_unit_cost: r.standard_unit_cost ?? null,
       is_active:          r.is_active,
       is_pre_product:     r.is_pre_product,

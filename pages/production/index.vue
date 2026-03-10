@@ -8,13 +8,13 @@ const toast  = useToast()
 
 type RecipeRow = {
   id: string; recipe_id: string | null; name: string; description: string
-  output_quantity: number; output_unit_id: string; output_unit_code: string
+  output_quantity: number; output_unit_id: string; output_unit_code: string; output_unit_type: string
   standard_unit_cost: number | null; comp_cost: number | null
   is_active: boolean; is_pre_product: boolean
   component_count: number; created_at: string; updated_at: string
 }
 type UnitOption       = { id: string; code: string; name: string; unit_type: string }
-type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
+type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string; default_unit_type: string }
 type AllergenOption   = { id: string; name: string }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
