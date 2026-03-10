@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     .from('ingredient')
     .select(`
       id, article_id, name, kind, default_unit_id, standard_unit_cost,
-      standard_cost_currency, produced_by_recipe_id, comment,
+      standard_cost_currency, produced_by_recipe_id, comment, name_translation_locked,
       image_data,
       yield_pct,
       purchase_quantity, purchase_unit_id, purchase_price, purchase_price_currency,
@@ -56,8 +56,9 @@ export default defineEventHandler(async (event) => {
       standard_cost_currency:  data.standard_cost_currency ?? 'EUR',
       produced_by_recipe_id:   data.produced_by_recipe_id,
       comment:                 data.comment ?? null,
-      has_image:               !!data.image_data,
-      allergen_ids:            allergenIds,
+      has_image:                  !!data.image_data,
+      allergen_ids:               allergenIds,
+      name_translation_locked:    (data as any).name_translation_locked ?? false,
       yield_pct:               (data as any).yield_pct ?? 100,
       purchase_quantity:       (data as any).purchase_quantity ?? null,
       purchase_unit_id:        (data as any).purchase_unit_id ?? null,

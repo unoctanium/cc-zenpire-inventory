@@ -12,6 +12,7 @@ type RecipeRow = {
   standard_unit_cost: number | null; comp_cost: number | null
   is_active: boolean; is_pre_product: boolean
   component_count: number; created_at: string; updated_at: string
+  is_machine_translation?: boolean
 }
 type UnitOption       = { id: string; code: string; name: string; unit_type: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string; default_unit_type: string }
@@ -20,12 +21,13 @@ type AllergenOption   = { id: string; name: string; code: string | null }
 // ─── permissions ──────────────────────────────────────────────────────────────
 
 const { canRead, canManage } = useTablePermissions('recipe')
+const { contentLocaleParam } = useContentLocale()
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data: recipeData, refresh }        = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>('/api/recipes', { credentials: 'include' })
+const { data: recipeData, refresh }        = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>(() => `/api/recipes?${contentLocaleParam.value}`, { credentials: 'include' })
 const { data: unitData }                   = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
-const { data: ingredientData }             = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>('/api/ingredients', { credentials: 'include' })
+const { data: ingredientData }             = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
 const { data: allergenData }               = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
 
 const recipes     = computed(() => recipeData.value?.recipes ?? [])
@@ -135,7 +137,10 @@ function handleMobileTap(id: string) {
           @click="selectRecipe(r.id)"
         >
           <div class="flex-1 min-w-0">
-            <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ r.name }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ r.name }}</span>
+              <span v-if="r.is_machine_translation" class="flex-none text-[9px] font-semibold px-1 py-px rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 uppercase tracking-wide">{{ $t('adminTranslations.mtBadge') }}</span>
+            </div>
             <div v-if="r.recipe_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ r.recipe_id }}</div>
           </div>
           <span v-if="!r.is_active" class="flex-none text-xs text-gray-400 dark:text-gray-600">{{ $t('units.no') }}</span>
@@ -149,7 +154,10 @@ function handleMobileTap(id: string) {
           @click="handleMobileTap(r.id)"
         >
           <div class="flex-1 min-w-0">
-            <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ r.name }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ r.name }}</span>
+              <span v-if="r.is_machine_translation" class="flex-none text-[9px] font-semibold px-1 py-px rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 uppercase tracking-wide">{{ $t('adminTranslations.mtBadge') }}</span>
+            </div>
             <div v-if="r.recipe_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ r.recipe_id }}</div>
           </div>
           <span v-if="!r.is_active" class="flex-none text-xs text-gray-400">{{ $t('units.no') }}</span>

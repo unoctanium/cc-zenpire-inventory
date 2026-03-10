@@ -10,6 +10,7 @@ type IngredientRow = {
   default_unit_id: string; default_unit_code: string; default_unit_type: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
+  is_machine_translation?: boolean
 }
 type UnitOption     = { id: string; code: string; name: string; unit_type: string }
 type AllergenOption = { id: string; name: string; code: string | null; comment: string | null }
@@ -17,10 +18,11 @@ type AllergenOption = { id: string; name: string; code: string | null; comment: 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
 const { canRead, canManage } = useTablePermissions('recipe')
+const { contentLocaleParam } = useContentLocale()
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredients: IngredientRow[] }>('/api/ingredients', { credentials: 'include' })
+const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredients: IngredientRow[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
 const { data: unitData }                = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
 const { data: allergenData }            = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
 
@@ -115,7 +117,10 @@ function handleMobileTap(id: string) {
           @click="selectIngredient(i.id)"
         >
           <div class="flex-1 min-w-0">
-            <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ i.name }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ i.name }}</span>
+              <span v-if="i.is_machine_translation" class="flex-none text-[9px] font-semibold px-1 py-px rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 uppercase tracking-wide">{{ $t('adminTranslations.mtBadge') }}</span>
+            </div>
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ i.article_id }}</div>
           </div>
           <span
@@ -131,7 +136,10 @@ function handleMobileTap(id: string) {
           @click="handleMobileTap(i.id)"
         >
           <div class="flex-1 min-w-0">
-            <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ i.name }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ i.name }}</span>
+              <span v-if="i.is_machine_translation" class="flex-none text-[9px] font-semibold px-1 py-px rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 uppercase tracking-wide">{{ $t('adminTranslations.mtBadge') }}</span>
+            </div>
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ i.article_id }}</div>
           </div>
           <span

@@ -58,6 +58,25 @@ const emit = defineEmits<{
 
 const { t }  = useI18n()
 const toast  = useToast()
+const auth   = useAuth()
+
+// ─── translate ────────────────────────────────────────────────────────────────
+const translating = ref(false)
+async function translateItem() {
+  if (!props.recipe?.id) return
+  translating.value = true
+  try {
+    await $fetch('/api/admin/translations/item', {
+      method: 'POST', credentials: 'include',
+      body: { kind: 'recipe', id: props.recipe.id },
+    })
+    toast.add({ title: t('adminTranslations.translationDone') })
+  } catch (e: any) {
+    toast.add({ title: t('adminTranslations.translationFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'error' })
+  } finally {
+    translating.value = false
+  }
+}
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
@@ -70,15 +89,16 @@ const isNew = computed(() => !props.recipe)
 // ─── basic fields draft ───────────────────────────────────────────────────────
 
 const draft = reactive({
-  recipe_id:          '',
-  name:               '',
-  description:        '',
-  production_notes:   '',
-  output_quantity:    '' as string | number,
-  output_unit_id:     '',
-  standard_unit_cost: '' as string | number,
-  is_active:          true,
-  is_pre_product:     false,
+  recipe_id:                 '',
+  name:                      '',
+  description:               '',
+  production_notes:          '',
+  output_quantity:           '' as string | number,
+  output_unit_id:            '',
+  standard_unit_cost:        '' as string | number,
+  is_active:                 true,
+  is_pre_product:            false,
+  name_translation_locked:   false,
 })
 
 const saving         = ref(false)
@@ -251,8 +271,9 @@ watch(
       draft.standard_unit_cost = recipe.standard_unit_cost != null
         ? recipe.standard_unit_cost * loadQty
         : ''
-      draft.is_active      = recipe.is_active
-      draft.is_pre_product = recipe.is_pre_product
+      draft.is_active                = recipe.is_active
+      draft.is_pre_product           = recipe.is_pre_product
+      draft.name_translation_locked  = (recipe as any).name_translation_locked ?? false
       await loadDetail(recipe.id)
     } else {
       // New recipe
@@ -380,15 +401,16 @@ async function saveBasic() {
   try {
     const costRaw = String(draft.standard_unit_cost).trim()
     const body = {
-      recipe_id:          draft.recipe_id.trim() || null,
-      name:               draft.name.trim(),
-      description:        draft.description.trim() || null,
-      production_notes:   draft.production_notes.trim() || null,
-      output_quantity:    qty,
-      output_unit_id:     draft.output_unit_id,
-      standard_unit_cost: costRaw === '' ? null : Number(costRaw) / qty,
-      is_active:          draft.is_active,
-      is_pre_product:     draft.is_pre_product,
+      recipe_id:                draft.recipe_id.trim() || null,
+      name:                     draft.name.trim(),
+      description:              draft.description.trim() || null,
+      production_notes:         draft.production_notes.trim() || null,
+      output_quantity:          qty,
+      output_unit_id:           draft.output_unit_id,
+      standard_unit_cost:       costRaw === '' ? null : Number(costRaw) / qty,
+      is_active:                draft.is_active,
+      is_pre_product:           draft.is_pre_product,
+      name_translation_locked:  draft.name_translation_locked,
     }
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
@@ -433,9 +455,10 @@ function cancelEdit() {
     draft.output_quantity    = r.output_quantity
     draft.output_unit_id     = r.output_unit_id
     draft.standard_unit_cost = r.standard_unit_cost != null ? r.standard_unit_cost * loadQty : ''
-    draft.is_active          = r.is_active
-    draft.is_pre_product     = r.is_pre_product
-    draft.production_notes   = loadedProductionNotes.value
+    draft.is_active                = r.is_active
+    draft.is_pre_product           = r.is_pre_product
+    draft.name_translation_locked  = (r as any).name_translation_locked ?? false
+    draft.production_notes         = loadedProductionNotes.value
     // Revert component drafts to DB state
     syncDraftCompsFromDb()
     editMode.value      = false
@@ -594,6 +617,16 @@ function onBannerFileChange(e: Event) {
       <div class="relative z-10 flex items-center">
         <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
           <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+        </button>
+        <button
+          v-if="auth.is_admin && !isNew"
+          class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50"
+          :class="{ 'opacity-50 pointer-events-none': translating }"
+          :title="$t('adminTranslations.translateItem')"
+          @click="translateItem"
+        >
+          <UIcon v-if="translating" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+          <UIcon v-else name="i-heroicons-language" class="w-5 h-5" />
         </button>
         <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printRecipe">
           <UIcon name="i-heroicons-printer" class="w-5 h-5" />
@@ -871,6 +904,10 @@ function onBannerFileChange(e: Event) {
       <div>
         <label class="ios-label">{{ $t('recipes.name') }} *</label>
         <input v-model="draft.name" class="ios-input" :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+        <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
+          <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
+          <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
+        </label>
       </div>
 
       <!-- Recipe ID -->

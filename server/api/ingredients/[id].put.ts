@@ -17,10 +17,11 @@ export default defineEventHandler(async (event) => {
   const comment      = body?.comment != null ? String(body.comment).trim() || null : null
   const allergen_ids = Array.isArray(body?.allergen_ids) ? (body.allergen_ids as string[]) : []
 
-  const purchase_quantity = body?.purchase_quantity != null && body.purchase_quantity !== '' ? Number(body.purchase_quantity) : null
-  const purchase_unit_id  = body?.purchase_unit_id  ? String(body.purchase_unit_id).trim() || null : null
-  const purchase_price    = body?.purchase_price    != null && body.purchase_price !== '' ? Number(body.purchase_price) : null
-  const yield_pct         = body?.yield_pct != null && body.yield_pct !== '' ? Number(body.yield_pct) : 100
+  const purchase_quantity        = body?.purchase_quantity != null && body.purchase_quantity !== '' ? Number(body.purchase_quantity) : null
+  const purchase_unit_id         = body?.purchase_unit_id  ? String(body.purchase_unit_id).trim() || null : null
+  const purchase_price           = body?.purchase_price    != null && body.purchase_price !== '' ? Number(body.purchase_price) : null
+  const yield_pct                = body?.yield_pct != null && body.yield_pct !== '' ? Number(body.yield_pct) : 100
+  const name_translation_locked  = body?.name_translation_locked === true
 
   if (!name || !default_unit_id) {
     throw createError({ statusCode: 400, statusMessage: 'Missing name or default_unit_id' })
@@ -43,7 +44,7 @@ export default defineEventHandler(async (event) => {
     .from('ingredient')
     .update({
       name, article_id, default_unit_id, standard_unit_cost, comment,
-      yield_pct,
+      yield_pct, name_translation_locked,
       purchase_quantity, purchase_unit_id, purchase_price, purchase_price_currency: 'EUR',
     })
     .eq('id', id)
@@ -59,6 +60,12 @@ export default defineEventHandler(async (event) => {
     await admin.from('ingredient_allergen')
       .insert(allergen_ids.map(aid => ({ ingredient_id: id, allergen_id: aid })))
   }
+
+  // Mark existing translations as stale (name or comment changed)
+  await admin
+    .from('ingredient_i18n')
+    .update({ is_stale: true, updated_at: new Date().toISOString() })
+    .eq('ingredient_id', id)
 
   return { ok: true, ingredient: data }
 })

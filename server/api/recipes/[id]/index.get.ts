@@ -1,4 +1,4 @@
-import { createError, getRouterParam } from 'h3'
+import { createError, getRouterParam, getQuery } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 import { resolveAppUser } from '~/server/utils/resolve-app-user'
@@ -10,13 +10,22 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
 
+  const query = getQuery(event)
+  const requestedLocale = query.locale ? String(query.locale).toLowerCase() : null
+
   const admin = supabaseAdmin()
+
+  let sourceLang = 'de'
+  if (requestedLocale) {
+    const { data: clientRow } = await admin.from('client').select('content_locale').eq('id', clientId).single()
+    sourceLang = clientRow?.content_locale ?? 'de'
+  }
 
   const { data: recipe, error: rErr } = await admin
     .from('recipe')
     .select(`
       id, recipe_id, name, description, production_notes, output_quantity, output_unit_id,
-      standard_unit_cost, is_active, is_pre_product, created_at, updated_at,
+      standard_unit_cost, is_active, is_pre_product, name_translation_locked, created_at, updated_at,
       image_data,
       unit:output_unit_id ( code )
     `)
@@ -51,14 +60,31 @@ export default defineEventHandler(async (event) => {
     .select('allergen_id')
     .eq('recipe_id', id)
 
+  // Fetch translation if requested locale differs from source
+  let i18nRow: { name: string | null; description: string | null; production_notes: string | null; is_machine: boolean } | null = null
+  if (requestedLocale && requestedLocale !== sourceLang) {
+    const { data: i18n } = await admin
+      .from('recipe_i18n')
+      .select('name, description, production_notes, is_machine')
+      .eq('recipe_id', id)
+      .eq('locale', requestedLocale)
+      .single()
+    if (i18n) i18nRow = i18n
+  }
+
+  const r = recipe as any
   return {
     ok: true,
     recipe: {
-      ...(recipe as any),
-      output_unit_code: (recipe as any).unit?.code ?? '',
-      has_image:        !!(recipe as any).image_data,
-      image_data:       undefined,
-      allergen_ids:     (allergenData ?? []).map((r: any) => r.allergen_id),
+      ...r,
+      name:                   i18nRow?.name              || r.name,
+      description:            i18nRow?.description       ?? r.description,
+      production_notes:       i18nRow?.production_notes  ?? r.production_notes,
+      output_unit_code:       r.unit?.code ?? '',
+      has_image:              !!r.image_data,
+      image_data:             undefined,
+      allergen_ids:           (allergenData ?? []).map((a: any) => a.allergen_id),
+      is_machine_translation: i18nRow ? i18nRow.is_machine : false,
     },
     components: (components ?? []).map((c: any) => ({
       id:                   c.id,

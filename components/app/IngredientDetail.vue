@@ -58,6 +58,25 @@ const emit = defineEmits<{
 const { t }        = useI18n()
 const toast        = useToast()
 const { printHtml } = usePrint()
+const auth = useAuth()
+
+// ─── translate ────────────────────────────────────────────────────────────────
+const translating = ref(false)
+async function translateItem() {
+  if (!props.ingredient?.id) return
+  translating.value = true
+  try {
+    await $fetch('/api/admin/translations/item', {
+      method: 'POST', credentials: 'include',
+      body: { kind: 'ingredient', id: props.ingredient.id },
+    })
+    toast.add({ title: t('adminTranslations.translationDone') })
+  } catch (e: any) {
+    toast.add({ title: t('adminTranslations.translationFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'error' })
+  } finally {
+    translating.value = false
+  }
+}
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
@@ -104,15 +123,16 @@ const effectiveCostDisplay = computed((): number | null => {
 // ─── draft ────────────────────────────────────────────────────────────────────
 
 const draft = reactive({
-  article_id:         '',
-  name:               '',
-  default_unit_id:    '',
-  standard_unit_cost: '' as string | number,
-  comment:            '',
-  yield_pct:          100 as string | number,
-  purchase_quantity:  '' as string | number,
-  purchase_unit_id:   '',
-  purchase_price:     '' as string | number,
+  article_id:                '',
+  name:                      '',
+  default_unit_id:           '',
+  standard_unit_cost:        '' as string | number,
+  comment:                   '',
+  yield_pct:                 100 as string | number,
+  purchase_quantity:         '' as string | number,
+  purchase_unit_id:          '',
+  purchase_price:            '' as string | number,
+  name_translation_locked:   false,
 })
 
 const selectedAllergenIds = ref<string[]>([])
@@ -164,8 +184,9 @@ watch(
         draft.purchase_quantity   = detail.ingredient.purchase_quantity ?? ''
         draft.purchase_unit_id    = detail.ingredient.purchase_unit_id ?? ''
         draft.purchase_price      = detail.ingredient.purchase_price ?? ''
-        selectedAllergenIds.value = detail.ingredient.allergen_ids ?? []
-        hasImage.value            = detail.ingredient.has_image ?? false
+        selectedAllergenIds.value         = detail.ingredient.allergen_ids ?? []
+        hasImage.value                    = detail.ingredient.has_image ?? false
+        draft.name_translation_locked     = detail.ingredient.name_translation_locked ?? false
       } catch { /* non-fatal */ } finally {
         loadingDetail.value = false
       }
@@ -251,16 +272,17 @@ async function save() {
   saving.value = true
   try {
     const body = {
-      article_id:         draft.article_id.trim() || null,
-      name:               draft.name.trim(),
-      default_unit_id:    draft.default_unit_id,
-      standard_unit_cost: costValue,
-      comment:            draft.comment.trim() || null,
-      allergen_ids:       selectedAllergenIds.value,
-      yield_pct:          Number(draft.yield_pct) || 100,
-      purchase_quantity:  draft.purchase_quantity !== '' ? Number(draft.purchase_quantity) : null,
-      purchase_unit_id:   draft.purchase_unit_id   || null,
-      purchase_price:     draft.purchase_price !== '' ? Number(draft.purchase_price) : null,
+      article_id:                draft.article_id.trim() || null,
+      name:                      draft.name.trim(),
+      default_unit_id:           draft.default_unit_id,
+      standard_unit_cost:        costValue,
+      comment:                   draft.comment.trim() || null,
+      allergen_ids:              selectedAllergenIds.value,
+      yield_pct:                 Number(draft.yield_pct) || 100,
+      purchase_quantity:         draft.purchase_quantity !== '' ? Number(draft.purchase_quantity) : null,
+      purchase_unit_id:          draft.purchase_unit_id   || null,
+      purchase_price:            draft.purchase_price !== '' ? Number(draft.purchase_price) : null,
+      name_translation_locked:   draft.name_translation_locked,
     }
     if (props.ingredient) {
       await $fetch(`/api/ingredients/${props.ingredient.id}`, { method: 'PUT', credentials: 'include', body })
@@ -398,6 +420,16 @@ async function doDelete() {
       <div class="relative z-10 flex items-center">
         <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
           <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+        </button>
+        <button
+          v-if="auth.is_admin && !isNew"
+          class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50"
+          :class="{ 'opacity-50 pointer-events-none': translating }"
+          :title="$t('adminTranslations.translateItem')"
+          @click="translateItem"
+        >
+          <UIcon v-if="translating" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+          <UIcon v-else name="i-heroicons-language" class="w-5 h-5" />
         </button>
         <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printIngredient">
           <UIcon name="i-heroicons-printer" class="w-5 h-5" />
@@ -598,6 +630,10 @@ async function doDelete() {
         <input v-model="draft.name"
           class="ios-input"
           :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+        <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
+          <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
+          <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
+        </label>
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.articleId') }}</label>

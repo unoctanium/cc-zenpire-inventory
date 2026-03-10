@@ -16,6 +16,7 @@
     "adminSeed": "DB Seed",
     "adminImportExport": "Import / Export",
     "adminStores": "Filialen",
+    "adminTranslations": "Übersetzungen",
     "personalSettings": "Persönliche Einstellungen",
     "recipe": "Rezept",
     "production": "Produktion",
@@ -379,5 +380,27 @@
     "importConfirmDesc": "Alle aktuellen Geschäftsdaten werden gelöscht und durch die importierte Datei ersetzt. Dies kann nicht rückgängig gemacht werden.",
     "importConfirm": "Importieren",
     "importSummaryLabel": "Die Datei enthält:"
+  },
+  "adminTranslations": {
+    "sourceLocaleHeading": "Inhaltssprache (Quellsprache)",
+    "sourceLocaleDesc": "Die Sprache, in der alle Inhalte (Rezepte, Zutaten) erfasst werden. Übersetzungen werden aus dieser Sprache erzeugt.",
+    "localeSaved": "Sprache gespeichert",
+    "coverageHeading": "Übersetzungsabdeckung",
+    "sourceIs": "Quellsprache: ",
+    "stale": "veraltet",
+    "translateMissing": "Fehlende übersetzen",
+    "retranslateStale": "Veraltete neu übersetzen",
+    "batchDone": "Übersetzung abgeschlossen",
+    "batchFailed": "Übersetzung fehlgeschlagen",
+    "translated": "Übersetzt",
+    "skipped": "Übersprungen",
+    "errors": "Fehler",
+    "noTargetLocales": "Keine Zielsprachen verfügbar.",
+    "translateItem": "Übersetzen",
+    "translating": "Wird übersetzt…",
+    "translationDone": "Übersetzung fertig",
+    "translationFailed": "Übersetzung fehlgeschlagen",
+    "lockName": "Name sperren (nicht übersetzen)",
+    "mtBadge": "MÜ"
   }
 }

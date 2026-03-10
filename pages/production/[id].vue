@@ -15,11 +15,12 @@ const route = useRoute()
 const id    = computed(() => route.params.id as string)
 
 const { canManage } = useTablePermissions('recipe')
+const { contentLocaleParam } = useContentLocale()
 
-const { data: recipeData, refresh }    = await useFetch<{ ok: boolean; recipe: RecipeRow }>(() => `/api/recipes/${id.value}`, { credentials: 'include' })
+const { data: recipeData, refresh }    = await useFetch<{ ok: boolean; recipe: RecipeRow }>(() => `/api/recipes/${id.value}?${contentLocaleParam.value}`, { credentials: 'include' })
 const { data: unitData }               = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
-const { data: ingredientData }         = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>('/api/ingredients', { credentials: 'include' })
-const { data: allRecipeData }          = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>('/api/recipes', { credentials: 'include' })
+const { data: ingredientData }         = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
+const { data: allRecipeData }          = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>(() => `/api/recipes?${contentLocaleParam.value}`, { credentials: 'include' })
 
 const recipe      = computed(() => recipeData.value?.recipe ?? null)
 const units       = computed(() => unitData.value?.units ?? [])
