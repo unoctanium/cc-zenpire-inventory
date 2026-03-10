@@ -8,11 +8,14 @@ const { doPrint } = usePrint()
 
 type RecipeRow = {
   id: string; recipe_id: string | null; name: string; description: string
-  output_quantity: number; output_unit_id: string; output_unit_code: string
+  output_quantity: number; output_unit_id: string; output_unit_code: string; output_unit_type: string
   standard_unit_cost: number | null; comp_cost: number | null
   is_active: boolean; is_pre_product: boolean
   component_count: number; created_at: string; updated_at: string
 }
+
+function costScale(t: string)  { return (t === 'mass' || t === 'volume') ? 100 : 1 }
+function costUnit(t: string)   { return t === 'mass' ? '100g' : t === 'volume' ? '100ml' : 'pcs' }
 
 const { canRead } = useTablePermissions('recipe')
 
@@ -46,7 +49,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
       { header: t('recipes.output'),      candidates: rows.value.map(r => `${r.output_quantity} ${r.output_unit_code}`) },
       { header: t('recipes.batchCost'),   candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * r.output_quantity).toFixed(2)}` : '—') },
       { header: t('recipes.compCost'),    candidates: rows.value.map(r => r.comp_cost != null ? `€ ${r.comp_cost.toFixed(2)}` : '—') },
-      { header: t('recipes.unitCost'),    candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : '—') },
+      { header: t('recipes.unitCost'),    candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * costScale(r.output_unit_type)).toFixed(4)} / ${costUnit(r.output_unit_type)}` : '—') },
       { header: t('recipes.active'),      candidates: ['true', 'false'] },
       { header: t('recipes.preProduct'),  candidates: ['true', 'false'] },
       { header: t('recipes.components'),  candidates: rows.value.map(r => String(r.component_count)) },
@@ -58,7 +61,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
 <template>
   <div>
   <!-- iOS nav bar -->
-  <div class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 relative flex items-center justify-end px-2 min-h-[44px]">
+  <div class="sticky top-0 z-30 bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 relative flex items-center justify-end px-2 min-h-[44px]">
     <span class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-20 truncate pointer-events-none">{{ $t('nav.recipes') }}</span>
     <div class="relative z-10 flex items-center">
       <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="refresh()">
@@ -166,7 +169,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
                 </span>
               </td>
               <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.comp_cost != null ? `€ ${row.comp_cost.toFixed(2)}` : '—' }}</span></td>
-              <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.standard_unit_cost != null ? `€ ${row.standard_unit_cost.toFixed(2)}` : '—' }}</span></td>
+              <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.standard_unit_cost != null ? `€ ${(row.standard_unit_cost * costScale(row.output_unit_type)).toFixed(4)} / ${costUnit(row.output_unit_type)}` : '—' }}</span></td>
               <td class="px-2 py-1.5 align-middle">
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                   :class="row.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'">
