@@ -95,6 +95,33 @@ export default defineEventHandler(async (event) => {
     dashiId = created!.id
   }
 
+  // Dashi ingredient shadow (kind='produced') — links recipe to ingredient system
+  const { data: exDashiIng } = await admin
+    .from('ingredient')
+    .select('id')
+    .eq('name', 'Dashi')
+    .eq('client_id', clientId)
+    .maybeSingle()
+  if (exDashiIng?.id) {
+    await admin.from('ingredient').update({
+      kind:                 'produced',
+      default_unit_id:      ml,
+      standard_unit_cost:   0.0004,
+      produced_by_recipe_id: dashiId,
+    }).eq('id', exDashiIng.id)
+    ingredientIds['Dashi'] = exDashiIng.id
+  } else {
+    const { data: created } = await admin.from('ingredient').insert({
+      client_id:            clientId,
+      name:                 'Dashi',
+      kind:                 'produced',
+      default_unit_id:      ml,
+      standard_unit_cost:   0.0004,
+      produced_by_recipe_id: dashiId,
+    }).select('id').single()
+    ingredientIds['Dashi'] = created!.id
+  }
+
   // Dashi component: Nori Leaf × 5 pcs
   const { data: exDashiComp } = await admin.from('recipe_component')
     .select('id').eq('recipe_id', dashiId).eq('ingredient_id', ingredientIds['Nori Leaf']).maybeSingle()
