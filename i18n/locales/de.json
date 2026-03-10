@@ -150,7 +150,9 @@
     "viewTitle": "Zutat",
     "editTitle": "Zutat bearbeiten",
     "newTitle": "Neue Zutat",
-    "noAllergens": "Noch keine Allergene definiert."
+    "noAllergens": "Noch keine Allergene definiert.",
+    "producedByRecipe": "Hergestellt durch Rezept",
+    "viewRecipe": "Rezept anzeigen"
   },
   "recipes": {
     "selectPrompt": "Rezept auswählen",

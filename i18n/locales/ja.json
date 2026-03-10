@@ -150,7 +150,9 @@
     "viewTitle": "食材詳細",
     "editTitle": "食材を編集",
     "newTitle": "新規食材",
-    "noAllergens": "まだアレルゲンが定義されていません。"
+    "noAllergens": "まだアレルゲンが定義されていません。",
+    "producedByRecipe": "製造レシピ",
+    "viewRecipe": "レシピを表示"
   },
   "recipes": {
     "selectPrompt": "レシピを選択して詳細を表示",

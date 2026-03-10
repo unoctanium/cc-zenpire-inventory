@@ -308,7 +308,7 @@ async function doDelete() {
     <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-2 min-h-[44px]">
       <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ ingredient?.name }}</h2>
       <div class="relative z-10 flex items-center">
-        <button v-if="canManage && !isProduced" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
+        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
           <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
         </button>
         <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printIngredient">
@@ -349,6 +349,13 @@ async function doDelete() {
             ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
             : 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300'"
         >{{ ingredient!.kind }}</span>
+      </div>
+      <div v-if="isProduced && ingredient?.produced_by_recipe_id">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.producedByRecipe') }}</div>
+        <button
+          class="text-[15px] text-[#007AFF] dark:text-blue-400 active:opacity-50"
+          @click="navigateTo(`/production/${ingredient!.produced_by_recipe_id}`)"
+        >{{ $t('ingredients.viewRecipe') }} →</button>
       </div>
       <div>
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.unit') }}</div>

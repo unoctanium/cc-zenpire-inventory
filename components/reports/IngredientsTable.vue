@@ -140,8 +140,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
             <tr v-else-if="visibleRows.length === 0"><td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
-                class="border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-900/40"
-                :class="row.kind === 'produced' ? 'opacity-70' : ''">
+                class="border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-900/40">
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
               </td>

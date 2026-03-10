@@ -114,7 +114,7 @@ function handleMobileTap(id: string) {
             : 'bg-white dark:bg-gray-900'"
           @click="selectIngredient(i.id)"
         >
-          <div class="flex-1 min-w-0" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+          <div class="flex-1 min-w-0">
             <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ i.name }}</div>
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ i.article_id }}</div>
           </div>
@@ -132,7 +132,7 @@ function handleMobileTap(id: string) {
           class="sm:hidden flex w-full items-center gap-2 px-4 py-3.5 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           @click="handleMobileTap(i.id)"
         >
-          <div class="flex-1 min-w-0" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+          <div class="flex-1 min-w-0">
             <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ i.name }}</div>
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ i.article_id }}</div>
           </div>

@@ -152,7 +152,9 @@
     "viewTitle": "Ingredient",
     "editTitle": "Edit Ingredient",
     "newTitle": "New Ingredient",
-    "noAllergens": "No allergens defined yet."
+    "noAllergens": "No allergens defined yet.",
+    "producedByRecipe": "Produced by recipe",
+    "viewRecipe": "View recipe"
   },
   "recipes": {
     "selectPrompt": "Select a recipe to view details",

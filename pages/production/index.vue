@@ -28,7 +28,7 @@ const { data: ingredientData }             = await useFetch<{ ok: boolean; ingre
 
 const recipes     = computed(() => recipeData.value?.recipes ?? [])
 const units       = computed(() => unitData.value?.units ?? [])
-const ingredients = computed(() => (ingredientData.value?.ingredients ?? []).filter(i => i.kind === 'purchased'))
+const ingredients = computed(() => ingredientData.value?.ingredients ?? [])
 
 // ─── list + search ────────────────────────────────────────────────────────────
 
