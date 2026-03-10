@@ -5,7 +5,9 @@ export type AuthState = {
   email: string
   app_user_id: string
   client_id: string
+  client_name: string
   permissions: string[]
+  roles: string[]
   is_admin: boolean
   is_superadmin: boolean
   stores: StoreItem[]

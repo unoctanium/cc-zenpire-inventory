@@ -60,11 +60,11 @@ async function submit() {
 
           <div class="space-y-4">
             <UFormField :label="$t('auth.email')" name="email">
-              <UInput v-model="email" type="email" required placeholder="name@example.com" />
+              <UInput v-model="email" type="email" required placeholder="name@example.com" @keyup.enter="submit" />
             </UFormField>
 
             <UFormField :label="$t('auth.password')" name="password">
-              <UInput v-model="password" type="password" required placeholder="••••••••" />
+              <UInput v-model="password" type="password" required placeholder="••••••••" @keyup.enter="submit" />
             </UFormField>
 
             <UButton block :loading="pending" @click="submit">

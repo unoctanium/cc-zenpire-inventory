@@ -18,7 +18,7 @@
  */
 
 type RecipeRow = {
-  id: string; name: string; description: string
+  id: string; recipe_id: string | null; name: string; description: string
   output_quantity: number; output_unit_id: string; output_unit_code: string
   standard_unit_cost: number | null
   is_active: boolean; is_pre_product: boolean
@@ -67,6 +67,7 @@ const isNew = computed(() => !props.recipe)
 // ─── basic fields draft ───────────────────────────────────────────────────────
 
 const draft = reactive({
+  recipe_id:          '',
   name:               '',
   description:        '',
   production_notes:   '',
@@ -234,6 +235,7 @@ watch(
       showEditSheet.value = false
       savedId.value    = recipe.id
       const loadQty    = Number(recipe.output_quantity) || 1
+      draft.recipe_id          = recipe.recipe_id ?? ''
       draft.name               = recipe.name
       draft.description        = recipe.description ?? ''
       draft.output_quantity    = recipe.output_quantity
@@ -248,6 +250,7 @@ watch(
       // New recipe
       editMode.value           = true
       savedId.value            = null
+      draft.recipe_id          = ''
       draft.name               = ''
       draft.description        = ''
       draft.production_notes   = ''
@@ -368,6 +371,7 @@ async function saveBasic() {
   try {
     const costRaw = String(draft.standard_unit_cost).trim()
     const body = {
+      recipe_id:          draft.recipe_id.trim() || null,
       name:               draft.name.trim(),
       description:        draft.description.trim() || null,
       production_notes:   draft.production_notes.trim() || null,
@@ -414,6 +418,7 @@ function cancelEdit() {
   if (props.recipe) {
     const r = props.recipe
     const loadQty = Number(r.output_quantity) || 1
+    draft.recipe_id          = r.recipe_id ?? ''
     draft.name               = r.name
     draft.description        = r.description ?? ''
     draft.output_quantity    = r.output_quantity
@@ -605,6 +610,9 @@ function onBannerFileChange(e: Event) {
       <!-- Name -->
       <h1 class="text-[26px] font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ draft.name }}</h1>
 
+      <!-- Recipe ID -->
+      <p v-if="draft.recipe_id" class="text-[13px] text-gray-400 dark:text-gray-500 font-mono -mt-2">{{ draft.recipe_id }}</p>
+
       <!-- Description -->
       <p v-if="draft.description" class="text-[15px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{{ draft.description }}</p>
 
@@ -702,6 +710,11 @@ function onBannerFileChange(e: Event) {
       <div>
         <label class="ios-label">{{ $t('recipes.name') }} *</label>
         <input v-model="draft.name" class="ios-input" :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+      </div>
+
+      <div>
+        <label class="ios-label">{{ $t('recipes.recipeId') }}</label>
+        <input v-model="draft.recipe_id" class="ios-input font-mono" :placeholder="$t('recipes.recipeIdPlaceholder')" autocomplete="off" />
       </div>
 
       <div>
@@ -821,6 +834,12 @@ function onBannerFileChange(e: Event) {
       <div>
         <label class="ios-label">{{ $t('recipes.name') }} *</label>
         <input v-model="draft.name" class="ios-input" :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+      </div>
+
+      <!-- Recipe ID -->
+      <div>
+        <label class="ios-label">{{ $t('recipes.recipeId') }}</label>
+        <input v-model="draft.recipe_id" class="ios-input font-mono" :placeholder="$t('recipes.recipeIdPlaceholder')" autocomplete="off" />
       </div>
 
       <!-- Description -->

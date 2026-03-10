@@ -2,7 +2,7 @@
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 type RecipeRow = {
-  id: string; name: string; description: string
+  id: string; recipe_id: string | null; name: string; description: string
   output_quantity: number; output_unit_id: string; output_unit_code: string
   standard_unit_cost: number | null; comp_cost: number | null
   is_active: boolean; is_pre_product: boolean

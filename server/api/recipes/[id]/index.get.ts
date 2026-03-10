@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const { data: recipe, error: rErr } = await admin
     .from('recipe')
     .select(`
-      id, name, description, production_notes, output_quantity, output_unit_id,
+      id, recipe_id, name, description, production_notes, output_quantity, output_unit_id,
       standard_unit_cost, is_active, is_pre_product, created_at, updated_at,
       image_data,
       unit:output_unit_id ( code )

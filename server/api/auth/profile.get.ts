@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await admin
     .from('app_user')
-    .select('email, first_name, last_name, telephone')
+    .select('email, first_name, last_name, telephone, avatar_data')
     .eq('id', appUserId)
     .single()
 
@@ -19,5 +19,6 @@ export default defineEventHandler(async (event) => {
     first_name: data.first_name ?? '',
     last_name:  data.last_name  ?? '',
     telephone:  data.telephone  ?? '',
+    has_avatar: !!data.avatar_data,
   }
 })

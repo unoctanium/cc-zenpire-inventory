@@ -7,7 +7,7 @@ const { t } = useI18n()
 const { doPrint } = usePrint()
 
 type RecipeRow = {
-  id: string; name: string; description: string
+  id: string; recipe_id: string | null; name: string; description: string
   output_quantity: number; output_unit_id: string; output_unit_code: string
   standard_unit_cost: number | null; comp_cost: number | null
   is_active: boolean; is_pre_product: boolean
@@ -41,6 +41,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
   computed(() => ({
     first: { header: t('recipes.name'), candidates: rows.value.map(r => r.name) },
     inner: [
+      { header: t('recipes.recipeId'),    candidates: rows.value.map(r => r.recipe_id ?? '') },
       { header: t('recipes.description'), candidates: rows.value.map(r => r.description.slice(0, 60)) },
       { header: t('recipes.output'),      candidates: rows.value.map(r => `${r.output_quantity} ${r.output_unit_code}`) },
       { header: t('recipes.batchCost'),   candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * r.output_quantity).toFixed(2)}` : '—') },
@@ -121,6 +122,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
                     :aria-label="$t('recipes.sortByName')" @click="toggleSort('name')" />
                 </div>
               </th>
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.recipeId') }}</th>
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.description') }}</th>
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.output') }}</th>
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.batchCost') }}</th>
@@ -139,13 +141,16 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
           </thead>
 
           <tbody>
-            <tr v-if="pending"><td colspan="9" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
-            <tr v-else-if="visibleRows.length === 0"><td colspan="9" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
+            <tr v-if="pending"><td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
+            <tr v-else-if="visibleRows.length === 0"><td colspan="10" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
                 class="border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-900/40">
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
+              </td>
+              <td class="px-2 py-1.5 align-middle">
+                <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ row.recipe_id ?? '–' }}</span>
               </td>
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-600 dark:text-gray-400 truncate block max-w-[200px]" :title="row.description">

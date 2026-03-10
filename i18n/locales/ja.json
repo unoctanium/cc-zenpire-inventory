@@ -83,7 +83,10 @@
     "title": "ダッシュボード",
     "subtitle": "単位・レシピ・食材・権限管理のMVP管理画面。",
     "quickLinks": "クイックリンク",
-    "refreshSession": "セッション更新"
+    "refreshSession": "セッション更新",
+    "tenant": "テナント",
+    "store": "現在の店舗",
+    "roles": "ロール"
   },
   "units": {
     "selectPrompt": "単位を選択して詳細を表示",
@@ -127,6 +130,8 @@
     "allergens": "アレルゲン",
     "notes": "メモ",
     "namePlaceholder": "例: 米",
+    "articleId": "品番",
+    "articleIdPlaceholder": "例: ART-1234",
     "costPlaceholder": "例: 0.005",
     "commentPlaceholder": "食材に関するメモ（任意）",
     "sortByName": "名前で並び替え",
@@ -161,6 +166,8 @@
     "sortByName": "名前で並び替え",
     "sortByActive": "有効状態で並び替え",
     "namePlaceholder": "例: 寿司飯",
+    "recipeId": "レシピID",
+    "recipeIdPlaceholder": "例: RCP-1234",
     "descPlaceholder": "簡単な説明",
     "outputQtyPlaceholder": "例: 1000",
     "nameRequired": "名前・出力量・出力単位は必須です。",
@@ -329,7 +336,11 @@
     "passwordMismatch": "パスワードが一致しません。",
     "passwordTooShort": "パスワードは6文字以上必要です。",
     "passwordChanged": "パスワードが正常に変更されました。",
-    "passwordChangeFailed": "パスワードの変更に失敗しました。"
+    "passwordChangeFailed": "パスワードの変更に失敗しました。",
+    "uploadAvatar": "写真をアップロード",
+    "removeAvatar": "削除",
+    "avatarUploaded": "写真を更新しました。",
+    "avatarRemoved": "写真を削除しました。"
   },
   "devTools": {
     "title": "開発ツール",

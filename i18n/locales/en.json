@@ -85,7 +85,10 @@
     "title": "Dashboard",
     "subtitle": "MVP admin for units, recipes, ingredients, and RBAC.",
     "quickLinks": "Quick links",
-    "refreshSession": "Refresh session"
+    "refreshSession": "Refresh session",
+    "tenant": "Tenant",
+    "store": "Current Store",
+    "roles": "Roles"
   },
   "units": {
     "selectPrompt": "Select a unit to view details",
@@ -129,6 +132,8 @@
     "allergens": "Allergens",
     "notes": "Notes",
     "namePlaceholder": "e.g. Rice",
+    "articleId": "Article ID",
+    "articleIdPlaceholder": "e.g. ART-1234",
     "costPlaceholder": "e.g. 0.005",
     "commentPlaceholder": "Optional notes about this ingredient",
     "sortByName": "Sort by name",
@@ -163,6 +168,8 @@
     "sortByName": "Sort by name",
     "sortByActive": "Sort by active",
     "namePlaceholder": "e.g. Sushi Rice",
+    "recipeId": "Recipe ID",
+    "recipeIdPlaceholder": "e.g. RCP-1234",
     "descPlaceholder": "Brief description",
     "outputQtyPlaceholder": "e.g. 1000",
     "nameRequired": "Name, output quantity and output unit are required.",
@@ -331,7 +338,11 @@
     "passwordMismatch": "Passwords do not match.",
     "passwordTooShort": "Password must be at least 6 characters.",
     "passwordChanged": "Password changed successfully.",
-    "passwordChangeFailed": "Failed to change password."
+    "passwordChangeFailed": "Failed to change password.",
+    "uploadAvatar": "Upload photo",
+    "removeAvatar": "Remove",
+    "avatarUploaded": "Photo updated.",
+    "avatarRemoved": "Photo removed."
   },
   "devTools": {
     "title": "Dev Tools",

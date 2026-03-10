@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
   const name            = String(body?.name            ?? '').trim()
+  const article_id      = String(body?.article_id      ?? '').trim() || null
   const default_unit_id = String(body?.default_unit_id ?? '').trim()
   const standard_unit_cost = body?.standard_unit_cost != null
     ? Number(body.standard_unit_cost)
@@ -26,6 +27,7 @@ export default defineEventHandler(async (event) => {
     .insert({
       client_id: clientId,
       name,
+      article_id,
       default_unit_id,
       kind: 'purchased',
       standard_unit_cost,

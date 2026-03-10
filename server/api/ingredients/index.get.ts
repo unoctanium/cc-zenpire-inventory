@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
     .from('ingredient')
     .select(`
       id,
+      article_id,
       name,
       kind,
       default_unit_id,
@@ -30,6 +31,7 @@ export default defineEventHandler(async (event) => {
     ok: true,
     ingredients: (data ?? []).map((r: any) => ({
       id:                    r.id,
+      article_id:            r.article_id ?? null,
       name:                  r.name,
       kind:                  r.kind,
       default_unit_id:       r.default_unit_id,

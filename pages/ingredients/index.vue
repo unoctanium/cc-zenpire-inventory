@@ -6,7 +6,7 @@ const { t }  = useI18n()
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type IngredientRow = {
-  id: string; name: string; kind: string
+  id: string; article_id: string | null; name: string; kind: string
   default_unit_id: string; default_unit_code: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
@@ -108,15 +108,16 @@ function handleMobileTap(id: string) {
         <!-- TABLET -->
         <button
           v-for="i in filteredIngredients" :key="i.id"
-          class="hidden sm:flex w-full items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="hidden sm:flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           :class="selectedId === i.id
             ? 'bg-blue-50 dark:bg-blue-900/20'
             : 'bg-white dark:bg-gray-900'"
           @click="selectIngredient(i.id)"
         >
-          <span class="flex-1 text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate" :class="i.kind === 'produced' ? 'opacity-60' : ''">
-            {{ i.name }}
-          </span>
+          <div class="flex-1 min-w-0" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+            <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ i.name }}</div>
+            <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ i.article_id }}</div>
+          </div>
           <span
             class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
             :class="i.kind === 'purchased'
@@ -128,10 +129,13 @@ function handleMobileTap(id: string) {
         <!-- MOBILE -->
         <button
           v-for="i in filteredIngredients" :key="i.id + '-m'"
-          class="sm:hidden flex w-full items-center gap-2 px-4 py-4 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          class="sm:hidden flex w-full items-center gap-2 px-4 py-3.5 text-left bg-white dark:bg-gray-900 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
           @click="handleMobileTap(i.id)"
         >
-          <span class="flex-1 text-[17px] font-medium text-gray-900 dark:text-gray-100" :class="i.kind === 'produced' ? 'opacity-60' : ''">{{ i.name }}</span>
+          <div class="flex-1 min-w-0" :class="i.kind === 'produced' ? 'opacity-60' : ''">
+            <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ i.name }}</div>
+            <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ i.article_id }}</div>
+          </div>
           <span
             class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
             :class="i.kind === 'purchased'

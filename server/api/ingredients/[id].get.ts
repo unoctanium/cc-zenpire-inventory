@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await admin
     .from('ingredient')
     .select(`
-      id, name, kind, default_unit_id, standard_unit_cost,
+      id, article_id, name, kind, default_unit_id, standard_unit_cost,
       standard_cost_currency, produced_by_recipe_id, comment,
       image_data,
       unit:default_unit_id ( code ),
@@ -30,6 +30,7 @@ export default defineEventHandler(async (event) => {
     ok: true,
     ingredient: {
       id:                     data.id,
+      article_id:             (data as any).article_id ?? null,
       name:                   data.name,
       kind:                   data.kind,
       default_unit_id:        data.default_unit_id,

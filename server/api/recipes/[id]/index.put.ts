@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
   const name               = String(body?.name            ?? '').trim()
+  const recipe_id          = String(body?.recipe_id       ?? '').trim() || null
   const description        = String(body?.description     ?? '').trim() || null
   const production_notes   = String(body?.production_notes ?? '').trim() || null
   const output_quantity    = Number(body?.output_quantity)
@@ -27,10 +28,10 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('recipe')
-    .update({ name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product })
+    .update({ name, recipe_id, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product })
     .eq('id', id)
     .eq('client_id', clientId)
-    .select('id, name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product, created_at, updated_at')
+    .select('id, recipe_id, name, description, production_notes, output_quantity, output_unit_id, standard_unit_cost, is_active, is_pre_product, created_at, updated_at')
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })

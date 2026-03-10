@@ -83,7 +83,10 @@
     "title": "Dashboard",
     "subtitle": "MVP-Verwaltung für Einheiten, Rezepte, Zutaten und Rollen.",
     "quickLinks": "Schnellzugriff",
-    "refreshSession": "Sitzung aktualisieren"
+    "refreshSession": "Sitzung aktualisieren",
+    "tenant": "Mandant",
+    "store": "Aktueller Standort",
+    "roles": "Rollen"
   },
   "units": {
     "selectPrompt": "Einheit auswählen",
@@ -127,6 +130,8 @@
     "allergens": "Allergene",
     "notes": "Notizen",
     "namePlaceholder": "z.B. Reis",
+    "articleId": "Artikel-ID",
+    "articleIdPlaceholder": "z.B. ART-1234",
     "costPlaceholder": "z.B. 0.005",
     "commentPlaceholder": "Optionale Anmerkungen zur Zutat",
     "sortByName": "Nach Name sortieren",
@@ -161,6 +166,8 @@
     "sortByName": "Nach Name sortieren",
     "sortByActive": "Nach Status sortieren",
     "namePlaceholder": "z.B. Sushi Reis",
+    "recipeId": "Rezept-ID",
+    "recipeIdPlaceholder": "z.B. RZP-1234",
     "descPlaceholder": "Kurze Beschreibung",
     "outputQtyPlaceholder": "z.B. 1000",
     "nameRequired": "Name, Ausgabemenge und Ausgabeeinheit sind Pflichtfelder.",
@@ -329,7 +336,11 @@
     "passwordMismatch": "Passwörter stimmen nicht überein.",
     "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein.",
     "passwordChanged": "Passwort erfolgreich geändert.",
-    "passwordChangeFailed": "Passwort konnte nicht geändert werden."
+    "passwordChangeFailed": "Passwort konnte nicht geändert werden.",
+    "uploadAvatar": "Foto hochladen",
+    "removeAvatar": "Entfernen",
+    "avatarUploaded": "Foto aktualisiert.",
+    "avatarRemoved": "Foto entfernt."
   },
   "devTools": {
     "title": "Entwickler-Tools",

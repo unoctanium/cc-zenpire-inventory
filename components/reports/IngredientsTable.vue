@@ -7,7 +7,7 @@ const { t } = useI18n()
 const { doPrint } = usePrint()
 
 type IngredientRow = {
-  id: string; name: string; kind: string
+  id: string; article_id: string | null; name: string; kind: string
   default_unit_id: string; default_unit_code: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
@@ -40,7 +40,8 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
   computed(() => ({
     first: { header: t('ingredients.name'), candidates: rows.value.map(r => r.name) },
     inner: [
-      { header: t('ingredients.kind'),     candidates: ['purchased', 'produced'] },
+      { header: t('ingredients.articleId'), candidates: rows.value.map(r => r.article_id ?? '') },
+      { header: t('ingredients.kind'),      candidates: ['purchased', 'produced'] },
       { header: t('ingredients.unit'),     candidates: rows.value.map(r => r.default_unit_code) },
       { header: t('ingredients.unitCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${r.standard_unit_cost.toFixed(2)}` : '—') },
     ],
@@ -115,6 +116,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
                     :aria-label="$t('ingredients.sortByName')" @click="toggleSort('name')" />
                 </div>
               </th>
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('ingredients.articleId') }}</th>
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">
                 <div class="flex items-center justify-between gap-1">
                   <span>{{ $t('ingredients.kind') }}</span>
@@ -134,14 +136,17 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
           </thead>
 
           <tbody>
-            <tr v-if="pending"><td colspan="4" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
-            <tr v-else-if="visibleRows.length === 0"><td colspan="4" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
+            <tr v-if="pending"><td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
+            <tr v-else-if="visibleRows.length === 0"><td colspan="5" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
                 class="border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-900/40"
                 :class="row.kind === 'produced' ? 'opacity-70' : ''">
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
+              </td>
+              <td class="px-2 py-1.5 align-middle">
+                <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ row.article_id ?? '–' }}</span>
               </td>
               <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.kind }}</span></td>
               <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.default_unit_code }}</span></td>

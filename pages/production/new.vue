@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
-type RecipeRow        = { id: string; name: string; description: string; output_quantity: number; output_unit_id: string; output_unit_code: string; standard_unit_cost: number | null; comp_cost: number | null; is_active: boolean; is_pre_product: boolean; component_count: number; created_at: string; updated_at: string }
+type RecipeRow        = { id: string; recipe_id: string | null; name: string; description: string; output_quantity: number; output_unit_id: string; output_unit_code: string; standard_unit_cost: number | null; comp_cost: number | null; is_active: boolean; is_pre_product: boolean; component_count: number; created_at: string; updated_at: string }
 type UnitOption       = { id: string; code: string; name: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
 

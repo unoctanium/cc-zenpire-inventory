@@ -17,7 +17,7 @@
  */
 
 type IngredientRow = {
-  id: string; name: string; kind: string
+  id: string; article_id: string | null; name: string; kind: string
   default_unit_id: string; default_unit_code: string
   standard_unit_cost: number | null; standard_cost_currency: string
   produced_by_recipe_id: string | null; comment: string | null
@@ -54,6 +54,7 @@ const isProduced = computed(() => props.ingredient?.kind === 'produced')
 // ─── draft ────────────────────────────────────────────────────────────────────
 
 const draft = reactive({
+  article_id:         '',
   name:               '',
   default_unit_id:    '',
   standard_unit_cost: '' as string | number,
@@ -80,6 +81,7 @@ watch(
     if (ing) {
       editMode.value      = false
       showEditSheet.value = false
+      draft.article_id         = ing.article_id ?? ''
       draft.name               = ing.name
       draft.default_unit_id    = ing.default_unit_id
       draft.standard_unit_cost = ing.standard_unit_cost ?? ''
@@ -91,6 +93,7 @@ watch(
         const detail = await $fetch<{ ok: boolean; ingredient: any }>(
           `/api/ingredients/${ing.id}`, { credentials: 'include' }
         )
+        draft.article_id          = detail.ingredient.article_id ?? ''
         draft.comment             = detail.ingredient.comment ?? ''
         selectedAllergenIds.value = detail.ingredient.allergen_ids ?? []
         hasImage.value            = detail.ingredient.has_image ?? false
@@ -100,6 +103,7 @@ watch(
     } else {
       // New ingredient — open in edit mode
       editMode.value = true
+      draft.article_id         = ''
       draft.name               = ''
       draft.default_unit_id    = props.units[0]?.id ?? ''
       draft.standard_unit_cost = ''
@@ -169,6 +173,7 @@ async function save() {
   saving.value = true
   try {
     const body = {
+      article_id:         draft.article_id.trim() || null,
       name:               draft.name.trim(),
       default_unit_id:    draft.default_unit_id,
       standard_unit_cost: costValue,
@@ -208,6 +213,7 @@ function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   // Revert draft from ingredient prop
   if (props.ingredient) {
+    draft.article_id         = props.ingredient.article_id ?? ''
     draft.name               = props.ingredient.name
     draft.default_unit_id    = props.ingredient.default_unit_id
     draft.standard_unit_cost = props.ingredient.standard_unit_cost ?? ''
@@ -331,6 +337,10 @@ async function doDelete() {
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.name') }}</div>
         <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ ingredient?.name }}</div>
       </div>
+      <div v-if="ingredient?.article_id">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.articleId') }}</div>
+        <div class="text-[17px] text-gray-700 dark:text-gray-300 font-mono">{{ ingredient.article_id }}</div>
+      </div>
       <div>
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.kind') }}</div>
         <span
@@ -375,6 +385,12 @@ async function doDelete() {
         <input v-model="draft.name"
           class="ios-input"
           :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+      </div>
+      <div>
+        <label class="ios-label">{{ $t('ingredients.articleId') }}</label>
+        <input v-model="draft.article_id"
+          class="ios-input font-mono"
+          :placeholder="$t('ingredients.articleIdPlaceholder')" autocomplete="off" />
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
@@ -432,6 +448,12 @@ async function doDelete() {
         <input v-model="draft.name"
           class="ios-input"
           :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+      </div>
+      <div>
+        <label class="ios-label">{{ $t('ingredients.articleId') }}</label>
+        <input v-model="draft.article_id"
+          class="ios-input font-mono"
+          :placeholder="$t('ingredients.articleIdPlaceholder')" autocomplete="off" />
       </div>
       <div v-if="!isProduced">
         <label class="ios-label">{{ $t('ingredients.unit') }} *</label>

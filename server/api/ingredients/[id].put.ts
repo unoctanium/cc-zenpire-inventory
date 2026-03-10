@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
   const name            = String(body?.name            ?? '').trim()
+  const article_id      = String(body?.article_id      ?? '').trim() || null
   const default_unit_id = String(body?.default_unit_id ?? '').trim()
   const standard_unit_cost = body?.standard_unit_cost != null && body.standard_unit_cost !== ''
     ? Number(body.standard_unit_cost)
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('ingredient')
-    .update({ name, default_unit_id, standard_unit_cost, comment })
+    .update({ name, article_id, default_unit_id, standard_unit_cost, comment })
     .eq('id', id)
     .eq('client_id', clientId)
     .select('id, name, kind, default_unit_id, standard_unit_cost, standard_cost_currency, comment')
