@@ -119,11 +119,9 @@ function handleMobileTap(id: string) {
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ i.article_id }}</div>
           </div>
           <span
-            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-            :class="i.kind === 'purchased'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-              : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'"
-          >{{ i.kind[0] }}</span>
+            v-if="i.kind === 'produced'"
+            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+          >p</span>
         </button>
 
         <!-- MOBILE -->
@@ -137,11 +135,9 @@ function handleMobileTap(id: string) {
             <div v-if="i.article_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ i.article_id }}</div>
           </div>
           <span
-            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-            :class="i.kind === 'purchased'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-              : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'"
-          >{{ i.kind[0] }}</span>
+            v-if="i.kind === 'produced'"
+            class="flex-none rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+          >p</span>
           <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-300 flex-none" />
         </button>
       </div>

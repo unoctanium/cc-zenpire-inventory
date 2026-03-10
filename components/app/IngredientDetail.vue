@@ -354,7 +354,7 @@ async function doDelete() {
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('ingredients.producedByRecipe') }}</div>
         <button
           class="text-[15px] text-[#007AFF] dark:text-blue-400 active:opacity-50"
-          @click="navigateTo(`/production/${ingredient!.produced_by_recipe_id}`)"
+          @click="navigateTo(`/production?recipe=${ingredient!.produced_by_recipe_id}`)"
         >{{ $t('ingredients.viewRecipe') }} →</button>
       </div>
       <div>

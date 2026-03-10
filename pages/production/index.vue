@@ -43,7 +43,20 @@ const filteredRecipes = computed(() => {
 
 // ─── selection ────────────────────────────────────────────────────────────────
 
+const route      = useRoute()
 const selectedId = ref<string | null>(null)
+
+// Pre-select from ?recipe=<id> query param (e.g. coming from ingredient "View recipe" link)
+watch(
+  () => recipeData.value,
+  (data) => {
+    if (!selectedId.value && route.query.recipe) {
+      const id = String(route.query.recipe)
+      if (data?.recipes.find(r => r.id === id)) selectedId.value = id
+    }
+  },
+  { immediate: true }
+)
 const showCreateModal = ref(false)
 
 const selectedRecipe = computed(() => recipes.value.find(r => r.id === selectedId.value) ?? null)
