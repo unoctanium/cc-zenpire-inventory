@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'superadmin' })
+
 const { t } = useI18n()
 const auth = useAuth()
 
