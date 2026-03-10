@@ -483,14 +483,28 @@ async function doDelete() {
       </div>
       <div>
         <label class="ios-label">{{ $t('ingredients.allergens') }}</label>
-        <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
-        <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
-          <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
-            <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
-              class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
-            {{ al.name }}
-          </label>
-        </div>
+        <!-- Produced: allergens derived from recipe — show read-only pills -->
+        <template v-if="isProduced">
+          <div v-if="selectedAllergenIds.length === 0" class="text-sm text-gray-400 dark:text-gray-600">—</div>
+          <div v-else class="flex flex-wrap gap-1.5">
+            <span
+              v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))" :key="al.id"
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+            >{{ al.name }}</span>
+          </div>
+          <p class="text-[11px] text-gray-400 dark:text-gray-600 mt-1.5">{{ $t('ingredients.allergensFromRecipe') }}</p>
+        </template>
+        <!-- Purchased: editable checkboxes -->
+        <template v-else>
+          <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
+          <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
+            <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
+              <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
+                class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
+              {{ al.name }}
+            </label>
+          </div>
+        </template>
       </div>
     </div>
   </AppBottomSheet>

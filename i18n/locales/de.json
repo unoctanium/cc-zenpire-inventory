@@ -152,7 +152,8 @@
     "newTitle": "Neue Zutat",
     "noAllergens": "Noch keine Allergene definiert.",
     "producedByRecipe": "Hergestellt durch Rezept",
-    "viewRecipe": "Rezept anzeigen"
+    "viewRecipe": "Rezept anzeigen",
+    "allergensFromRecipe": "Aus Rezeptkomponenten abgeleitet — im Rezept bearbeiten"
   },
   "recipes": {
     "selectPrompt": "Rezept auswählen",
@@ -215,7 +216,8 @@
     "ingredientSearchPlaceholder": "Zutaten suchen…",
     "createIngredient": "＋ \"{name}\" erstellen",
     "selectIngredient": "Bitte zuerst eine Zutat oder ein Teilrezept auswählen.",
-    "noSearchResults": "Keine Ergebnisse. Anderen Namen versuchen."
+    "noSearchResults": "Keine Ergebnisse. Anderen Namen versuchen.",
+    "allergens": "Allergene"
   },
   "production": {
     "title": "Produktion",

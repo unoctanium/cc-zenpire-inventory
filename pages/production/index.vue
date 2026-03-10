@@ -15,6 +15,7 @@ type RecipeRow = {
 }
 type UnitOption       = { id: string; code: string; name: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
+type AllergenOption   = { id: string; name: string }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
@@ -25,10 +26,12 @@ const { canRead, canManage } = useTablePermissions('recipe')
 const { data: recipeData, refresh }        = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>('/api/recipes', { credentials: 'include' })
 const { data: unitData }                   = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
 const { data: ingredientData }             = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>('/api/ingredients', { credentials: 'include' })
+const { data: allergenData }               = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
 
 const recipes     = computed(() => recipeData.value?.recipes ?? [])
 const units       = computed(() => unitData.value?.units ?? [])
 const ingredients = computed(() => ingredientData.value?.ingredients ?? [])
+const allergens   = computed(() => allergenData.value?.allergens ?? [])
 
 // ─── list + search ────────────────────────────────────────────────────────────
 
@@ -165,6 +168,7 @@ function handleMobileTap(id: string) {
         :units="units"
         :ingredients="ingredients"
         :all-recipes="recipes"
+        :allergens="allergens"
         :can-manage="canManage"
         @saved="onSaved"
         @deleted="onDeleted"
@@ -191,6 +195,7 @@ function handleMobileTap(id: string) {
       :units="units"
       :ingredients="ingredients"
       :all-recipes="recipes"
+      :allergens="allergens"
       :can-manage="canManage"
       @saved="onSaved"
       @deleted="onDeleted"

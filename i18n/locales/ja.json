@@ -152,7 +152,8 @@
     "newTitle": "新規食材",
     "noAllergens": "まだアレルゲンが定義されていません。",
     "producedByRecipe": "製造レシピ",
-    "viewRecipe": "レシピを表示"
+    "viewRecipe": "レシピを表示",
+    "allergensFromRecipe": "レシピ構成要素から導出されます — レシピで編集してください"
   },
   "recipes": {
     "selectPrompt": "レシピを選択して詳細を表示",
@@ -215,7 +216,8 @@
     "ingredientSearchPlaceholder": "食材を検索…",
     "createIngredient": "＋ \"{name}\" を作成",
     "selectIngredient": "最初に食材またはサブレシピを選択してください。",
-    "noSearchResults": "結果なし。別の名前をお試しください。"
+    "noSearchResults": "結果なし。別の名前をお試しください。",
+    "allergens": "アレルゲン"
   },
   "production": {
     "title": "製造",

@@ -27,6 +27,7 @@ type RecipeRow = {
 
 type UnitOption       = { id: string; code: string; name: string }
 type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
+type AllergenOption   = { id: string; name: string }
 
 type ComponentRow = {
   id: string; recipe_id: string
@@ -44,6 +45,7 @@ const props = defineProps<{
   units:       UnitOption[]
   ingredients: IngredientOption[]
   allRecipes:  RecipeRow[]
+  allergens:   AllergenOption[]
   canManage:   boolean
 }>()
 
@@ -89,6 +91,11 @@ const imageVersion   = ref(0)
 const components            = ref<ComponentRow[]>([])
 const detailLoading         = ref(false)
 const loadedProductionNotes = ref('')
+const allergenIds           = ref<string[]>([])
+
+const effectiveAllergens = computed(() =>
+  props.allergens.filter(a => allergenIds.value.includes(a.id))
+)
 
 // ─── component draft state ────────────────────────────────────────────────────
 
@@ -276,6 +283,7 @@ async function loadDetail(id: string) {
     hasImage.value   = res.recipe?.has_image ?? false
     draft.production_notes       = res.recipe?.production_notes ?? ''
     loadedProductionNotes.value  = res.recipe?.production_notes ?? ''
+    allergenIds.value            = res.recipe?.allergen_ids ?? []
     // Sync draft comps from fresh DB state (only when not mid-edit)
     if (!showEditSheet.value) {
       syncDraftCompsFromDb()
@@ -700,6 +708,19 @@ function onBannerFileChange(e: Event) {
         <div class="text-[15px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{{ draft.production_notes }}</div>
       </div>
 
+      <!-- Allergens (always shown, read-only) -->
+      <div class="pt-1">
+        <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ $t('recipes.allergens') }}</div>
+        <div v-if="detailLoading" class="text-xs text-gray-400">{{ $t('common.loading') }}</div>
+        <div v-else-if="effectiveAllergens.length === 0" class="text-sm text-gray-400">—</div>
+        <div v-else class="flex flex-wrap gap-1.5">
+          <span
+            v-for="al in effectiveAllergens" :key="al.id"
+            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >{{ al.name }}</span>
+        </div>
+      </div>
+
     </template>
 
     <!-- ═══════════════════════════════════════════════════════════════════════
@@ -924,10 +945,21 @@ function onBannerFileChange(e: Event) {
         </button>
       </div>
 
-      <!-- Production notes (last) -->
+      <!-- Production notes -->
       <div>
         <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
         <textarea v-model="draft.production_notes" rows="3" class="ios-input resize-none" :placeholder="$t('recipes.productionNotesPlaceholder')" />
+      </div>
+
+      <!-- Allergens (read-only info) -->
+      <div v-if="effectiveAllergens.length > 0">
+        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ $t('recipes.allergens') }}</div>
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="al in effectiveAllergens" :key="al.id"
+            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >{{ al.name }}</span>
+        </div>
       </div>
 
     </div>

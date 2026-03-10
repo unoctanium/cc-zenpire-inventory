@@ -46,6 +46,11 @@ export default defineEventHandler(async (event) => {
 
   if (cErr) throw createError({ statusCode: 500, statusMessage: cErr.message })
 
+  const { data: allergenData } = await admin
+    .from('v_recipe_effective_allergens')
+    .select('allergen_id')
+    .eq('recipe_id', id)
+
   return {
     ok: true,
     recipe: {
@@ -53,6 +58,7 @@ export default defineEventHandler(async (event) => {
       output_unit_code: (recipe as any).unit?.code ?? '',
       has_image:        !!(recipe as any).image_data,
       image_data:       undefined,
+      allergen_ids:     (allergenData ?? []).map((r: any) => r.allergen_id),
     },
     components: (components ?? []).map((c: any) => ({
       id:                   c.id,

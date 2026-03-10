@@ -154,7 +154,8 @@
     "newTitle": "New Ingredient",
     "noAllergens": "No allergens defined yet.",
     "producedByRecipe": "Produced by recipe",
-    "viewRecipe": "View recipe"
+    "viewRecipe": "View recipe",
+    "allergensFromRecipe": "Derived from recipe components — edit in the recipe"
   },
   "recipes": {
     "selectPrompt": "Select a recipe to view details",
@@ -217,7 +218,8 @@
     "ingredientSearchPlaceholder": "Search ingredients…",
     "createIngredient": "＋ Create \"{name}\"",
     "selectIngredient": "Select an ingredient or sub-recipe first.",
-    "noSearchResults": "No results. Try a different name."
+    "noSearchResults": "No results. Try a different name.",
+    "allergens": "Allergens"
   },
   "production": {
     "title": "Production",
