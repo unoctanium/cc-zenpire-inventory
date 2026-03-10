@@ -732,9 +732,8 @@ function onBannerFileChange(e: Event) {
         <div v-else class="flex flex-wrap gap-1.5">
           <span
             v-for="al in effectiveAllergens" :key="al.id"
-            class="rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-            :title="al.name"
-          >{{ al.code ?? al.name }}</span>
+            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >{{ al.name }}</span>
         </div>
       </div>
 
@@ -974,9 +973,8 @@ function onBannerFileChange(e: Event) {
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="al in effectiveAllergens" :key="al.id"
-            class="rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-            :title="al.name"
-          >{{ al.code ?? al.name }}</span>
+            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >{{ al.name }}</span>
         </div>
       </div>
 

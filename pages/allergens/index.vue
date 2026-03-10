@@ -5,7 +5,7 @@ const { t } = useI18n()
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
-type AllergenRow = { id: string; name: string; comment: string | null; created_at: string; updated_at: string }
+type AllergenRow = { id: string; name: string; code: string | null; comment: string | null; created_at: string; updated_at: string }
 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
@@ -103,7 +103,7 @@ function handleMobileTap(id: string) {
           @click="selectAllergen(a)"
         >
           <span class="flex-1 text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ a.name }}</span>
-          <span v-if="a.comment" class="text-xs text-gray-400 truncate max-w-[80px]">{{ a.comment }}</span>
+          <span v-if="a.code" class="flex-none text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ a.code }}</span>
         </button>
 
         <!-- MOBILE -->
@@ -113,6 +113,7 @@ function handleMobileTap(id: string) {
           @click="handleMobileTap(a.id)"
         >
           <span class="flex-1 text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ a.name }}</span>
+          <span v-if="a.code" class="flex-none text-[11px] font-mono text-gray-400 dark:text-gray-500 mr-1">{{ a.code }}</span>
           <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-300 flex-none" />
         </button>
       </div>
