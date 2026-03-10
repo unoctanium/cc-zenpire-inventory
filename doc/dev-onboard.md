@@ -1,442 +1,358 @@
-# Zenpire Inventory MVP  
+# Zenpire Inventory
 ## Developer Handbook
+
+*Last updated: 2026-03-10*
 
 ---
 
 # 1. Project Overview
 
-Zenpire Inventory is a SQL-first, RPC-driven inventory and recipe management system built with:
+Zenpire Inventory is a restaurant automation and digitalization platform. Core domain: recipe management, ingredient management, allergen tracking, and production support.
 
-- **Nuxt 4 (Vue 3)** — UI + server (BFF layer)
-- **Supabase (Postgres)** — Database + Auth
-- **Supabase CLI** — Versioned migrations
-- **Git** — Full reproducibility
+It is a **SQL-first, RPC-driven** system. Business logic lives in Postgres, not in application code.
 
-The architecture is intentionally:
+**Stack:**
 
-- Database-centric
-- Transaction-safe
-- Migration-driven
-- Deterministic in development
-
----
-
-# 2. Repository Structure
-
-Canonical Nuxt 4 structure:
-
-app.vue  
-nuxt.config.ts  
-.env.example  
-
-pages/  
-&nbsp;&nbsp;index.vue  
-&nbsp;&nbsp;login.vue  
-&nbsp;&nbsp;dev/  
-&nbsp;&nbsp;&nbsp;&nbsp;tools.vue  
-&nbsp;&nbsp;&nbsp;&nbsp;adjust.vue  
-
-layouts/  
-&nbsp;&nbsp;default.vue  
-
-server/  
-&nbsp;&nbsp;api/  
-&nbsp;&nbsp;&nbsp;&nbsp;me.get.ts  
-&nbsp;&nbsp;&nbsp;&nbsp;stock/  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;adjust.post.ts  
-&nbsp;&nbsp;&nbsp;&nbsp;dev/  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;purge.post.ts  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;seed.post.ts  
-&nbsp;&nbsp;utils/  
-&nbsp;&nbsp;&nbsp;&nbsp;supabase.ts  
-&nbsp;&nbsp;&nbsp;&nbsp;require-admin-dev.ts  
-
-supabase/  
-&nbsp;&nbsp;migrations/  
-
-db/  
-&nbsp;&nbsp;schema_snapshot_*.sql  
-
-docs/  
-&nbsp;&nbsp;developer-handbook.md  
+| Layer | Technology |
+|---|---|
+| Frontend + SSR | Nuxt 4 (Vue 3) |
+| Server layer | Nuxt server routes (BFF) |
+| Database | Supabase (Postgres) |
+| Auth | Supabase Auth (email/password, session cookie) |
+| Schema management | Supabase CLI (versioned migrations) |
+| i18n | @nuxtjs/i18n (en / de / ja) |
 
 ---
 
-## Routing Rules
+# 2. Multi-Tenancy
 
-### UI Routes
+The app is multi-tenant. Every client (restaurant group) is isolated at the application layer — not via RLS.
 
-Generated automatically from:
+**Key tables:**
+- `client` — top-level tenant
+- `store` — a location/kitchen under a client
+- `app_user` — linked to Supabase auth user; belongs to a client
 
-pages/**
+**Isolation pattern:**
+All business tables carry a `client_id` column. Every server route resolves `clientId` from the authenticated user and filters all queries by it.
 
-Examples:
-
-- pages/index.vue → `/`
-- pages/login.vue → `/login`
-- pages/dev/tools.vue → `/dev/tools`
-
----
-
-### API Routes
-
-Generated from:
-
-server/api/**
-
-Examples:
-
-- server/api/me.get.ts → `GET /api/me`
-- server/api/stock/adjust.post.ts → `POST /api/stock/adjust`
-- server/api/dev/seed.post.ts → `POST /api/dev/seed`
+**Dev tenant:**
+- Client UUID: `00000000-0000-0000-0000-000000000001`
+- Store UUID: `00000000-0000-0000-0000-000000000002`
+- Admin user: `admin@zenpire.eu`
 
 ---
 
-### Shared Server Utilities
+# 3. Repository Structure
 
-server/utils/**
+```
+app.vue
+nuxt.config.ts
+.env                          ← never commit
 
-Contains:
+components/
+  admin/                      ← table UI building blocks
+  app/                        ← detail panels (RecipeDetail, IngredientDetail, …)
+  reports/                    ← report table components + NavList
+  AppSplitLayout.vue
+  AppBottomSheet.vue
+  AppFab.vue
 
-- Supabase client setup
-- RBAC helpers
-- Dev guards
+composables/
+  useAuth.ts                  ← global auth state + fetchAuth()
+  useAppNav.ts                ← ALL_APPS, bar/overflow/drawer nav
+  useCurrentStore.ts          ← localStorage-backed active store
 
----
+layouts/
+  default.vue                 ← main shell (sidebar + tabbar + drawer)
+  superadmin.vue              ← blue full-page layout for /superadmin
+  auth.vue                    ← blue background for login
 
-# 3. Data Model Overview
+pages/
+  index.vue                   ← Dashboard
+  login.vue / logout.vue
+  settings.vue                ← User Settings (profile + password)
+  production/                 ← Recipe list + detail
+  ingredients/
+  units/
+  allergens/
+  reports/                    ← Report navigator + sub-reports
+  admin/
+    db.vue                    ← DB Seed + Import/Export (DEV_MODE)
+    stores.vue                ← Store CRUD
+    users.vue                 ← User management (admin only)
+  superadmin/
+    index.vue                 ← Client CRUD (superadmin only, own layout)
 
-The system models:
+server/
+  api/
+    auth/
+      login.post.ts
+      logout.post.ts
+      me.get.ts               ← session + permissions + stores
+      profile.get.ts / .put.ts
+      password.put.ts
+    stores/                   ← Store CRUD (store.manage)
+    rbac/                     ← Legacy role/user viewer (admin)
+    admin/users/              ← User CRUD incl. Supabase auth (admin)
+    superadmin/clients/       ← Client CRUD (superadmin)
+    manage/
+      purge.post.ts           ← Client-scoped purge
+      seed_initial.post.ts    ← Units + allergens
+      seed_example.post.ts    ← Sample recipes + ingredients
+      export.get.ts           ← Full JSON export (with images)
+      export-plain.get.ts     ← JSON export (no images)
+      import.post.ts          ← JSON import (replaces all data)
+    recipes/ ingredients/ units/ allergens/   ← CRUD routes
+  utils/
+    supabase.ts               ← supabaseAdmin() + supabaseServer()
+    resolve-app-user.ts       ← resolveAppUser(event) → { authUser, appUserId, clientId }
+    require-user.ts
+    require-permission.ts
+    require-any-permission.ts
+    require-admin-dev.ts
 
-- Recipes
-- Ingredients
-- Suppliers
-- Supplier Offers
-- Time-based Offer Prices
-- Stock Ledger Movements
-
----
-
-## Core Tables
-
-### recipe
-- id
-- name
-- description
-
-Related tables:
-- recipe_step
-- recipe_media
-- recipe_component
-
----
-
-### ingredient
-- id
-- name
-- kind (purchased / produced)
-- default_unit_id
-
-Relations:
-- 1:1 → ingredient_stock
-- M:N → supplier_offer (via ingredient_supplier_offer)
-- 1:N → stock_movement
-
----
-
-### ingredient_stock
-
-Tracks:
-
-- on_hand_quantity
-- planned_quantity
-- threshold deltas (green/yellow)
-
----
-
-### supplier
-- id
-- name
-- contact_email
-- contact_phone
-- note
-
----
-
-### supplier_offer
-
-Represents purchasable package (can be bundle).
-
-Columns:
-- supplier_id
-- offer_name
-- supplier_article_number (SKU)
-- pack_quantity
-- pack_unit_id
-- is_active
-- active_from
-- active_to
-- notes
-
-Bundle modeling:
-
-Example:
-- 6×1L vinegar → pack_quantity = 6000 ml
-- 6×20 nori sheets → pack_quantity = 120 pcs
-
-Stock is always stored in base units:
-- g
-- ml
-- pcs
+supabase/migrations/          ← all schema changes, versioned
+i18n/locales/                 ← en.json / de.json / ja.json
+```
 
 ---
 
-### supplier_offer_price
+# 4. Routing Conventions
 
-Time-versioned pricing:
-
-- supplier_offer_id
-- valid_from
-- valid_to
-- price_per_pack
-- currency
-
----
-
-### stock_movement
-
-Immutable ledger table.
-
-All inventory changes write here:
-
-- purchase
-- production
-- waste
-- adjustment
-
-Stock state is derived from ledger.
+| Pattern | Example |
+|---|---|
+| `pages/foo/bar.vue` | `/foo/bar` |
+| `server/api/foo/bar.get.ts` | `GET /api/foo/bar` |
+| `server/api/foo/bar.post.ts` | `POST /api/foo/bar` |
+| `server/api/foo/[id].put.ts` | `PUT /api/foo/:id` |
 
 ---
 
-# 4. SQL-First Domain Model
+# 5. Data Model
 
-Business logic lives in Postgres.
+## Multi-tenancy tables
 
-We use:
+| Table | Purpose |
+|---|---|
+| `client` | Top-level tenant (e.g. "Ramen House Berlin") |
+| `store` | Kitchen/location within a client |
 
-- Foreign keys
-- Constraints
-- Unique indexes
-- Views
-- Stored procedures (RPC functions)
+## User & auth tables
 
-Why:
+| Table | Purpose |
+|---|---|
+| `app_user` | App user record; links to Supabase `auth.users`; has `client_id`, `first_name`, `last_name`, `telephone` |
+| `role` | Named role (`admin`, `user`, `superadmin`) |
+| `permission` | Named permission code (e.g. `recipe.manage`) |
+| `role_permission` | Many-to-many: role → permissions |
+| `user_role` | Many-to-many: app_user → roles |
+| `v_user_permissions` | View: flattens user → roles → permissions (uses DISTINCT) |
 
-- Transaction safety
-- Atomic inventory updates
-- Centralized domain logic
-- Client independence
+## Business tables (all carry `client_id`)
 
----
-
-# 5. RPC-Based Business Logic
-
-Inventory-changing operations are implemented as Postgres functions:
-
-Examples:
-
-- fn_post_adjustment(...)
-- fn_post_purchase_receipt(...)
-- fn_post_production_batch(...)
-
-Properties:
-
-- Atomic
-- Transaction-safe
-- Ledger-driven
-- Reusable across clients
-
-Nuxt server layer calls RPCs.  
-The browser never writes directly to inventory tables.
+| Table | Purpose |
+|---|---|
+| `unit` | Units of measure (g, kg, ml, l, pcs, …) |
+| `allergen` | Allergen definitions (EU 14 mandatory) |
+| `ingredient` | Purchasable or produced ingredient; has default unit, std cost |
+| `ingredient_allergen` | Many-to-many: ingredient → allergens |
+| `recipe` | A dish or preparation; has output qty, production notes, batch cost |
+| `recipe_component` | Ingredient or sub-recipe within a recipe; has qty + unit |
 
 ---
 
-# 6. Nuxt Server Layer (Thin BFF)
+# 6. Authentication & RBAC
 
-Responsibilities:
+**Auth flow:**
+Supabase Auth (email/password) → session cookie → `supabaseServer(event).auth.getUser()` on each request.
 
-- Authenticate user
-- Resolve app_user
-- Enforce RBAC
-- Validate input
-- Call DB RPC
-- Return response
+**User resolution:**
+Every protected server route calls `resolveAppUser(event)` which returns `{ authUser, appUserId, clientId }`.
 
-Rules:
+**Permission check:**
+```ts
+await requirePermission(event, 'recipe.manage')
+await requireAnyPermission(event, ['recipe.manage', 'recipe.read'])
+```
 
+## Roles
+
+| Role | Purpose | Permissions |
+|---|---|---|
+| `admin` | Full tenant access | `admin`, `admin.export`, `recipe.manage`, `recipe.read`, `unit.manage`, `unit.read`, `store.manage` |
+| `user` | Read-only tenant access | `recipe.read`, `unit.read` |
+| `superadmin` | Platform admin only (`/superadmin`) | `superadmin` |
+
+## Permissions in use
+
+| Permission | Enforced by | Meaning |
+|---|---|---|
+| `admin` | Admin pages, user management | Gate for all admin routes |
+| `admin.export` | `/api/manage/export`, `import` | DB export / import |
+| `recipe.manage` | Recipe, ingredient, allergen CRUD | Full write on production data |
+| `recipe.read` | Same routes (read paths) | Read-only on production data |
+| `unit.manage` | Unit CRUD | Write access to units |
+| `unit.read` | Unit read routes | Read-only on units |
+| `store.manage` | `/api/stores` | Create / edit / delete stores |
+| `superadmin` | `/api/superadmin/clients` | Manage all clients |
+
+> **Note:** The permission layer is planned for removal in a future refactor. The app will check roles directly instead.
+
+---
+
+# 7. App Navigation
+
+Navigation is managed by `composables/useAppNav.ts`.
+
+**Apps visible in sidebar / tabbar (first 4 = icon slots, 5th+ → More popup):**
+
+| App | Route | `inTopBar` |
+|---|---|---|
+| Dashboard | `/` | ✓ |
+| Production | `/production` | ✓ |
+| Stock | `/stock` | ✓ |
+| Reports | `/reports` | ✓ |
+
+**Drawer-only (avatar menu):**
+
+| App | Entry route |
+|---|---|
+| Admin Settings | `/admin/db` (pills: DB / Stores / Users) |
+| User Settings | `/settings` |
+
+**Admin Settings pills:**
+- **DB** — seed, purge, import/export (DEV_MODE only)
+- **Stores** — store CRUD
+- **Users** — user management
+
+---
+
+# 8. Layouts
+
+| Layout | Used by | Description |
+|---|---|---|
+| `default` | All main pages | Sidebar (tablet) + tabbar (mobile) + avatar drawer |
+| `superadmin` | `/superadmin` | Blue background, top bar (← Home / title / logout), white content area |
+| `auth` | Login | Blue full-screen background |
+
+---
+
+# 9. Server Route Pattern (Thin BFF)
+
+Every protected route follows this pattern:
+
+```ts
+export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'recipe.manage')   // 1. RBAC
+  const { clientId } = await resolveAppUser(event)  // 2. resolve tenant
+
+  const body = await readBody(event)                // 3. validate input
+  // ...
+
+  const admin = supabaseAdmin()                     // 4. call DB
+  const { data, error } = await admin
+    .from('recipe')
+    .select('...')
+    .eq('client_id', clientId)
+  // ...
+
+  return { ok: true, data }                         // 5. return
+})
+```
+
+**Rules:**
 - No business logic in Vue components
-- No stock math in server routes
-- Complex logic belongs in Postgres
+- No direct table mutations from the browser
+- Keep server routes thin — complex logic belongs in Postgres
 
 ---
 
-# 7. Authentication & RBAC
+# 10. Development Utilities
 
-Auth:
+Controlled by `DEV_MODE=1` in `.env`.
 
-- Supabase Auth (email/password)
-- Session cookie-based
+When `DEV_MODE` is not set, seed/purge endpoints return 403.
 
-Mapping:
+**Access via:** Admin Settings → DB pill
 
-Supabase auth user → app_user
+| Action | Endpoint | Effect |
+|---|---|---|
+| Purge | `POST /api/manage/purge` | Deletes all business data for the current client |
+| Seed Initial | `POST /api/manage/seed_initial` | Inserts units (g/kg/ml/l/pcs) + EU allergens |
+| Seed Example | `POST /api/manage/seed_example` | Inserts sample ingredients + recipes |
+| DB Export | `GET /api/manage/export` | Downloads full JSON (includes images) |
+| DB Export Plain | `GET /api/manage/export-plain` | Downloads JSON without images |
+| DB Import | `POST /api/manage/import` | Replaces all client data from JSON file |
 
-Permissions resolved via:
-
-v_user_permissions
-
-Server checks permissions before executing protected actions.
-
-Current MVP admin gate:
-- stock.adjust.post
-
----
-
-# 8. Development Utilities (Seed & Purge)
-
-DEV_MODE controlled via:
-
-DEV_MODE=1
-
-If disabled:
-
-- /api/dev/seed blocked
-- /api/dev/purge blocked
+**Typical dev reset flow:**
+Purge → Seed Initial → Seed Example
 
 ---
 
-## Purge Endpoint
+# 11. Migrations
 
-POST /api/dev/purge
+All schema changes are versioned Supabase migrations. Never modify the schema directly in the Supabase dashboard.
 
-- Calls fn_dev_purge_all()
-- Uses TRUNCATE
-- Clears business data
-- Keeps reference tables
+```bash
+# Create a new migration
+npx supabase migration new <descriptive_name>
 
----
-
-## Seed Endpoint
-
-POST /api/dev/seed
-
-Inserts deterministic:
-
-- Suppliers
-- Ingredients
-- Offers
-- Prices
-- Stock targets
-- Initial stock adjustments
-
-Seed is idempotent.
-
----
-
-# 9. Supabase CLI & Migrations
-
-All schema changes are versioned.
-
-Create migration:
-
-npx supabase migration new <name>
-
-Apply:
-
+# Apply to remote DB
 npx supabase db push
 
-Check:
-
+# Check status
 npx supabase migration list
+```
 
-Rule:
-
-Never modify schema directly in Supabase dashboard after migrations are established.
-
----
-
-# 10. Git Workflow
-
-Repository is private.
-
-.gitignore excludes:
-- .env
-- node_modules
-- .nuxt
-- dist
-
-Schema reproducibility:
-- supabase/migrations
-- seed endpoint
-
-Any developer can:
-
-1. Clone repo
-2. Set environment variables
-3. Run migrations
-4. Run seed
-5. Have identical state
+Migration naming examples:
+- `add_recipe_yield_column`
+- `add_client_and_store_tables`
+- `fix_v_user_permissions_distinct`
 
 ---
 
-# 11. Architectural Principles
+# 12. Developer Quick Start
 
-1. SQL-first domain logic
-2. Atomic inventory changes
-3. Ledger-based stock
-4. Thin server orchestration
-5. Deterministic development
-6. Versioned migrations
-7. Reproducible environments
-8. Minimal vendor lock-in
+```bash
+# 1. Clone and install
+git clone <repo>
+cd cc-zenpire-inventory
+npm install
 
----
+# 2. Configure environment
+cp .env.example .env
+# fill in SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 
-# 12. Next Development Phase
+# 3. Apply migrations
+npx supabase db push
 
-Option A — Minimal Admin UI:
+# 4. Start dev server
+npm run dev
 
-- Ingredient CRUD
-- Supplier CRUD
-- Offer CRUD
-- Stock snapshot dashboard
+# 5. Open browser → login as admin@zenpire.eu
+# 6. Go to Admin Settings → DB → Purge → Seed Initial → Seed Example
+```
 
-Rules remain:
-
-- Writes → server → RPC
-- Reads → server → bounded queries
-- No direct DB calls from browser
+You are now in a deterministic development state.
 
 ---
 
-# 13. Developer Quick Start
+# 13. Architectural Principles
 
-1. Clone repository
-2. Create `.env` from `.env.example`
-3. Run:
-
-npm install  
-npm run dev  
-
-4. Login
-5. Visit `/dev/tools`
-6. Click:
-   - Purge
-   - Seed
-7. Verify DB content in Supabase
-
-You are now in deterministic development state.
+1. **SQL-first** — business logic lives in Postgres
+2. **Thin BFF** — server routes orchestrate only (auth → resolve → validate → call DB → return)
+3. **Migration-driven** — all schema changes are versioned and reproducible
+4. **Multi-tenant by design** — every query is scoped by `client_id`
+5. **Application-level isolation** — service role key + `client_id` filters (not RLS)
+6. **Deterministic development** — seed is idempotent; any dev can reproduce the exact state
+7. **No direct browser writes** — the browser never talks to Supabase directly
 
 ---
 
-# End of Handbook
+# 14. Planned / Future Work
+
+- **Refactor RBAC to role-based checks** — remove the permission table layer; check roles directly in server routes
+- **Stock app** — stock snapshot, adjustments, production batches
+- **Supplier & purchasing** — supplier CRUD, offer CRUD, purchase receipts
+- **Recipe costing** — auto-calculation from component costs
