@@ -26,6 +26,19 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 404, statusMessage: error.message })
 
+  // For produced ingredients, resolve allergens from the full recursive recipe tree.
+  // For purchased ingredients, use the direct ingredient_allergen entries.
+  let allergenIds: string[]
+  if (data.kind === 'produced' && data.produced_by_recipe_id) {
+    const { data: effData } = await admin
+      .from('v_recipe_effective_allergens')
+      .select('allergen_id')
+      .eq('recipe_id', data.produced_by_recipe_id)
+    allergenIds = (effData ?? []).map((r: any) => r.allergen_id)
+  } else {
+    allergenIds = ((data as any).ingredient_allergen ?? []).map((ia: any) => ia.allergen_id)
+  }
+
   return {
     ok: true,
     ingredient: {
@@ -40,7 +53,7 @@ export default defineEventHandler(async (event) => {
       produced_by_recipe_id:  data.produced_by_recipe_id,
       comment:                data.comment ?? null,
       has_image:              !!data.image_data,
-      allergen_ids:           ((data as any).ingredient_allergen ?? []).map((ia: any) => ia.allergen_id),
+      allergen_ids:           allergenIds,
     },
   }
 })

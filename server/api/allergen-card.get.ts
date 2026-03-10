@@ -18,42 +18,39 @@ export default defineEventHandler(async (event) => {
 
   if (allergenErr) throw createError({ statusCode: 500, statusMessage: allergenErr.message })
 
-  // Fetch all recipes with their component ingredients' allergens.
-  // Use FK hint to resolve ambiguity: recipe_component has both recipe_id and
-  // sub_recipe_id pointing to recipe; we want the recipe_id (parent) relationship.
+  // Fetch all recipes (for names)
   const { data: recipeData, error: recipeErr } = await admin
     .from('recipe')
-    .select(`
-      id,
-      name,
-      recipe_component!recipe_component_recipe_id_fkey (
-        ingredient_id,
-        ingredient:ingredient_id (
-          ingredient_allergen ( allergen_id )
-        )
-      )
-    `)
+    .select('id, name')
     .eq('client_id', clientId)
     .order('name', { ascending: true })
 
   if (recipeErr) throw createError({ statusCode: 500, statusMessage: recipeErr.message })
 
-  // Extract unique allergen IDs per recipe
-  const recipes = (recipeData ?? []).map((r: any) => {
-    const allergenIds = new Set<string>()
-    // Supabase returns the FK-hinted relation under the original table name key
-    const comps = r.recipe_component ?? r['recipe_component!recipe_component_recipe_id_fkey'] ?? []
-    for (const comp of comps) {
-      for (const ia of comp.ingredient?.ingredient_allergen ?? []) {
-        allergenIds.add(ia.allergen_id)
-      }
+  // Fetch effective allergens per recipe from the recursive view
+  const recipeIds = (recipeData ?? []).map((r: any) => r.id)
+  let effectiveMap = new Map<string, Set<string>>()
+
+  if (recipeIds.length > 0) {
+    const { data: effData, error: effErr } = await admin
+      .from('v_recipe_effective_allergens')
+      .select('recipe_id, allergen_id')
+      .in('recipe_id', recipeIds)
+
+    if (effErr) throw createError({ statusCode: 500, statusMessage: effErr.message })
+
+    for (const row of effData ?? []) {
+      const s = effectiveMap.get((row as any).recipe_id) ?? new Set<string>()
+      s.add((row as any).allergen_id)
+      effectiveMap.set((row as any).recipe_id, s)
     }
-    return {
-      id:          r.id,
-      name:        r.name,
-      allergen_ids: Array.from(allergenIds),
-    }
-  })
+  }
+
+  const recipes = (recipeData ?? []).map((r: any) => ({
+    id:           r.id,
+    name:         r.name,
+    allergen_ids: Array.from(effectiveMap.get(r.id) ?? []),
+  }))
 
   return {
     ok:       true,
