@@ -35,6 +35,7 @@ type ComponentRow = {
   quantity: number; unit_id: string; unit_code: string
   sort_order: number; type: 'ingredient' | 'sub_recipe'; name: string
   std_cost: number | null; base_unit_factor: number | null; component_unit_factor: number | null
+  yield_pct: number
 }
 
 // Local draft component — same shape but id may be null (new, not yet saved)
@@ -461,7 +462,8 @@ async function doDelete() {
 function componentCost(comp: ComponentRow): number | null {
   if (comp.std_cost == null || comp.base_unit_factor == null || comp.component_unit_factor == null) return null
   if (comp.base_unit_factor === 0) return null
-  return comp.quantity * (comp.component_unit_factor / comp.base_unit_factor) * comp.std_cost
+  const yld = (comp.yield_pct ?? 100) / 100
+  return comp.quantity * (comp.component_unit_factor / comp.base_unit_factor) * comp.std_cost / yld
 }
 
 function formatCost(n: number | null): string {

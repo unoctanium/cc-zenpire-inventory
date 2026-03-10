@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
       id, recipe_id, ingredient_id, sub_recipe_id,
       quantity, unit_id, sort_order,
       ingredient:ingredient_id (
-        name, standard_unit_cost,
+        name, standard_unit_cost, yield_pct,
         default_unit:default_unit_id ( factor )
       ),
       sub_recipe:sub_recipe_id (
@@ -74,6 +74,9 @@ export default defineEventHandler(async (event) => {
       std_cost:             c.ingredient_id
                               ? (c.ingredient?.standard_unit_cost ?? null)
                               : (c.sub_recipe?.standard_unit_cost ?? null),
+      yield_pct:            c.ingredient_id
+                              ? (c.ingredient?.yield_pct ?? 100)
+                              : 100,
       base_unit_factor:     c.ingredient_id
                               ? (c.ingredient?.default_unit?.factor ?? null)
                               : (c.sub_recipe?.output_unit?.factor ?? null),
