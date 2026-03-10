@@ -6,7 +6,7 @@ import { useTablePermissions } from '~/composables/useTablePermissions'
 const { t } = useI18n()
 const { doPrint } = usePrint()
 
-type AllergenRow = { id: string; name: string; comment: string | null; created_at: string; updated_at: string }
+type AllergenRow = { id: string; name: string; code: string | null; comment: string | null; created_at: string; updated_at: string }
 
 const { canRead } = useTablePermissions('recipe')
 
@@ -35,7 +35,8 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
   computed(() => ({
     first: { header: t('allergens.name'),    candidates: rows.value.map(r => r.name) },
     inner: [
-      { header: t('allergens.comment'), candidates: rows.value.map(r => r.comment?.slice(0, 80) ?? '') },
+      { header: 'GS1',                   candidates: rows.value.map(r => r.code ?? '') },
+      { header: t('allergens.comment'),   candidates: rows.value.map(r => r.comment?.slice(0, 80) ?? '') },
     ],
   }))
 )
@@ -94,7 +95,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
         >
           <colgroup>
             <col :style="{ width: firstWidth + 'px' }" />
-            <col :style="{ width: innerWidths[0] + 'px' }" />
+            <col v-for="(w, i) in innerWidths" :key="i" :style="{ width: w + 'px' }" />
           </colgroup>
 
           <thead class="sticky top-0 z-20 bg-white dark:bg-gray-950">
@@ -108,18 +109,22 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
                     :aria-label="$t('allergens.sortByName')" @click="toggleSort('name')" />
                 </div>
               </th>
+              <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">GS1</th>
               <th class="px-2 py-1.5 text-left font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800">{{ $t('allergens.comment') }}</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-if="pending"><td colspan="2" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
-            <tr v-else-if="visibleRows.length === 0"><td colspan="2" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
+            <tr v-if="pending"><td colspan="3" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.loading') }}</td></tr>
+            <tr v-else-if="visibleRows.length === 0"><td colspan="3" class="px-2 py-2 text-gray-500 dark:text-gray-400">{{ $t('common.noData') }}</td></tr>
 
             <tr v-for="row in visibleRows" :key="row.id"
                 class="border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-900/40">
               <td class="sticky left-0 z-10 px-2 py-1.5 align-middle bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ row.name }}</span>
+              </td>
+              <td class="px-2 py-1.5 align-middle">
+                <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ row.code || '–' }}</span>
               </td>
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-600 dark:text-gray-400 truncate block" :title="row.comment ?? ''">

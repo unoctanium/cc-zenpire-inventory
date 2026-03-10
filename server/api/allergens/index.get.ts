@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('allergen')
-    .select('id, name, comment, created_at, updated_at')
+    .select('id, name, code, comment, created_at, updated_at')
     .eq('client_id', clientId)
     .order('name', { ascending: true })
 

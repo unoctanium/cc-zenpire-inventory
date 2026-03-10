@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type AllergenRow = { id: string; name: string; comment: string | null }
+type AllergenRow = { id: string; name: string; code: string | null; comment: string | null }
 
 const props = defineProps<{
   allergen:  AllergenRow | null
@@ -43,7 +43,7 @@ const editMode         = ref(false)
 const showEditSheet    = ref(false)
 const confirmingDelete = ref(false)
 const saving           = ref(false)
-const draft            = reactive({ name: '', comment: '' })
+const draft            = reactive({ name: '', code: '', comment: '' })
 
 watch(() => props.allergen, (a) => {
   confirmingDelete.value = false
@@ -51,10 +51,12 @@ watch(() => props.allergen, (a) => {
   if (a) {
     editMode.value = false
     draft.name     = a.name
+    draft.code     = a.code ?? ''
     draft.comment  = a.comment ?? ''
   } else {
     editMode.value = true
     draft.name     = ''
+    draft.code     = ''
     draft.comment  = ''
   }
 }, { immediate: true })
@@ -68,6 +70,7 @@ function cancelEdit() {
   if (isNew.value) { emit('cancelled'); return }
   const a = props.allergen!
   draft.name     = a.name
+  draft.code     = a.code ?? ''
   draft.comment  = a.comment ?? ''
   editMode.value         = false
   showEditSheet.value    = false
@@ -81,7 +84,7 @@ async function save() {
   }
   saving.value = true
   try {
-    const body = { name: draft.name.trim(), comment: draft.comment.trim() || null }
+    const body = { name: draft.name.trim(), code: draft.code.trim().toUpperCase() || null, comment: draft.comment.trim() || null }
     if (isNew.value) {
       const res = await $fetch<{ ok: boolean; allergen: { id: string } }>('/api/allergens', { method: 'POST', credentials: 'include', body })
       toast.add({ title: t('allergens.created') })
@@ -138,9 +141,15 @@ async function doDelete() {
 
     <!-- View mode (existing) -->
     <div v-if="!isNew" class="space-y-5">
-      <div>
-        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('allergens.name') }}</div>
-        <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ allergen?.name }}</div>
+      <div class="flex items-start gap-4">
+        <div class="flex-1">
+          <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('allergens.name') }}</div>
+          <div class="text-[17px] font-medium text-gray-900 dark:text-gray-100">{{ allergen?.name }}</div>
+        </div>
+        <div v-if="allergen?.code" class="flex-none text-right">
+          <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">GS1</div>
+          <div class="text-[15px] font-mono font-semibold text-gray-700 dark:text-gray-300">{{ allergen.code }}</div>
+        </div>
       </div>
       <div>
         <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1">{{ $t('allergens.comment') }}</div>
@@ -150,11 +159,19 @@ async function doDelete() {
 
     <!-- Create mode (new — inline, parent already provides the sheet) -->
     <div v-if="isNew" class="space-y-5">
-      <div>
-        <label class="ios-label">{{ $t('allergens.name') }} *</label>
-        <input v-model="draft.name"
-          class="ios-input"
-          :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="ios-label">{{ $t('allergens.name') }} *</label>
+          <input v-model="draft.name"
+            class="ios-input"
+            :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+        </div>
+        <div class="w-20">
+          <label class="ios-label">GS1</label>
+          <input v-model="draft.code" maxlength="2"
+            class="ios-input uppercase"
+            placeholder="AW" autocomplete="off" />
+        </div>
       </div>
       <div>
         <label class="ios-label">{{ $t('allergens.comment') }}</label>
@@ -175,11 +192,19 @@ async function doDelete() {
       <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
     </div>
     <div class="p-4 space-y-4">
-      <div>
-        <label class="ios-label">{{ $t('allergens.name') }} *</label>
-        <input v-model="draft.name"
-          class="ios-input"
-          :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="ios-label">{{ $t('allergens.name') }} *</label>
+          <input v-model="draft.name"
+            class="ios-input"
+            :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+        </div>
+        <div class="w-20">
+          <label class="ios-label">GS1</label>
+          <input v-model="draft.code" maxlength="2"
+            class="ios-input uppercase"
+            placeholder="AW" autocomplete="off" />
+        </div>
       </div>
       <div>
         <label class="ios-label">{{ $t('allergens.comment') }}</label>

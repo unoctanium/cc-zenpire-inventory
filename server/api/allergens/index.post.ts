@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const body    = await readBody(event)
   const name    = String(body?.name    ?? '').trim()
+  const code    = body?.code    != null ? String(body.code).trim().toUpperCase().slice(0, 2) || null : null
   const comment = body?.comment != null ? String(body.comment).trim() || null : null
 
   if (!name) throw createError({ statusCode: 400, statusMessage: 'Missing name' })
@@ -16,8 +17,8 @@ export default defineEventHandler(async (event) => {
   const admin = supabaseAdmin()
   const { data, error } = await admin
     .from('allergen')
-    .insert({ client_id: clientId, name, comment })
-    .select('id, name, comment, created_at, updated_at')
+    .insert({ client_id: clientId, name, code, comment })
+    .select('id, name, code, comment, created_at, updated_at')
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })
