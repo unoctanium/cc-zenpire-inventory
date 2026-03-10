@@ -55,24 +55,6 @@ const ALL_APPS = [
       { labelKey: 'nav.units',          to: '/reports/units',         icon: 'i-heroicons-scale'                },
     ] as AppMenuLink[],
   },
-  {
-    id: 'test1',
-    labelKey: 'nav.apps.test1',
-    icon: 'i-heroicons-beaker',
-    to: '/test1',
-    inTopBar: true,
-    links:     [] as AppLink[],
-    menuLinks: [] as AppMenuLink[],
-  },
-  {
-    id: 'test2',
-    labelKey: 'nav.apps.test2',
-    icon: 'i-heroicons-puzzle-piece',
-    to: '/test2',
-    inTopBar: true,
-    links:     [] as AppLink[],
-    menuLinks: [] as AppMenuLink[],
-  },
   // ── Drawer-only apps (never shown in bar, tabbar, or More popup) ──────────
   {
     id: 'admin',

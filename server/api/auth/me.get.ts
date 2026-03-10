@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     admin.from('v_user_permissions').select('permission_code').eq('auth_user_id', authUserId),
     admin.from('store').select('id, name, address').eq('client_id', appUser.client_id).order('name'),
     admin.from('client').select('name').eq('id', appUser.client_id).single(),
-    admin.from('user_role').select('role:role_id(code)').eq('app_user_id', appUser.id),
+    admin.from('user_role').select('role:role_id(code)').eq('user_id', appUser.id),
   ])
 
   if (permsRes.error) throw createError({ statusCode: 500, statusMessage: permsRes.error.message })
