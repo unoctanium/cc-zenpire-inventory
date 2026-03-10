@@ -88,14 +88,15 @@ export function usePrint() {
    * Print the current page.
    *
    * iOS standalone: window.print() is silently ignored.
-   * Open the page URL in a new tab so the user can print from Safari.
+   * Use navigator.share() to open the native iOS share sheet, which always
+   * includes a Print option — even in home-screen PWA mode.
    *
    * All other contexts: window.print() directly.
    */
   function doPrint() {
     if (typeof window === 'undefined') return
-    if (isIOSStandalone()) {
-      window.open(window.location.href, '_blank')
+    if (isIOSStandalone() && navigator.share) {
+      navigator.share({ url: window.location.href, title: document.title }).catch(() => {})
       return
     }
     window.print()
