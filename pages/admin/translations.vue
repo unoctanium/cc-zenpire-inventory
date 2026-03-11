@@ -77,8 +77,10 @@ async function translateAll(locale: string, staleOnly = false) {
   }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────
-await Promise.all([loadSettings(), loadCoverage()])
+// ── Init — client-only (auth cookies not available during SSR) ────────────
+if (import.meta.client) {
+  await Promise.all([loadSettings(), loadCoverage()])
+}
 </script>
 
 <template>
@@ -97,13 +99,12 @@ await Promise.all([loadSettings(), loadCoverage()])
           <div class="flex items-center gap-3">
             <USelect
               v-model="contentLocale"
-              :options="[
+              :items="[
                 { label: 'Deutsch',  value: 'de' },
                 { label: 'English',  value: 'en' },
                 { label: '日本語',   value: 'ja' },
               ]"
-              option-attribute="label"
-              value-attribute="value"
+              value-key="value"
               class="w-48"
             />
             <UButton color="neutral" variant="soft" :loading="savingLocale" @click="saveContentLocale">

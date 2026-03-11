@@ -56,9 +56,9 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }  = useI18n()
-const toast  = useToast()
-const auth   = useAuth()
+const { t, locale }  = useI18n()
+const toast          = useToast()
+const auth           = useAuth()
 
 // ─── translate ────────────────────────────────────────────────────────────────
 const translating = ref(false)
@@ -299,7 +299,7 @@ async function loadDetail(id: string) {
   detailLoading.value = true
   try {
     const res = await $fetch<{ ok: boolean; recipe: any; components: ComponentRow[] }>(
-      `/api/recipes/${id}`, { credentials: 'include' }
+      `/api/recipes/${id}?locale=${locale.value}`, { credentials: 'include' }
     )
     components.value = res.components
     hasImage.value   = res.recipe?.has_image ?? false
