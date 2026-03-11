@@ -401,6 +401,8 @@
     "translationDone": "Übersetzung fertig",
     "translationFailed": "Übersetzung fehlgeschlagen",
     "lockName": "Name sperren (nicht übersetzen)",
+    "nameLocked": "Name ist gesperrt – Übersetzung deaktiviert",
+    "translatingLocale": "Übersetzung bearbeiten für: {locale}",
     "mtBadge": "MÜ"
   }
 }

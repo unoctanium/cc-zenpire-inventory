@@ -401,6 +401,8 @@
     "translationDone": "翻訳完了",
     "translationFailed": "翻訳失敗",
     "lockName": "名前をロック（翻訳しない）",
+    "nameLocked": "名前はロックされています — 翻訳は無効です",
+    "translatingLocale": "翻訳を編集中: {locale}",
     "mtBadge": "MT"
   }
 }

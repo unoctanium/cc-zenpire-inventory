@@ -59,6 +59,37 @@ const emit = defineEmits<{
 const { t, locale }  = useI18n()
 const toast          = useToast()
 const auth           = useAuth()
+const { sourceLang, loadIfNeeded: loadSourceLang } = useClientSettings()
+
+// ─── editing locale ────────────────────────────────────────────────────────────
+const SUPPORTED_LOCALES = ['de', 'en', 'ja']
+const LOCALE_LABELS: Record<string, string> = { de: 'DE', en: 'EN', ja: 'JA' }
+const editingLocale = ref('')
+const isSourceEdit  = computed(() => !editingLocale.value || editingLocale.value === sourceLang.value)
+
+const i18nDraft = reactive({ name: '', description: '', production_notes: '' })
+const loadingI18n = ref(false)
+
+async function switchEditingLocale(loc: string) {
+  editingLocale.value = loc
+  if (loc === sourceLang.value || !savedId.value) return
+  loadingI18n.value = true
+  try {
+    const res = await $fetch<any>(
+      `/api/recipes/${savedId.value}/i18n/${loc}`,
+      { credentials: 'include' }
+    )
+    i18nDraft.name             = res.name             ?? ''
+    i18nDraft.description      = res.description      ?? ''
+    i18nDraft.production_notes = res.production_notes ?? ''
+  } catch {
+    i18nDraft.name             = ''
+    i18nDraft.description      = ''
+    i18nDraft.production_notes = ''
+  } finally {
+    loadingI18n.value = false
+  }
+}
 
 // ─── translate ────────────────────────────────────────────────────────────────
 const translating = ref(false)
@@ -392,6 +423,31 @@ async function saveComponents(recipeId: string) {
 // ─── save basic fields ────────────────────────────────────────────────────────
 
 async function saveBasic() {
+  // ── Non-source locale: save only translation fields ──
+  if (!isSourceEdit.value && savedId.value) {
+    saving.value = true
+    try {
+      await $fetch(`/api/recipes/${savedId.value}/i18n/${editingLocale.value}`, {
+        method: 'PUT', credentials: 'include',
+        body: {
+          name:             draft.name_translation_locked ? undefined : (i18nDraft.name.trim() || null),
+          description:      i18nDraft.description.trim()      || null,
+          production_notes: i18nDraft.production_notes.trim() || null,
+        },
+      })
+      toast.add({ title: t('recipes.updated') })
+      editMode.value      = false
+      showEditSheet.value = false
+      emit('saved', savedId.value)
+    } catch (e: any) {
+      toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
+    } finally {
+      saving.value = false
+    }
+    return
+  }
+
+  // ── Source locale: save main record ──
   const qty = Number(draft.output_quantity)
   if (!draft.name.trim() || !draft.output_unit_id || !(qty > 0)) {
     toast.add({ title: t('common.missingFields'), description: t('recipes.nameRequired'), color: 'red' })
@@ -437,7 +493,24 @@ async function saveBasic() {
   }
 }
 
-function startEdit() {
+async function startEdit() {
+  await loadSourceLang()
+  editingLocale.value = sourceLang.value || 'de'
+
+  // Re-fetch source data (no locale param) so draft always holds source values
+  if (savedId.value) {
+    try {
+      const res = await $fetch<{ ok: boolean; recipe: any; components: ComponentRow[] }>(
+        `/api/recipes/${savedId.value}`, { credentials: 'include' }
+      )
+      draft.name               = res.recipe?.name               ?? draft.name
+      draft.description        = res.recipe?.description        ?? ''
+      draft.production_notes   = res.recipe?.production_notes   ?? ''
+      draft.name_translation_locked = res.recipe?.name_translation_locked ?? false
+      loadedProductionNotes.value   = draft.production_notes
+    } catch { /* non-fatal */ }
+  }
+
   // Sync draft comps from current DB state before opening edit sheet
   syncDraftCompsFromDb()
   editMode.value      = true
@@ -882,138 +955,198 @@ function onBannerFileChange(e: Event) {
   <!-- ─── Edit sheet (existing recipe) ──────────────────────────────────────── -->
   <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
     <!-- Sticky iOS nav bar -->
-    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
-      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
-      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('recipes.editTitle') }} — {{ draft.name }}</span>
-      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="saveBasic">{{ $t('common.save') }}</button>
+    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center px-4 min-h-[44px]">
+        <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+        <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('recipes.editTitle') }}</span>
+        <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="saveBasic">{{ $t('common.save') }}</button>
+      </div>
+      <!-- Locale pill selector -->
+      <div class="flex gap-1.5 px-4 pb-2">
+        <button
+          v-for="loc in SUPPORTED_LOCALES"
+          :key="loc"
+          class="px-2.5 py-0.5 text-xs rounded-full border transition-colors"
+          :class="editingLocale === loc
+            ? 'bg-blue-500 text-white border-blue-500'
+            : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'"
+          @click="switchEditingLocale(loc)"
+        >
+          {{ LOCALE_LABELS[loc] }}<span v-if="loc === sourceLang" class="ml-0.5 opacity-60 text-[9px]">↑</span>
+        </button>
+      </div>
     </div>
 
     <div class="p-4 space-y-5">
 
-      <!-- Image (compact) at top -->
-      <AdminImageUpload
-        v-if="savedId"
-        :image-url="imageUrl"
-        :uploading="imageUploading"
-        :can-manage="canManage"
-        @upload="uploadImage"
-        @remove="removeImage"
-      />
+      <!-- ── Source locale edit (full form) ── -->
+      <template v-if="isSourceEdit">
 
-      <!-- Name -->
-      <div>
-        <label class="ios-label">{{ $t('recipes.name') }} *</label>
-        <input v-model="draft.name" class="ios-input" :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
-        <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
-          <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
-          <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
-        </label>
-      </div>
+        <!-- Image (compact) at top -->
+        <AdminImageUpload
+          v-if="savedId"
+          :image-url="imageUrl"
+          :uploading="imageUploading"
+          :can-manage="canManage"
+          @upload="uploadImage"
+          @remove="removeImage"
+        />
 
-      <!-- Recipe ID -->
-      <div>
-        <label class="ios-label">{{ $t('recipes.recipeId') }}</label>
-        <input v-model="draft.recipe_id" class="ios-input font-mono" :placeholder="$t('recipes.recipeIdPlaceholder')" autocomplete="off" />
-      </div>
-
-      <!-- Description -->
-      <div>
-        <label class="ios-label">{{ $t('recipes.description') }}</label>
-        <textarea v-model="draft.description" rows="2" class="ios-input resize-none" :placeholder="$t('recipes.descPlaceholder')" />
-      </div>
-
-      <!-- Flags row -->
-      <div class="flex gap-6">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input v-model="draft.is_active" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-          <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
-          <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
-        </label>
-      </div>
-
-      <!-- Batch row: qty + unit + cost in one row -->
-      <div>
-        <div class="flex gap-2">
-          <div class="flex-1">
-            <label class="ios-label">{{ $t('recipes.output') }} *</label>
-            <input v-model="draft.output_quantity" type="number" min="0.001" step="any" class="ios-input" :placeholder="$t('recipes.outputQtyPlaceholder')" />
-          </div>
-          <div class="flex-1">
-            <label class="ios-label">&nbsp;</label>
-            <select v-model="draft.output_unit_id" class="ios-input">
-              <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
-            </select>
-          </div>
-          <div class="flex-1">
-            <label class="ios-label">{{ $t('recipes.batchCostLabel') }}</label>
-            <input v-model="draft.standard_unit_cost" type="number" min="0" step="any" class="ios-input" :placeholder="$t('recipes.stdCostPlaceholder')" />
-          </div>
+        <!-- Name -->
+        <div>
+          <label class="ios-label">{{ $t('recipes.name') }} *</label>
+          <input v-model="draft.name" class="ios-input" :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+          <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
+            <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
+            <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
+          </label>
         </div>
-        <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}</p>
-        <button v-if="totalCost != null" type="button" class="mt-1 text-xs text-blue-500 hover:underline" @click="draft.standard_unit_cost = totalCost">
-          {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
-        </button>
-      </div>
 
-      <!-- Components section (edit sheet) -->
-      <div class="pt-2">
-        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('recipes.componentsSection') }}</h3>
+        <!-- Recipe ID -->
+        <div>
+          <label class="ios-label">{{ $t('recipes.recipeId') }}</label>
+          <input v-model="draft.recipe_id" class="ios-input font-mono" :placeholder="$t('recipes.recipeIdPlaceholder')" autocomplete="off" />
         </div>
-        <div v-if="draftComps.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-2">
-          <div
-            v-for="comp in draftComps" :key="comp._localId"
-            class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
-          >
-            <div
-              class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
-              :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
-              @touchstart="onSwipeTouchStart($event, comp._localId)"
-              @touchmove="onSwipeTouchMove($event, comp._localId)"
-              @touchend="onSwipeTouchEnd($event, comp._localId)"
-              @click="onRowClick(comp)"
-            >
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ comp.name }}</div>
-                <div class="text-xs text-gray-400">{{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
-              </div>
-              <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
-                <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
-                <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
-              </div>
+
+        <!-- Description -->
+        <div>
+          <label class="ios-label">{{ $t('recipes.description') }}</label>
+          <textarea v-model="draft.description" rows="2" class="ios-input resize-none" :placeholder="$t('recipes.descPlaceholder')" />
+        </div>
+
+        <!-- Flags row -->
+        <div class="flex gap-6">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input v-model="draft.is_active" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
+            <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.active') }}</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input v-model="draft.is_pre_product" type="checkbox" class="rounded border-gray-300 dark:border-gray-700" />
+            <span class="text-[17px] text-gray-700 dark:text-gray-300">{{ $t('recipes.preProduct') }}</span>
+          </label>
+        </div>
+
+        <!-- Batch row: qty + unit + cost in one row -->
+        <div>
+          <div class="flex gap-2">
+            <div class="flex-1">
+              <label class="ios-label">{{ $t('recipes.output') }} *</label>
+              <input v-model="draft.output_quantity" type="number" min="0.001" step="any" class="ios-input" :placeholder="$t('recipes.outputQtyPlaceholder')" />
             </div>
-            <button class="absolute right-0 top-0 bottom-0 w-20 bg-red-500 text-white text-sm font-medium active:bg-red-600" @click.stop="swipeDeleteComp(comp)">{{ $t('common.delete') }}</button>
+            <div class="flex-1">
+              <label class="ios-label">&nbsp;</label>
+              <select v-model="draft.output_unit_id" class="ios-input">
+                <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="ios-label">{{ $t('recipes.batchCostLabel') }}</label>
+              <input v-model="draft.standard_unit_cost" type="number" min="0" step="any" class="ios-input" :placeholder="$t('recipes.stdCostPlaceholder')" />
+            </div>
+          </div>
+          <p v-if="perUnitCost != null" class="text-xs text-gray-400 mt-1">= € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}</p>
+          <button v-if="totalCost != null" type="button" class="mt-1 text-xs text-blue-500 hover:underline" @click="draft.standard_unit_cost = totalCost">
+            {{ $t('recipes.autoFillFromComponents') }} (€ {{ totalCost.toFixed(2) }})
+          </button>
+        </div>
+
+        <!-- Components section (edit sheet) -->
+        <div class="pt-2">
+          <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('recipes.componentsSection') }}</h3>
+          </div>
+          <div v-if="draftComps.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-2">
+            <div
+              v-for="comp in draftComps" :key="comp._localId"
+              class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+            >
+              <div
+                class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+                :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
+                @touchstart="onSwipeTouchStart($event, comp._localId)"
+                @touchmove="onSwipeTouchMove($event, comp._localId)"
+                @touchend="onSwipeTouchEnd($event, comp._localId)"
+                @click="onRowClick(comp)"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ comp.name }}</div>
+                  <div class="text-xs text-gray-400">{{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
+                </div>
+                <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
+                  <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                  <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                </div>
+              </div>
+              <button class="absolute right-0 top-0 bottom-0 w-20 bg-red-500 text-white text-sm font-medium active:bg-red-600" @click.stop="swipeDeleteComp(comp)">{{ $t('common.delete') }}</button>
+            </div>
+          </div>
+          <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
+          <button
+            class="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-[#007AFF] dark:text-blue-400 active:bg-gray-50 dark:active:bg-gray-800"
+            @click="openCompEditSheet(null)"
+          >
+            <UIcon name="i-heroicons-plus-circle" class="w-4 h-4" />
+            {{ $t('recipes.addComponent') }}
+          </button>
+        </div>
+
+        <!-- Production notes -->
+        <div>
+          <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
+          <textarea v-model="draft.production_notes" rows="3" class="ios-input resize-none" :placeholder="$t('recipes.productionNotesPlaceholder')" />
+        </div>
+
+        <!-- Allergens (read-only info) -->
+        <div v-if="effectiveAllergens.length > 0">
+          <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ $t('recipes.allergens') }}</div>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="al in effectiveAllergens" :key="al.id"
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+            >{{ al.name }}</span>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
-        <button
-          class="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-[#007AFF] dark:text-blue-400 active:bg-gray-50 dark:active:bg-gray-800"
-          @click="openCompEditSheet(null)"
-        >
-          <UIcon name="i-heroicons-plus-circle" class="w-4 h-4" />
-          {{ $t('recipes.addComponent') }}
-        </button>
-      </div>
 
-      <!-- Production notes -->
-      <div>
-        <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
-        <textarea v-model="draft.production_notes" rows="3" class="ios-input resize-none" :placeholder="$t('recipes.productionNotesPlaceholder')" />
-      </div>
+      </template>
 
-      <!-- Allergens (read-only info) -->
-      <div v-if="effectiveAllergens.length > 0">
-        <div class="text-[13px] font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ $t('recipes.allergens') }}</div>
-        <div class="flex flex-wrap gap-1.5">
-          <span
-            v-for="al in effectiveAllergens" :key="al.id"
-            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-          >{{ al.name }}</span>
-        </div>
-      </div>
+      <!-- ── Non-source locale edit (translatable fields only) ── -->
+      <template v-else>
+        <div v-if="loadingI18n" class="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">{{ $t('common.loading') }}</div>
+        <template v-else>
+
+          <!-- Name -->
+          <div>
+            <label class="ios-label">{{ $t('recipes.name') }}</label>
+            <div class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic">
+              {{ draft.name || '—' }}
+            </div>
+            <div v-if="draft.name_translation_locked" class="flex items-center gap-1.5 text-[13px] text-amber-600 dark:text-amber-400">
+              <UIcon name="i-heroicons-lock-closed" class="w-3.5 h-3.5" />
+              {{ $t('adminTranslations.nameLocked') }}
+            </div>
+            <input v-else v-model="i18nDraft.name"
+              class="ios-input"
+              :placeholder="$t('recipes.namePlaceholder')" autocomplete="off" />
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="ios-label">{{ $t('recipes.description') }}</label>
+            <div v-if="draft.description" class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic whitespace-pre-wrap">{{ draft.description }}</div>
+            <textarea v-model="i18nDraft.description" rows="2" class="ios-input resize-none" :placeholder="$t('recipes.descPlaceholder')" />
+          </div>
+
+          <!-- Production notes -->
+          <div>
+            <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
+            <div v-if="draft.production_notes" class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic whitespace-pre-wrap">{{ draft.production_notes }}</div>
+            <textarea v-model="i18nDraft.production_notes" rows="3" class="ios-input resize-none" :placeholder="$t('recipes.productionNotesPlaceholder')" />
+          </div>
+
+          <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $t('adminTranslations.translatingLocale', { locale: LOCALE_LABELS[editingLocale] ?? editingLocale }) }}</p>
+
+        </template>
+      </template>
 
     </div>
   </AppBottomSheet>

@@ -55,10 +55,40 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }        = useI18n()
-const toast        = useToast()
-const { printHtml } = usePrint()
-const auth = useAuth()
+const { t } = useI18n()
+const toast          = useToast()
+const { printHtml }  = usePrint()
+const auth           = useAuth()
+const { sourceLang, loadIfNeeded: loadSourceLang } = useClientSettings()
+
+// ─── editing locale ────────────────────────────────────────────────────────────
+const SUPPORTED_LOCALES = ['de', 'en', 'ja']
+const LOCALE_LABELS: Record<string, string> = { de: 'DE', en: 'EN', ja: 'JA' }
+const editingLocale = ref('')
+const isSourceEdit  = computed(() => !editingLocale.value || editingLocale.value === sourceLang.value)
+
+// Draft for i18n (non-source) edits only
+const i18nDraft = reactive({ name: '', comment: '' })
+const loadingI18n = ref(false)
+
+async function switchEditingLocale(loc: string) {
+  editingLocale.value = loc
+  if (loc === sourceLang.value || !props.ingredient?.id) return
+  loadingI18n.value = true
+  try {
+    const res = await $fetch<any>(
+      `/api/ingredients/${props.ingredient.id}/i18n/${loc}`,
+      { credentials: 'include' }
+    )
+    i18nDraft.name    = res.name    ?? ''
+    i18nDraft.comment = res.comment ?? ''
+  } catch {
+    i18nDraft.name    = ''
+    i18nDraft.comment = ''
+  } finally {
+    loadingI18n.value = false
+  }
+}
 
 // ─── translate ────────────────────────────────────────────────────────────────
 const translating = ref(false)
@@ -253,6 +283,34 @@ function toggleAllergen(id: string) {
 // ─── save ─────────────────────────────────────────────────────────────────────
 
 async function save() {
+  // ── Non-source locale: save only translation fields ──
+  if (!isSourceEdit.value && props.ingredient) {
+    saving.value = true
+    try {
+      await $fetch(`/api/ingredients/${props.ingredient.id}/i18n/${editingLocale.value}`, {
+        method: 'PUT', credentials: 'include',
+        body: {
+          name:    draft.name_translation_locked ? undefined : (i18nDraft.name.trim() || null),
+          comment: i18nDraft.comment.trim() || null,
+        },
+      })
+      toast.add({ title: t('ingredients.updated') })
+      editMode.value      = false
+      showEditSheet.value = false
+      emit('saved', props.ingredient.id)
+    } catch (e: any) {
+      toast.add({
+        title:       t('common.saveFailed'),
+        description: e?.data?.message ?? e?.data?.statusMessage ?? e?.message ?? String(e),
+        color:       'red',
+      })
+    } finally {
+      saving.value = false
+    }
+    return
+  }
+
+  // ── Source locale: save main record ──
   if (!draft.name.trim() || !draft.default_unit_id) {
     toast.add({ title: t('common.missingFields'), description: t('ingredients.nameAndUnitRequired'), color: 'red' })
     return
@@ -308,7 +366,31 @@ async function save() {
   }
 }
 
-function startEdit() {
+async function startEdit() {
+  await loadSourceLang()
+  editingLocale.value = sourceLang.value || 'de'
+
+  // Re-fetch source data (no locale param) so draft always holds source values
+  if (props.ingredient?.id) {
+    try {
+      const detail = await $fetch<{ ok: boolean; ingredient: any }>(
+        `/api/ingredients/${props.ingredient.id}`, { credentials: 'include' }
+      )
+      draft.name               = detail.ingredient.name
+      draft.comment            = detail.ingredient.comment ?? ''
+      draft.article_id         = detail.ingredient.article_id ?? ''
+      draft.name_translation_locked = detail.ingredient.name_translation_locked ?? false
+      if (detail.ingredient.standard_unit_cost != null) {
+        draft.standard_unit_cost = detail.ingredient.standard_unit_cost
+          * costScale(detail.ingredient.default_unit_type)
+      }
+      draft.yield_pct         = detail.ingredient.yield_pct ?? 100
+      draft.purchase_quantity = detail.ingredient.purchase_quantity ?? ''
+      draft.purchase_unit_id  = detail.ingredient.purchase_unit_id ?? ''
+      draft.purchase_price    = detail.ingredient.purchase_price ?? ''
+    } catch { /* non-fatal */ }
+  }
+
   editMode.value      = true
   showEditSheet.value = true
 }
@@ -611,112 +693,165 @@ async function doDelete() {
   <!-- Edit sheet (existing ingredient) -->
   <AppBottomSheet :open="showEditSheet" @close="cancelEdit">
     <!-- Sticky iOS nav bar -->
-    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
-      <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
-      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('ingredients.editTitle') }} — {{ ingredient?.name }}</span>
-      <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
+    <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center px-4 min-h-[44px]">
+        <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+        <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('ingredients.editTitle') }}</span>
+        <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
+      </div>
+      <!-- Locale pill selector -->
+      <div class="flex gap-1.5 px-4 pb-2">
+        <button
+          v-for="loc in SUPPORTED_LOCALES"
+          :key="loc"
+          class="px-2.5 py-0.5 text-xs rounded-full border transition-colors"
+          :class="editingLocale === loc
+            ? 'bg-blue-500 text-white border-blue-500'
+            : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'"
+          @click="switchEditingLocale(loc)"
+        >
+          {{ LOCALE_LABELS[loc] }}<span v-if="loc === sourceLang" class="ml-0.5 opacity-60 text-[9px]">↑</span>
+        </button>
+      </div>
     </div>
+
     <div class="p-4 space-y-4">
-      <AdminImageUpload
-        v-if="ingredient?.id"
-        :image-url="imageUrl"
-        :uploading="imageUploading"
-        :can-manage="canManage && !isProduced"
-        @upload="uploadImage"
-        @remove="removeImage"
-      />
-      <div>
-        <label class="ios-label">{{ $t('ingredients.name') }} *</label>
-        <input v-model="draft.name"
-          class="ios-input"
-          :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
-        <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
-          <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
-          <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
-        </label>
-      </div>
-      <div>
-        <label class="ios-label">{{ $t('ingredients.articleId') }}</label>
-        <input v-model="draft.article_id"
-          class="ios-input font-mono"
-          :placeholder="$t('ingredients.articleIdPlaceholder')" autocomplete="off" />
-      </div>
-      <div v-if="!isProduced">
-        <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
-        <select v-model="draft.default_unit_id" class="ios-input">
-          <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
-        </select>
-      </div>
-      <!-- Purchase price section (purchased ingredients only) -->
-      <div v-if="!isProduced" class="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 space-y-3">
-        <div class="text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('ingredients.purchasePriceSection') }}</div>
-        <div class="flex gap-2">
-          <div class="flex-1">
-            <label class="ios-label">{{ $t('ingredients.purchaseQty') }}</label>
-            <input v-model="draft.purchase_quantity" type="number" min="0" step="any" class="ios-input" placeholder="1" />
-          </div>
-          <div class="flex-1">
-            <label class="ios-label">{{ $t('ingredients.purchaseUnit') }}</label>
-            <select v-model="draft.purchase_unit_id" class="ios-input">
-              <option value="">—</option>
-              <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
-            </select>
-          </div>
-          <div class="flex-1">
-            <label class="ios-label">{{ $t('ingredients.purchasePriceLabel') }} (€)</label>
-            <input v-model="draft.purchase_price" type="number" min="0" step="any" class="ios-input" placeholder="0.00" />
-          </div>
+
+      <!-- ── Source locale edit (full form) ── -->
+      <template v-if="isSourceEdit">
+        <AdminImageUpload
+          v-if="ingredient?.id"
+          :image-url="imageUrl"
+          :uploading="imageUploading"
+          :can-manage="canManage && !isProduced"
+          @upload="uploadImage"
+          @remove="removeImage"
+        />
+        <div>
+          <label class="ios-label">{{ $t('ingredients.name') }} *</label>
+          <input v-model="draft.name"
+            class="ios-input"
+            :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
+          <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
+            <input type="checkbox" v-model="draft.name_translation_locked" class="rounded" />
+            <span class="text-[12px] text-gray-500 dark:text-gray-400">{{ $t('adminTranslations.lockName') }}</span>
+          </label>
         </div>
-        <p v-if="purchaseDerivedCostDisplay != null" class="text-xs text-gray-500 dark:text-gray-400">
-          = € {{ purchaseDerivedCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
-        </p>
-      </div>
-      <!-- Manual cost fallback (only when no purchase fields filled) -->
-      <div v-if="!isProduced && !hasPurchaseInput">
-        <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
-        <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
-          class="ios-input"
-          :placeholder="$t('ingredients.costPlaceholder')" />
-      </div>
-      <!-- Yield percentage (purchased ingredients only) -->
-      <div v-if="!isProduced">
-        <label class="ios-label">{{ $t('ingredients.yield') }} %</label>
-        <input v-model="draft.yield_pct" type="number" min="1" max="100" step="1" class="ios-input" placeholder="100" />
-        <p v-if="effectiveCostDisplay != null" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
-          → {{ $t('ingredients.afterYield') }}: € {{ effectiveCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
-        </p>
-      </div>
-      <div>
-        <label class="ios-label">{{ $t('ingredients.comment') }}</label>
-        <textarea v-model="draft.comment" rows="2"
-          class="ios-input resize-none"
-          :placeholder="$t('ingredients.commentPlaceholder')" />
-      </div>
-      <div>
-        <label class="ios-label">{{ $t('ingredients.allergens') }}</label>
-        <!-- Produced: allergens derived from recipe — show read-only pills -->
-        <template v-if="isProduced">
-          <div v-if="selectedAllergenIds.length === 0" class="text-sm text-gray-400 dark:text-gray-600">—</div>
-          <div v-else class="flex flex-wrap gap-1.5">
-            <span
-              v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))" :key="al.id"
-              class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-            >{{ al.name }}</span>
+        <div>
+          <label class="ios-label">{{ $t('ingredients.articleId') }}</label>
+          <input v-model="draft.article_id"
+            class="ios-input font-mono"
+            :placeholder="$t('ingredients.articleIdPlaceholder')" autocomplete="off" />
+        </div>
+        <div v-if="!isProduced">
+          <label class="ios-label">{{ $t('ingredients.unit') }} *</label>
+          <select v-model="draft.default_unit_id" class="ios-input">
+            <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }} – {{ u.name }}</option>
+          </select>
+        </div>
+        <!-- Purchase price section (purchased ingredients only) -->
+        <div v-if="!isProduced" class="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 space-y-3">
+          <div class="text-[12px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('ingredients.purchasePriceSection') }}</div>
+          <div class="flex gap-2">
+            <div class="flex-1">
+              <label class="ios-label">{{ $t('ingredients.purchaseQty') }}</label>
+              <input v-model="draft.purchase_quantity" type="number" min="0" step="any" class="ios-input" placeholder="1" />
+            </div>
+            <div class="flex-1">
+              <label class="ios-label">{{ $t('ingredients.purchaseUnit') }}</label>
+              <select v-model="draft.purchase_unit_id" class="ios-input">
+                <option value="">—</option>
+                <option v-for="u in units" :key="u.id" :value="u.id">{{ u.code }}</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="ios-label">{{ $t('ingredients.purchasePriceLabel') }} (€)</label>
+              <input v-model="draft.purchase_price" type="number" min="0" step="any" class="ios-input" placeholder="0.00" />
+            </div>
           </div>
-          <p class="text-[11px] text-gray-400 dark:text-gray-600 mt-1.5">{{ $t('ingredients.allergensFromRecipe') }}</p>
-        </template>
-        <!-- Purchased: editable checkboxes -->
+          <p v-if="purchaseDerivedCostDisplay != null" class="text-xs text-gray-500 dark:text-gray-400">
+            = € {{ purchaseDerivedCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+          </p>
+        </div>
+        <!-- Manual cost fallback (only when no purchase fields filled) -->
+        <div v-if="!isProduced && !hasPurchaseInput">
+          <label class="ios-label">{{ $t('ingredients.unitCost') }} / {{ currentCostLabel }}</label>
+          <input v-model="draft.standard_unit_cost" type="number" min="0" step="0.0001"
+            class="ios-input"
+            :placeholder="$t('ingredients.costPlaceholder')" />
+        </div>
+        <!-- Yield percentage (purchased ingredients only) -->
+        <div v-if="!isProduced">
+          <label class="ios-label">{{ $t('ingredients.yield') }} %</label>
+          <input v-model="draft.yield_pct" type="number" min="1" max="100" step="1" class="ios-input" placeholder="100" />
+          <p v-if="effectiveCostDisplay != null" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+            → {{ $t('ingredients.afterYield') }}: € {{ effectiveCostDisplay.toFixed(4) }} / {{ currentCostLabel }}
+          </p>
+        </div>
+        <div>
+          <label class="ios-label">{{ $t('ingredients.comment') }}</label>
+          <textarea v-model="draft.comment" rows="2"
+            class="ios-input resize-none"
+            :placeholder="$t('ingredients.commentPlaceholder')" />
+        </div>
+        <div>
+          <label class="ios-label">{{ $t('ingredients.allergens') }}</label>
+          <!-- Produced: allergens derived from recipe — show read-only pills -->
+          <template v-if="isProduced">
+            <div v-if="selectedAllergenIds.length === 0" class="text-sm text-gray-400 dark:text-gray-600">—</div>
+            <div v-else class="flex flex-wrap gap-1.5">
+              <span
+                v-for="al in allergens.filter(a => selectedAllergenIds.includes(a.id))" :key="al.id"
+                class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+              >{{ al.name }}</span>
+            </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-600 mt-1.5">{{ $t('ingredients.allergensFromRecipe') }}</p>
+          </template>
+          <!-- Purchased: editable checkboxes -->
+          <template v-else>
+            <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
+            <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
+              <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
+                  class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
+                {{ al.name }}
+              </label>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ── Non-source locale edit (translatable fields only) ── -->
+      <template v-else>
+        <div v-if="loadingI18n" class="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">{{ $t('common.loading') }}</div>
         <template v-else>
-          <div v-if="allergens.length === 0" class="text-sm text-gray-400 dark:text-gray-600">{{ $t('ingredients.noAllergens') }}</div>
-          <div v-else class="grid grid-cols-2 gap-y-1 gap-x-4">
-            <label v-for="al in allergens" :key="al.id" class="flex items-center gap-2 text-[17px] text-gray-800 dark:text-gray-200 cursor-pointer">
-              <input type="checkbox" :checked="selectedAllergenIds.includes(al.id)"
-                class="rounded border-gray-300 dark:border-gray-700" @change="toggleAllergen(al.id)" />
-              {{ al.name }}
-            </label>
+          <!-- Name -->
+          <div>
+            <label class="ios-label">{{ $t('ingredients.name') }}</label>
+            <!-- Source reference -->
+            <div class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic">
+              {{ draft.name || '—' }}
+            </div>
+            <div v-if="draft.name_translation_locked" class="flex items-center gap-1.5 text-[13px] text-amber-600 dark:text-amber-400">
+              <UIcon name="i-heroicons-lock-closed" class="w-3.5 h-3.5" />
+              {{ $t('adminTranslations.nameLocked') }}
+            </div>
+            <input v-else v-model="i18nDraft.name"
+              class="ios-input"
+              :placeholder="$t('ingredients.namePlaceholder')" autocomplete="off" />
           </div>
+          <!-- Comment -->
+          <div>
+            <label class="ios-label">{{ $t('ingredients.comment') }}</label>
+            <div v-if="draft.comment" class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic whitespace-pre-wrap">{{ draft.comment }}</div>
+            <textarea v-model="i18nDraft.comment" rows="3"
+              class="ios-input resize-none"
+              :placeholder="$t('ingredients.commentPlaceholder')" />
+          </div>
+          <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $t('adminTranslations.translatingLocale', { locale: LOCALE_LABELS[editingLocale] ?? editingLocale }) }}</p>
         </template>
-      </div>
+      </template>
+
     </div>
   </AppBottomSheet>
 

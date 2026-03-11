@@ -376,6 +376,8 @@
     "translationDone": "Translation done",
     "translationFailed": "Translation failed",
     "lockName": "Lock name (do not translate)",
+    "nameLocked": "Name is locked — translation is disabled",
+    "translatingLocale": "Editing translation for: {locale}",
     "mtBadge": "MT"
   },
   "devTools": {
