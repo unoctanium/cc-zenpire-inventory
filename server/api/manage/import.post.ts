@@ -12,7 +12,7 @@ type RequiredTable = typeof REQUIRED_TABLES[number]
 
 // Optional tables — present in exports since the translation feature was added;
 // treated as empty arrays when missing (allows importing older export files)
-const OPTIONAL_TABLES = ['ingredient_i18n', 'recipe_i18n'] as const
+const OPTIONAL_TABLES = ['allergen_i18n', 'ingredient_i18n', 'recipe_i18n'] as const
 type OptionalTable = typeof OPTIONAL_TABLES[number]
 
 /**
@@ -81,6 +81,10 @@ export default defineEventHandler(async (event) => {
     .from('ingredient').select('id').eq('client_id', clientId)
     .then(r => (r.data ?? []).map((x: any) => x.id))
 
+  const existingAllergenIds = await admin
+    .from('allergen').select('id').eq('client_id', clientId)
+    .then(r => (r.data ?? []).map((x: any) => x.id))
+
   if (existingRecipeIds.length > 0) {
     await admin.from('recipe_i18n').delete().in('recipe_id', existingRecipeIds)
     await admin.from('recipe_component').delete().in('recipe_id', existingRecipeIds)
@@ -88,6 +92,9 @@ export default defineEventHandler(async (event) => {
   if (existingIngredientIds.length > 0) {
     await admin.from('ingredient_i18n').delete().in('ingredient_id', existingIngredientIds)
     await admin.from('ingredient_allergen').delete().in('ingredient_id', existingIngredientIds)
+  }
+  if (existingAllergenIds.length > 0) {
+    await admin.from('allergen_i18n').delete().in('allergen_id', existingAllergenIds)
   }
   // ingredient must be deleted before recipe: ingredient.produced_by_recipe_id → recipe
   await admin.from('ingredient').delete().eq('client_id', clientId)
@@ -121,6 +128,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // --- Step 7: Pass 6 — i18n translation rows (optional, absent in older exports) ---
+  await insertRows('allergen_i18n',   tables.allergen_i18n   ?? [])
   await insertRows('ingredient_i18n', tables.ingredient_i18n ?? [])
   await insertRows('recipe_i18n',     tables.recipe_i18n     ?? [])
 

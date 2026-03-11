@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
+const { contentLocaleParam } = useContentLocale()
+
 type IngredientRow = {
   id: string; article_id: string | null; name: string; kind: string
   default_unit_id: string; default_unit_code: string; default_unit_type: string
@@ -15,7 +17,7 @@ const id    = computed(() => route.params.id as string)
 
 const { canManage } = useTablePermissions('recipe')
 
-const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredient: IngredientRow }>(() => `/api/ingredients/${id.value}`, { credentials: 'include' })
+const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredient: IngredientRow }>(() => `/api/ingredients/${id.value}?${contentLocaleParam.value}`, { credentials: 'include' })
 const { data: unitData }                = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
 const { data: allergenData }            = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
 

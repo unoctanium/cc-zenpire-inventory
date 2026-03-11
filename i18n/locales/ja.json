@@ -77,8 +77,9 @@
     "uploadImage":  "画像をアップロード",
     "replaceImage": "画像を置き換え",
     "removeImage":  "画像を削除",
-    "back":   "戻る",
-    "change": "変更"
+    "back":      "戻る",
+    "change":    "変更",
+    "printedOn": "印刷"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -171,7 +172,9 @@
     "name": "名前",
     "description": "説明",
     "output": "バッチ量",
-    "active": "有効",
+    "active":   "有効",
+    "inactive": "無効",
+    "status":   "ステータス",
     "preProduct": "中間製品",
     "components": "構成要素",
     "sortByName": "名前で並び替え",

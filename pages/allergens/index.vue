@@ -2,6 +2,7 @@
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
 const { t } = useI18n()
+const { contentLocaleParam } = useContentLocale()
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -13,7 +14,7 @@ const { canRead, canManage } = useTablePermissions('recipe')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data, refresh } = await useFetch<{ ok: boolean; allergens: AllergenRow[] }>('/api/allergens', { credentials: 'include' })
+const { data, refresh } = await useFetch<{ ok: boolean; allergens: AllergenRow[] }>(() => `/api/allergens?${contentLocaleParam.value}`, { credentials: 'include' })
 
 const allergens = computed(() => data.value?.allergens ?? [])
 

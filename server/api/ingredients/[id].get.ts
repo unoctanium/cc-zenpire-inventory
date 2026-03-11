@@ -1,4 +1,4 @@
-import { createError, getRouterParam } from 'h3'
+import { createError, getRouterParam, getQuery } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 import { resolveAppUser } from '~/server/utils/resolve-app-user'
@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing id' })
+
+  const query = getQuery(event)
+  const requestedLocale = query.locale ? String(query.locale).toLowerCase() : null
 
   const admin = supabaseAdmin()
   const { data, error } = await admin
@@ -29,6 +32,22 @@ export default defineEventHandler(async (event) => {
 
   if (error) throw createError({ statusCode: 404, statusMessage: error.message })
 
+  // Fetch translation if requested locale differs from source
+  let i18nRow: { name: string | null; comment: string | null; is_machine: boolean } | null = null
+  if (requestedLocale) {
+    const { data: clientRow } = await admin.from('client').select('content_locale').eq('id', clientId).single()
+    const sourceLang = (clientRow as any)?.content_locale ?? 'de'
+    if (requestedLocale !== sourceLang) {
+      const { data: i18n } = await admin
+        .from('ingredient_i18n')
+        .select('name, comment, is_machine')
+        .eq('ingredient_id', id)
+        .eq('locale', requestedLocale)
+        .single()
+      if (i18n) i18nRow = i18n as any
+    }
+  }
+
   // For produced ingredients, resolve allergens from the full recursive recipe tree.
   // For purchased ingredients, use the direct ingredient_allergen entries.
   let allergenIds: string[]
@@ -47,7 +66,7 @@ export default defineEventHandler(async (event) => {
     ingredient: {
       id:                      data.id,
       article_id:              (data as any).article_id ?? null,
-      name:                    data.name,
+      name:                    (i18nRow?.name) || data.name,
       kind:                    data.kind,
       default_unit_id:         data.default_unit_id,
       default_unit_code:       (data as any).unit?.code ?? '',
@@ -55,7 +74,7 @@ export default defineEventHandler(async (event) => {
       standard_unit_cost:      data.standard_unit_cost,
       standard_cost_currency:  data.standard_cost_currency ?? 'EUR',
       produced_by_recipe_id:   data.produced_by_recipe_id,
-      comment:                 data.comment ?? null,
+      comment:                 (i18nRow !== null ? i18nRow.comment : data.comment) ?? null,
       has_image:                  !!data.image_data,
       allergen_ids:               allergenIds,
       name_translation_locked:    (data as any).name_translation_locked ?? false,

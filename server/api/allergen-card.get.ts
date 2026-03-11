@@ -1,4 +1,4 @@
-import { createError } from 'h3'
+import { createError, getQuery } from 'h3'
 import { supabaseAdmin } from '~/server/utils/supabase'
 import { requireAnyPermission } from '~/server/utils/require-any-permission'
 import { resolveAppUser } from '~/server/utils/resolve-app-user'
@@ -6,6 +6,8 @@ import { resolveAppUser } from '~/server/utils/resolve-app-user'
 export default defineEventHandler(async (event) => {
   await requireAnyPermission(event, ['recipe.manage', 'recipe.read'])
   const { clientId } = await resolveAppUser(event)
+
+  const locale = (getQuery(event).locale as string | undefined)?.toLowerCase()
 
   const admin = supabaseAdmin()
 
@@ -46,15 +48,43 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Build i18n name maps when locale differs from source
+  const recipeNameMap  = new Map<string, string>()
+  const allergenNameMap = new Map<string, string>()
+  if (locale) {
+    const { data: clientRow } = await admin
+      .from('client').select('content_locale').eq('id', clientId).single()
+    const sourceLang = (clientRow as any)?.content_locale ?? 'de'
+    if (locale !== sourceLang) {
+      const allergenIds = (allergenData ?? []).map((a: any) => a.id)
+      const [recipeI18n, allergenI18n] = await Promise.all([
+        recipeIds.length > 0
+          ? admin.from('recipe_i18n').select('recipe_id, name').in('recipe_id', recipeIds).eq('locale', locale).not('name', 'is', null)
+          : { data: [] },
+        allergenIds.length > 0
+          ? admin.from('allergen_i18n').select('allergen_id, name').in('allergen_id', allergenIds).eq('locale', locale).not('name', 'is', null)
+          : { data: [] },
+      ])
+      for (const row of recipeI18n.data ?? [])  recipeNameMap.set((row as any).recipe_id,  (row as any).name)
+      for (const row of allergenI18n.data ?? []) allergenNameMap.set((row as any).allergen_id, (row as any).name)
+    }
+  }
+
   const recipes = (recipeData ?? []).map((r: any) => ({
     id:           r.id,
-    name:         r.name,
+    name:         recipeNameMap.get(r.id) ?? r.name,
     allergen_ids: Array.from(effectiveMap.get(r.id) ?? []),
   }))
 
+  const allergens = (allergenData ?? []).map((a: any) => ({
+    id:      a.id,
+    name:    allergenNameMap.get(a.id) ?? a.name,
+    code:    a.code ?? null,
+  }))
+
   return {
-    ok:       true,
-    allergens: allergenData ?? [],
+    ok: true,
+    allergens,
     recipes,
   }
 })

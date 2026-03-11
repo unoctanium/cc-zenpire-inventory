@@ -77,8 +77,9 @@
     "uploadImage":  "Bild hochladen",
     "replaceImage": "Bild ersetzen",
     "removeImage":  "Bild entfernen",
-    "back":   "Zurück",
-    "change": "Ändern"
+    "back":      "Zurück",
+    "change":    "Ändern",
+    "printedOn": "gedruckt"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -171,7 +172,9 @@
     "name": "Name",
     "description": "Beschreibung",
     "output": "Chargenmenge",
-    "active": "Aktiv",
+    "active":   "Aktiv",
+    "inactive": "Inaktiv",
+    "status":   "Status",
     "preProduct": "Vorprodukt",
     "components": "Komponenten",
     "sortByName": "Nach Name sortieren",

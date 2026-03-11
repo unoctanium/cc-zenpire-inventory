@@ -58,10 +58,12 @@ export default defineEventHandler(async (event) => {
     fetchTable('recipe'),
   ])
 
+  const allergenIds   = (allergen    as any[]).map((r: any) => r.id)
   const ingredientIds = (ingredient as any[]).map((r: any) => r.id)
   const recipeIds     = (recipe     as any[]).map((r: any) => r.id)
 
-  const [ingredient_i18n, recipe_i18n, recipe_component] = await Promise.all([
+  const [allergen_i18n, ingredient_i18n, recipe_i18n, recipe_component] = await Promise.all([
+    fetchByParent('allergen_i18n',   'allergen_id',   allergenIds),
     fetchByParent('ingredient_i18n', 'ingredient_id', ingredientIds),
     fetchByParent('recipe_i18n',     'recipe_id',     recipeIds),
     fetchByParent('recipe_component','recipe_id',     recipeIds),
@@ -82,7 +84,8 @@ export default defineEventHandler(async (event) => {
       recipe,
       // 4. join/child tables
       recipe_component,
-      // 5. translation rows (depend on ingredient/recipe)
+      // 5. translation rows (depend on allergen/ingredient/recipe)
+      allergen_i18n,
       ingredient_i18n,
       recipe_i18n,
     },

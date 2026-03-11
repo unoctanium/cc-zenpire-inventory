@@ -79,8 +79,9 @@
     "uploadImage":  "Upload image",
     "replaceImage": "Replace image",
     "removeImage":  "Remove image",
-    "back":   "Back",
-    "change": "Change"
+    "back":       "Back",
+    "change":     "Change",
+    "printedOn":  "printed"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -173,7 +174,9 @@
     "name": "Name",
     "description": "Description",
     "output": "Batch Amount",
-    "active": "Active",
+    "active":   "Active",
+    "inactive": "Inactive",
+    "status":   "Status",
     "preProduct": "Pre-product",
     "components": "Components",
     "sortByName": "Sort by name",

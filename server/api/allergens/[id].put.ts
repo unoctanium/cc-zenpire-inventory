@@ -27,5 +27,12 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (error) throw createError({ statusCode: 400, statusMessage: error.message })
+
+  // Mark existing translations as stale (name or comment may have changed)
+  await admin
+    .from('allergen_i18n')
+    .update({ is_stale: true, updated_at: new Date().toISOString() })
+    .eq('allergen_id', id)
+
   return { ok: true, allergen: data }
 })

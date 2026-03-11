@@ -630,14 +630,14 @@ function printRecipe() {
   const compRows = components.value.map(c =>
     `<tr>
       <td style="padding:5px 10px 5px 0;border-bottom:1px solid #f3f4f6">${esc(c.name)}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? 'Ingredient' : 'Sub-recipe'}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? t('recipes.typeIngredient') : t('recipes.typeSubRecipe')}</td>
       <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${c.quantity}</td>
       <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
       <td style="padding:5px 0 5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(componentCost(c))}</td>
     </tr>`
   ).join('')
 
-  printHtml(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(draft.name)} — Zenpire</title>
+  printHtml(`<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8"><title>${esc(draft.name)} — Zenpire</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
 h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
 .desc{color:#4b5563;margin-bottom:16px;line-height:1.6}
@@ -650,15 +650,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:lef
 ${imgTag}<h1>${esc(draft.name)}</h1>
 ${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
 <div class="meta">
-  <div><label>Batch Amount</label><span>${draft.output_quantity} ${esc(outputUnitCode.value)}</span></div>
+  <div><label>${t('recipes.output')}</label><span>${draft.output_quantity} ${esc(outputUnitCode.value)}</span></div>
   ${draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
-    ? `<div><label>Batch cost</label><span>€ ${Number(draft.standard_unit_cost).toFixed(2)}</span></div>` : ''}
-  <div><label>Status</label><span>${draft.is_active ? 'Active' : 'Inactive'}${draft.is_pre_product ? ' · Pre-product' : ''}</span></div>
-  ${totalCost.value != null ? `<div><label>Total comp. cost</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
+    ? `<div><label>${t('recipes.batchCostLabel')}</label><span>€ ${Number(draft.standard_unit_cost).toFixed(2)}</span></div>` : ''}
+  <div><label>${t('recipes.status')}</label><span>${draft.is_active ? t('recipes.active') : t('recipes.inactive')}${draft.is_pre_product ? ' · ' + t('recipes.preProduct') : ''}</span></div>
+  ${totalCost.value != null ? `<div><label>${t('recipes.totalCost')}</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
 </div>
-${components.value.length > 0 ? `<h2>Components</h2><table><thead><tr><th>Name</th><th>Type</th><th style="text-align:right">Qty</th><th>Unit</th><th style="text-align:right">Cost</th></tr></thead><tbody>${compRows}</tbody></table>` : ''}
-${draft.production_notes ? `<h2>Production Notes</h2><p style="white-space:pre-wrap;line-height:1.6;color:#374151">${esc(draft.production_notes)}</p>` : ''}
-<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+${components.value.length > 0 ? `<h2>${t('recipes.componentsSection')}</h2><table><thead><tr><th>${t('recipes.name')}</th><th>${t('recipes.type')}</th><th style="text-align:right">${t('recipes.qty')}</th><th>${t('recipes.unit')}</th><th style="text-align:right">${t('recipes.compCost')}</th></tr></thead><tbody>${compRows}</tbody></table>` : ''}
+${draft.production_notes ? `<h2>${t('recipes.productionNotes')}</h2><p style="white-space:pre-wrap;line-height:1.6;color:#374151">${esc(draft.production_notes)}</p>` : ''}
+<div class="footer">Zenpire Inventory — ${t('common.printedOn')} ${new Date().toLocaleString(locale.value)}</div>
 </body></html>`)
 }
 

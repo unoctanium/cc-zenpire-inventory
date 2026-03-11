@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
   const localeParam  = body?.locale ? String(body.locale).trim().toLowerCase() : null
 
   if (!kind || !id) throw createError({ statusCode: 400, statusMessage: 'Missing kind or id' })
-  if (kind !== 'ingredient' && kind !== 'recipe') {
-    throw createError({ statusCode: 400, statusMessage: 'kind must be ingredient or recipe' })
+  if (kind !== 'ingredient' && kind !== 'recipe' && kind !== 'allergen') {
+    throw createError({ statusCode: 400, statusMessage: 'kind must be ingredient, recipe or allergen' })
   }
 
   const admin = supabaseAdmin()
@@ -132,6 +132,51 @@ export default defineEventHandler(async (event) => {
         fields.forEach((f, i) => { row[f] = translated_texts[i] })
 
         await admin.from('recipe_i18n').upsert(row, { onConflict: 'recipe_id,locale' })
+        translated++
+      } catch {
+        errors++
+      }
+    }
+  }
+
+  if (kind === 'allergen') {
+    const { data: alg, error } = await admin
+      .from('allergen')
+      .select('id, name, comment')
+      .eq('id', id)
+      .eq('client_id', clientId)
+      .single()
+
+    if (error || !alg) throw createError({ statusCode: 404, statusMessage: 'Allergen not found' })
+
+    for (const locale of targetLocales) {
+      if (locale === sourceLang) continue
+      try {
+        const textsToTranslate: string[] = []
+        const fields: string[] = []
+
+        if (alg.name) {
+          textsToTranslate.push(alg.name)
+          fields.push('name')
+        }
+        if (alg.comment) {
+          textsToTranslate.push(alg.comment)
+          fields.push('comment')
+        }
+
+        if (!textsToTranslate.length) { skipped++; continue }
+
+        const translated_texts = await translateTexts(textsToTranslate, locale, sourceLang)
+        const row: Record<string, unknown> = {
+          allergen_id: alg.id,
+          locale,
+          is_machine: true,
+          is_stale: false,
+          updated_at: new Date().toISOString(),
+        }
+        fields.forEach((f, i) => { row[f] = translated_texts[i] })
+
+        await admin.from('allergen_i18n').upsert(row, { onConflict: 'allergen_id,locale' })
         translated++
       } catch {
         errors++

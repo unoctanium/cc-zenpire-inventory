@@ -35,6 +35,7 @@ type LocaleCoverage = {
   locale: string
   ingredients: { total: number; translated: number; stale: number }
   recipes:     { total: number; translated: number; stale: number }
+  allergens:   { total: number; translated: number; stale: number }
 }
 
 const sourceLang = ref<string>('de')
@@ -165,6 +166,17 @@ if (import.meta.client) {
                       </span>
                     </td>
                   </tr>
+                  <tr>
+                    <td class="w-32 py-1 text-gray-500 dark:text-gray-400">{{ $t('nav.allergens') }}</td>
+                    <td class="py-1">
+                      <span class="text-gray-800 dark:text-gray-200">
+                        {{ loc.allergens?.translated ?? 0 }} / {{ loc.allergens?.total ?? 0 }}
+                      </span>
+                      <span v-if="(loc.allergens?.stale ?? 0) > 0" class="ml-2 text-amber-600 dark:text-amber-400 text-xs">
+                        {{ loc.allergens.stale }} {{ $t('adminTranslations.stale') }}
+                      </span>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
 
@@ -178,7 +190,7 @@ if (import.meta.client) {
                   {{ $t('adminTranslations.translateMissing') }}
                 </UButton>
                 <UButton
-                  v-if="loc.ingredients.stale > 0 || loc.recipes.stale > 0"
+                  v-if="loc.ingredients.stale > 0 || loc.recipes.stale > 0 || (loc.allergens?.stale ?? 0) > 0"
                   color="warning" variant="soft" size="sm"
                   :loading="translating[loc.locale]"
                   @click="translateAll(loc.locale, true)"

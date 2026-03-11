@@ -3,7 +3,7 @@ import { useTableWidths }      from '~/composables/useTableWidths'
 import { useInlineTable }      from '~/composables/useInlineTable'
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { doPrint } = usePrint()
 
 type IngredientRow = {
@@ -20,7 +20,7 @@ const { canRead } = useTablePermissions('recipe')
 
 const { data: ingredientData, pending, refresh, error } = useFetch<{
   ok: boolean; ingredients: IngredientRow[]
-}>('/api/ingredients', { credentials: 'include' })
+}>(() => `/api/ingredients?locale=${locale.value}`, { credentials: 'include' })
 
 const rows = ref<IngredientRow[]>([])
 watchEffect(() => { rows.value = ingredientData.value?.ingredients ?? [] })

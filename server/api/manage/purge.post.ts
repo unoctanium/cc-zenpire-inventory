@@ -26,6 +26,15 @@ export default defineEventHandler(async (event) => {
     await admin.from('ingredient_allergen').delete().in('ingredient_id', ingredientIds)
   }
   // ingredient must be deleted before recipe: ingredient.produced_by_recipe_id → recipe
+  const allergenIds = await admin
+    .from('allergen')
+    .select('id')
+    .eq('client_id', clientId)
+    .then(r => (r.data ?? []).map((x: any) => x.id))
+
+  if (allergenIds.length > 0) {
+    await admin.from('allergen_i18n').delete().in('allergen_id', allergenIds)
+  }
   await admin.from('ingredient').delete().eq('client_id', clientId)
   await admin.from('recipe').delete().eq('client_id', clientId)
   await admin.from('allergen').delete().eq('client_id', clientId)

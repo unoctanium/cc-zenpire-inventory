@@ -55,7 +55,7 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const toast          = useToast()
 const { printHtml }  = usePrint()
 const auth           = useAuth()
@@ -201,7 +201,7 @@ watch(
       try {
         loadingDetail.value = true
         const detail = await $fetch<{ ok: boolean; ingredient: any }>(
-          `/api/ingredients/${ing.id}`, { credentials: 'include' }
+          `/api/ingredients/${ing.id}?locale=${locale.value}`, { credentials: 'include' }
         )
         draft.article_id          = detail.ingredient.article_id ?? ''
         draft.comment             = detail.ingredient.comment ?? ''
@@ -441,14 +441,14 @@ function printIngredient() {
     .map(a => a.name)
 
   const allergenSection = selectedAllergenNames.length
-    ? `<h2>Allergens</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${
+    ? `<h2>${t('ingredients.allergens')}</h2><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${
         selectedAllergenNames.map(n =>
           `<span style="padding:2px 10px;background:#fee2e2;color:#991b1b;border-radius:999px;font-size:12px">${esc(n)}</span>`
         ).join('')
       }</div>`
     : ''
 
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(ing.name)} — Zenpire</title>
+  const html = `<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8"><title>${esc(ing.name)} — Zenpire</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
 h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
@@ -459,13 +459,13 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weigh
 <body>
 ${imgTag}<h1>${esc(ing.name)}</h1>
 <div class="meta">
-  <div><label>Kind</label><span>${esc(ing.kind)}</span></div>
-  <div><label>Unit</label><span>${esc(ing.default_unit_code)}</span></div>
-  ${ing.standard_unit_cost != null ? `<div><label>Unit Cost</label><span>€ ${ing.standard_unit_cost.toFixed(6)}</span></div>` : ''}
+  <div><label>${t('ingredients.kind')}</label><span>${esc(ing.kind)}</span></div>
+  <div><label>${t('ingredients.unit')}</label><span>${esc(ing.default_unit_code)}</span></div>
+  ${ing.standard_unit_cost != null ? `<div><label>${t('ingredients.unitCost')}</label><span>€ ${ing.standard_unit_cost.toFixed(6)}</span></div>` : ''}
 </div>
-${draft.comment ? `<h2>Comment</h2><p class="comment">${esc(draft.comment)}</p>` : ''}
+${draft.comment ? `<h2>${t('ingredients.comment')}</h2><p class="comment">${esc(draft.comment)}</p>` : ''}
 ${allergenSection}
-<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+<div class="footer">Zenpire Inventory — ${t('common.printedOn')} ${new Date().toLocaleString(locale.value)}</div>
 </body></html>`
 
   printHtml(html)

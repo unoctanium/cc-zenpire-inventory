@@ -12,19 +12,63 @@ const emit = defineEmits<{
   (e: 'cancelled'): void
 }>()
 
-const { t }         = useI18n()
+const { t, locale } = useI18n()
 const toast         = useToast()
 const { printHtml } = usePrint()
+const auth          = useAuth()
+const { sourceLang, reload: reloadSourceLang } = useClientSettings()
 
-function esc(s: string | null | undefined): string {
-  if (!s) return ''
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+// ─── editing locale ────────────────────────────────────────────────────────────
+const SUPPORTED_LOCALES = ['de', 'en', 'ja']
+const LOCALE_LABELS: Record<string, string> = { de: 'DE', en: 'EN', ja: 'JA' }
+const editingLocale = ref('')
+const isSourceEdit  = computed(() => !editingLocale.value || editingLocale.value === sourceLang.value)
+
+// Draft for i18n (non-source) edits only
+const i18nDraft   = reactive({ name: '', comment: '' })
+const loadingI18n = ref(false)
+
+async function switchEditingLocale(loc: string) {
+  editingLocale.value = loc
+  if (loc === sourceLang.value || !props.allergen?.id) return
+  loadingI18n.value = true
+  try {
+    const res = await $fetch<any>(
+      `/api/allergens/${props.allergen.id}/i18n/${loc}`,
+      { credentials: 'include' }
+    )
+    i18nDraft.name    = res.name    ?? ''
+    i18nDraft.comment = res.comment ?? ''
+  } catch {
+    i18nDraft.name    = ''
+    i18nDraft.comment = ''
+  } finally {
+    loadingI18n.value = false
+  }
+}
+
+// ─── translate ────────────────────────────────────────────────────────────────
+const translating = ref(false)
+async function translateItem() {
+  if (!props.allergen?.id) return
+  translating.value = true
+  try {
+    await $fetch('/api/admin/translations/item', {
+      method: 'POST', credentials: 'include',
+      body: { kind: 'allergen', id: props.allergen.id },
+    })
+    toast.add({ title: t('adminTranslations.translationDone') })
+  } catch (e: any) {
+    toast.add({ title: t('adminTranslations.translationFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'error' })
+  } finally {
+    translating.value = false
+  }
 }
 
 function printAllergen() {
   if (!props.allergen) return
   const a = props.allergen
-  printHtml(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${esc(a.name)} — Zenpire</title>
+  printHtml(`<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8"><title>${esc(a.name)} — Zenpire</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
 h1{font-size:24px;font-weight:700;margin-bottom:20px}
 h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
@@ -33,9 +77,14 @@ h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom
 @media print{@page{margin:1.5cm}}</style></head>
 <body>
 <h1>${esc(a.name)}</h1>
-${a.comment ? `<h2>Comment</h2><p class="comment">${esc(a.comment)}</p>` : ''}
-<div class="footer">Zenpire Inventory — printed ${new Date().toLocaleString()}</div>
+${a.comment ? `<h2>${t('allergens.comment')}</h2><p class="comment">${esc(a.comment)}</p>` : ''}
+<div class="footer">Zenpire Inventory — ${t('common.printedOn')} ${new Date().toLocaleString(locale.value)}</div>
 </body></html>`)
+}
+
+function esc(s: string | null | undefined): string {
+  if (!s) return ''
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 const isNew            = computed(() => !props.allergen)
@@ -61,7 +110,22 @@ watch(() => props.allergen, (a) => {
   }
 }, { immediate: true })
 
-function startEdit() {
+async function startEdit() {
+  await reloadSourceLang()
+  editingLocale.value = sourceLang.value || 'de'
+
+  // Re-fetch source data so draft always holds source values
+  if (props.allergen?.id) {
+    try {
+      const detail = await $fetch<{ ok: boolean; allergen: any }>(
+        `/api/allergens/${props.allergen.id}`, { credentials: 'include' }
+      )
+      draft.name    = detail.allergen.name
+      draft.code    = detail.allergen.code ?? ''
+      draft.comment = detail.allergen.comment ?? ''
+    } catch { /* non-fatal */ }
+  }
+
   editMode.value      = true
   showEditSheet.value = true
 }
@@ -75,15 +139,33 @@ function cancelEdit() {
   editMode.value         = false
   showEditSheet.value    = false
   confirmingDelete.value = false
+  editingLocale.value    = ''
 }
 
 async function save() {
-  if (!draft.name.trim()) {
-    toast.add({ title: t('common.missingFields'), description: t('allergens.nameRequired'), color: 'red' })
-    return
-  }
   saving.value = true
   try {
+    // ── Non-source locale: save to i18n table ──
+    if (!isSourceEdit.value && props.allergen?.id) {
+      await $fetch(`/api/allergens/${props.allergen.id}/i18n/${editingLocale.value}`, {
+        method: 'PUT', credentials: 'include',
+        body: {
+          name:    i18nDraft.name.trim()    || null,
+          comment: i18nDraft.comment.trim() || null,
+        },
+      })
+      toast.add({ title: t('allergens.updated') })
+      editMode.value      = false
+      showEditSheet.value = false
+      emit('saved', props.allergen.id)
+      return
+    }
+
+    // ── Source locale: save main record ──
+    if (!draft.name.trim()) {
+      toast.add({ title: t('common.missingFields'), description: t('allergens.nameRequired'), color: 'red' })
+      return
+    }
     const body = { name: draft.name.trim(), code: draft.code.trim().toUpperCase() || null, comment: draft.comment.trim() || null }
     if (isNew.value) {
       const res = await $fetch<{ ok: boolean; allergen: { id: string } }>('/api/allergens', { method: 'POST', credentials: 'include', body })
@@ -91,7 +173,10 @@ async function save() {
       emit('saved', res.allergen.id)
     } else {
       await $fetch(`/api/allergens/${props.allergen!.id}`, { method: 'PUT', credentials: 'include', body })
-      toast.add({ title: t('allergens.updated') })
+      toast.add({
+        title: t('allergens.updated'),
+        actions: auth.is_admin ? [{ label: t('adminTranslations.translateNow'), onClick: translateItem }] : undefined,
+      })
       editMode.value      = false
       showEditSheet.value = false
       emit('saved', props.allergen!.id)
@@ -126,6 +211,10 @@ async function doDelete() {
     <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-2 min-h-[44px]">
       <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ allergen?.name }}</h2>
       <div class="relative z-10 flex items-center">
+        <button v-if="auth.is_admin" class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" :class="{ 'opacity-50': translating }" @click="translateItem">
+          <UIcon v-if="translating" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
+          <UIcon v-else name="i-heroicons-language" class="w-5 h-5" />
+        </button>
         <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printAllergen">
           <UIcon name="i-heroicons-printer" class="w-5 h-5" />
         </button>
@@ -188,30 +277,79 @@ async function doDelete() {
     <!-- Sticky iOS nav bar -->
     <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 min-h-[44px]">
       <button class="flex-none text-[15px] text-[#007AFF] dark:text-blue-400 py-2 pr-4 active:opacity-50" @click="cancelEdit">{{ $t('common.cancel') }}</button>
-      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">{{ $t('common.edit') }} — {{ allergen?.name }}</span>
+      <span class="flex-1 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate px-2">
+        {{ isSourceEdit
+          ? `${$t('common.edit')} — ${allergen?.name}`
+          : $t('adminTranslations.translatingLocale', { locale: LOCALE_LABELS[editingLocale] ?? editingLocale }) }}
+      </span>
       <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="save">{{ $t('common.save') }}</button>
     </div>
+
+    <!-- Locale pill selector (edit existing only) -->
+    <div v-if="!isNew && sourceLang" class="flex gap-1.5 px-4 pt-3 pb-1">
+      <button
+        v-for="loc in SUPPORTED_LOCALES" :key="loc"
+        class="px-2.5 py-0.5 rounded-full text-[12px] font-semibold border transition-colors"
+        :class="editingLocale === loc
+          ? 'bg-[#007AFF] border-[#007AFF] text-white'
+          : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400'"
+        @click="switchEditingLocale(loc)"
+      >
+        {{ LOCALE_LABELS[loc] }}{{ loc === sourceLang ? ' ↑' : '' }}
+      </button>
+    </div>
+
     <div class="p-4 space-y-4">
-      <div class="flex gap-3">
-        <div class="flex-1">
-          <label class="ios-label">{{ $t('allergens.name') }} *</label>
-          <input v-model="draft.name"
+      <!-- Loading i18n data -->
+      <div v-if="loadingI18n" class="text-sm text-gray-400 py-2">{{ $t('common.loading') }}</div>
+
+      <!-- Source locale edit -->
+      <template v-else-if="isSourceEdit">
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label class="ios-label">{{ $t('allergens.name') }} *</label>
+            <input v-model="draft.name"
+              class="ios-input"
+              :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
+          </div>
+          <div class="w-20">
+            <label class="ios-label">GS1</label>
+            <input v-model="draft.code" maxlength="2"
+              class="ios-input uppercase"
+              placeholder="AW" autocomplete="off" />
+          </div>
+        </div>
+        <div>
+          <label class="ios-label">{{ $t('allergens.comment') }}</label>
+          <textarea v-model="draft.comment" rows="2"
+            class="ios-input resize-none"
+            :placeholder="$t('allergens.commentPlaceholder')" />
+        </div>
+      </template>
+
+      <!-- Non-source locale edit -->
+      <template v-else>
+        <div>
+          <label class="ios-label">{{ $t('allergens.name') }}</label>
+          <!-- Source reference -->
+          <div class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic">
+            {{ draft.name || '—' }}
+          </div>
+          <input v-model="i18nDraft.name"
             class="ios-input"
             :placeholder="$t('allergens.namePlaceholder')" autocomplete="off" />
         </div>
-        <div class="w-20">
-          <label class="ios-label">GS1</label>
-          <input v-model="draft.code" maxlength="2"
-            class="ios-input uppercase"
-            placeholder="AW" autocomplete="off" />
+        <div>
+          <label class="ios-label">{{ $t('allergens.comment') }}</label>
+          <!-- Source reference -->
+          <div v-if="draft.comment" class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic whitespace-pre-wrap">
+            {{ draft.comment }}
+          </div>
+          <textarea v-model="i18nDraft.comment" rows="2"
+            class="ios-input resize-none"
+            :placeholder="$t('allergens.commentPlaceholder')" />
         </div>
-      </div>
-      <div>
-        <label class="ios-label">{{ $t('allergens.comment') }}</label>
-        <textarea v-model="draft.comment" rows="2"
-          class="ios-input resize-none"
-          :placeholder="$t('allergens.commentPlaceholder')" />
-      </div>
+      </template>
     </div>
   </AppBottomSheet>
 

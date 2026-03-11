@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { doPrint } = usePrint()
 
 type AllergenRow = { id: string; name: string; code: string | null }
@@ -13,7 +13,7 @@ const { data, pending, refresh, error } = useFetch<{
   ok: boolean
   allergens: AllergenRow[]
   recipes: RecipeRow[]
-}>('/api/allergen-card', { credentials: 'include' })
+}>(() => `/api/allergen-card?locale=${locale.value}`, { credentials: 'include' })
 
 const allergens = computed<AllergenRow[]>(() => data.value?.allergens ?? [])
 const allRows   = computed<RecipeRow[]>(() => data.value?.recipes ?? [])

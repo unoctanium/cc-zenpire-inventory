@@ -3,7 +3,7 @@ import { useTableWidths }      from '~/composables/useTableWidths'
 import { useInlineTable }      from '~/composables/useInlineTable'
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { doPrint } = usePrint()
 
 type AllergenRow = { id: string; name: string; code: string | null; comment: string | null; created_at: string; updated_at: string }
@@ -11,7 +11,7 @@ type AllergenRow = { id: string; name: string; code: string | null; comment: str
 const { canRead } = useTablePermissions('recipe')
 
 const { data, pending, refresh, error } = useFetch<{ ok: boolean; allergens: AllergenRow[] }>(
-  '/api/allergens', { credentials: 'include' }
+  () => `/api/allergens?locale=${locale.value}`, { credentials: 'include' }
 )
 
 const rows = ref<AllergenRow[]>([])
