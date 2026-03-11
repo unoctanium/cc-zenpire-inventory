@@ -471,7 +471,10 @@ async function saveBasic() {
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
       await saveComponents(savedId.value)
-      toast.add({ title: t('recipes.updated') })
+      toast.add({
+        title:   t('recipes.updated'),
+        actions: auth.is_admin ? [{ label: t('adminTranslations.translateNow'), onClick: translateItem }] : undefined,
+      })
       editMode.value      = false
       showEditSheet.value = false
       await loadDetail(savedId.value)

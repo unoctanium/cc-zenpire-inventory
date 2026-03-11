@@ -372,6 +372,7 @@
     "errors": "Errors",
     "noTargetLocales": "No target locales available.",
     "translateItem": "Translate",
+    "translateNow": "Translate now",
     "translating": "Translating…",
     "translationDone": "Translation done",
     "translationFailed": "Translation failed",

@@ -397,6 +397,7 @@
     "errors": "エラー",
     "noTargetLocales": "対象言語がありません。",
     "translateItem": "翻訳",
+    "translateNow": "今すぐ翻訳",
     "translating": "翻訳中…",
     "translationDone": "翻訳完了",
     "translationFailed": "翻訳失敗",

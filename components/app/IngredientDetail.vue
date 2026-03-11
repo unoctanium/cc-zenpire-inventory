@@ -344,7 +344,10 @@ async function save() {
     }
     if (props.ingredient) {
       await $fetch(`/api/ingredients/${props.ingredient.id}`, { method: 'PUT', credentials: 'include', body })
-      toast.add({ title: t('ingredients.updated') })
+      toast.add({
+        title:   t('ingredients.updated'),
+        actions: auth.is_admin ? [{ label: t('adminTranslations.translateNow'), onClick: translateItem }] : undefined,
+      })
       editMode.value      = false
       showEditSheet.value = false
       emit('saved', props.ingredient.id)

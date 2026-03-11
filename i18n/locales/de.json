@@ -397,6 +397,7 @@
     "errors": "Fehler",
     "noTargetLocales": "Keine Zielsprachen verfügbar.",
     "translateItem": "Übersetzen",
+    "translateNow": "Jetzt übersetzen",
     "translating": "Wird übersetzt…",
     "translationDone": "Übersetzung fertig",
     "translationFailed": "Übersetzung fehlgeschlagen",
