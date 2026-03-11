@@ -14,7 +14,8 @@ import { resolveAppUser }     from '~/server/utils/resolve-app-user'
  *   app:         'zenpire-inventory',
  *   exported_at: <ISO string>,
  *   tables: {
- *     unit, allergen, ingredient, recipe, recipe_component
+ *     unit, allergen, ingredient, recipe, recipe_component,
+ *     ingredient_i18n, recipe_i18n
  *   }
  * }
  *
@@ -39,46 +40,51 @@ export default defineEventHandler(async (event) => {
     return data ?? []
   }
 
-  // recipe_component has no client_id — fetch via recipe IDs
-  async function fetchComponents(recipeIds: string[]) {
-    if (recipeIds.length === 0) return []
-    const { data, error } = await admin.from('recipe_component').select('*').in('recipe_id', recipeIds)
+  // i18n and join tables have no client_id — fetch via parent IDs
+  async function fetchByParent(table: string, parentCol: string, parentIds: string[]) {
+    if (parentIds.length === 0) return []
+    const { data, error } = await admin.from(table).select('*').in(parentCol, parentIds)
     if (error) {
-      throw createError({ statusCode: 500, statusMessage: `Export failed on table recipe_component: ${error.message}` })
+      throw createError({ statusCode: 500, statusMessage: `Export failed on table ${table}: ${error.message}` })
     }
     return data ?? []
   }
 
-  // Fetch all tables in parallel — dependency order matters for import, not for export
-  const [
-    unit,
-    allergen,
-    ingredient,
-    recipe,
-  ] = await Promise.all([
+  // Fetch all client-scoped tables in parallel
+  const [unit, allergen, ingredient, recipe] = await Promise.all([
     fetchTable('unit'),
     fetchTable('allergen'),
     fetchTable('ingredient'),
     fetchTable('recipe'),
   ])
 
-  const recipe_component = await fetchComponents((recipe as any[]).map((r: any) => r.id))
+  const ingredientIds = (ingredient as any[]).map((r: any) => r.id)
+  const recipeIds     = (recipe     as any[]).map((r: any) => r.id)
+
+  const [ingredient_i18n, recipe_i18n, recipe_component] = await Promise.all([
+    fetchByParent('ingredient_i18n', 'ingredient_id', ingredientIds),
+    fetchByParent('recipe_i18n',     'recipe_id',     recipeIds),
+    fetchByParent('recipe_component','recipe_id',     recipeIds),
+  ])
 
   return {
     version:     1,
     app:         'zenpire-inventory',
     exported_at: new Date().toISOString(),
     tables: {
-      // Dependency order (safe insert sequence for a future import):
+      // Dependency order (safe insert sequence for import):
       // 1. No-dependency reference tables
       unit,
       allergen,
-      // 2. ingredient depends on unit; produced_by_recipe_id is nullable → insert with NULL, patch after recipes
+      // 2. ingredient depends on unit; produced_by_recipe_id nulled → patched after recipes
       ingredient,
       // 3. recipe depends on unit (output_unit_id)
       recipe,
       // 4. join/child tables
       recipe_component,
+      // 5. translation rows (depend on ingredient/recipe)
+      ingredient_i18n,
+      recipe_i18n,
     },
   }
 })

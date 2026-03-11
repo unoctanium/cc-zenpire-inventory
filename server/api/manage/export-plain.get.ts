@@ -25,28 +25,30 @@ export default defineEventHandler(async (event) => {
     return data ?? []
   }
 
-  async function fetchComponents(recipeIds: string[]) {
-    if (recipeIds.length === 0) return []
-    const { data, error } = await admin.from('recipe_component').select('*').in('recipe_id', recipeIds)
+  async function fetchByParent(table: string, parentCol: string, parentIds: string[]) {
+    if (parentIds.length === 0) return []
+    const { data, error } = await admin.from(table).select('*').in(parentCol, parentIds)
     if (error) {
-      throw createError({ statusCode: 500, statusMessage: `Export failed on table recipe_component: ${error.message}` })
+      throw createError({ statusCode: 500, statusMessage: `Export failed on table ${table}: ${error.message}` })
     }
     return data ?? []
   }
 
-  const [
-    unit,
-    allergen,
-    ingredientRaw,
-    recipeRaw,
-  ] = await Promise.all([
+  const [unit, allergen, ingredientRaw, recipeRaw] = await Promise.all([
     fetchTable('unit'),
     fetchTable('allergen'),
     fetchTable('ingredient'),
     fetchTable('recipe'),
   ])
 
-  const recipe_component = await fetchComponents((recipeRaw as any[]).map((r: any) => r.id))
+  const ingredientIds = (ingredientRaw as any[]).map((r: any) => r.id)
+  const recipeIds     = (recipeRaw     as any[]).map((r: any) => r.id)
+
+  const [ingredient_i18n, recipe_i18n, recipe_component] = await Promise.all([
+    fetchByParent('ingredient_i18n', 'ingredient_id', ingredientIds),
+    fetchByParent('recipe_i18n',     'recipe_id',     recipeIds),
+    fetchByParent('recipe_component','recipe_id',     recipeIds),
+  ])
 
   const ingredient = (ingredientRaw as any[]).map(r => ({ ...r, image_data: null, image_mime: null }))
   const recipe     = (recipeRaw     as any[]).map(r => ({ ...r, image_data: null, image_mime: null }))
@@ -62,6 +64,8 @@ export default defineEventHandler(async (event) => {
       ingredient,
       recipe,
       recipe_component,
+      ingredient_i18n,
+      recipe_i18n,
     },
   }
 })

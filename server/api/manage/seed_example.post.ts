@@ -209,5 +209,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Set source language to English — example content is authored in English
+  await admin.from('client').update({ content_locale: 'en' }).eq('id', clientId)
+
   return { ok: true }
 })

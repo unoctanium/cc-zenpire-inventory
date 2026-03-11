@@ -18,9 +18,11 @@ export default defineEventHandler(async (event) => {
     .then(r => (r.data ?? []).map((x: any) => x.id))
 
   if (recipeIds.length > 0) {
+    await admin.from('recipe_i18n').delete().in('recipe_id', recipeIds)
     await admin.from('recipe_component').delete().in('recipe_id', recipeIds)
   }
   if (ingredientIds.length > 0) {
+    await admin.from('ingredient_i18n').delete().in('ingredient_id', ingredientIds)
     await admin.from('ingredient_allergen').delete().in('ingredient_id', ingredientIds)
   }
   await admin.from('recipe').delete().eq('client_id', clientId)

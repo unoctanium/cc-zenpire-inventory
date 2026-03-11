@@ -2,12 +2,18 @@ import { requirePermission } from '~/server/utils/require-permission'
 import { supabaseAdmin }      from '~/server/utils/supabase'
 import { resolveAppUser }     from '~/server/utils/resolve-app-user'
 
-const EXPECTED_TABLES = [
+// Required tables — must be present in every export file
+const REQUIRED_TABLES = [
   'unit', 'allergen', 'ingredient', 'recipe',
   'recipe_component',
 ] as const
 
-type TableName = typeof EXPECTED_TABLES[number]
+type RequiredTable = typeof REQUIRED_TABLES[number]
+
+// Optional tables — present in exports since the translation feature was added;
+// treated as empty arrays when missing (allows importing older export files)
+const OPTIONAL_TABLES = ['ingredient_i18n', 'recipe_i18n'] as const
+type OptionalTable = typeof OPTIONAL_TABLES[number]
 
 /**
  * POST /api/manage/import
@@ -22,6 +28,7 @@ type TableName = typeof EXPECTED_TABLES[number]
  *   Pass 3: recipe
  *   Pass 4: join/child tables (recipe_component)
  *   Pass 5: patch ingredient.produced_by_recipe_id for rows that had a non-null value
+ *   Pass 6: i18n translation rows (ingredient_i18n, recipe_i18n)
  *
  * NOTE: Keep this file in sync with export.get.ts and export-plain.get.ts whenever
  * the data model changes (columns added/removed, new tables).
@@ -45,21 +52,20 @@ export default defineEventHandler(async (event) => {
   if (!body.tables || typeof body.tables !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'Missing tables object in body' })
   }
-  for (const t of EXPECTED_TABLES) {
+  for (const t of REQUIRED_TABLES) {
     if (!Array.isArray(body.tables[t])) {
       throw createError({ statusCode: 400, statusMessage: `Missing or invalid table: ${t}` })
     }
   }
 
-  const tables = body.tables as Record<TableName, any[]>
+  const tables = body.tables as Record<RequiredTable, any[]> & Partial<Record<OptionalTable, any[]>>
   const admin  = supabaseAdmin()
 
-  // Override client_id on all rows to ensure they belong to this client
   function withClient(rows: any[]) {
     return rows.map(r => ({ ...r, client_id: clientId }))
   }
 
-  async function insert(table: TableName, rows: any[]) {
+  async function insertRows(table: string, rows: any[]) {
     if (rows.length === 0) return
     const { error } = await admin.from(table).insert(rows)
     if (error) {
@@ -68,18 +74,20 @@ export default defineEventHandler(async (event) => {
   }
 
   // --- Step 1: Purge current client's data in reverse dependency order ---
-  const recipeIds = await admin
+  const existingRecipeIds = await admin
     .from('recipe').select('id').eq('client_id', clientId)
     .then(r => (r.data ?? []).map((x: any) => x.id))
-  const ingredientIds = await admin
+  const existingIngredientIds = await admin
     .from('ingredient').select('id').eq('client_id', clientId)
     .then(r => (r.data ?? []).map((x: any) => x.id))
 
-  if (recipeIds.length > 0) {
-    await admin.from('recipe_component').delete().in('recipe_id', recipeIds)
+  if (existingRecipeIds.length > 0) {
+    await admin.from('recipe_i18n').delete().in('recipe_id', existingRecipeIds)
+    await admin.from('recipe_component').delete().in('recipe_id', existingRecipeIds)
   }
-  if (ingredientIds.length > 0) {
-    await admin.from('ingredient_allergen').delete().in('ingredient_id', ingredientIds)
+  if (existingIngredientIds.length > 0) {
+    await admin.from('ingredient_i18n').delete().in('ingredient_id', existingIngredientIds)
+    await admin.from('ingredient_allergen').delete().in('ingredient_id', existingIngredientIds)
   }
   await admin.from('recipe').delete().eq('client_id', clientId)
   await admin.from('ingredient').delete().eq('client_id', clientId)
@@ -87,19 +95,18 @@ export default defineEventHandler(async (event) => {
   await admin.from('unit').delete().eq('client_id', clientId)
 
   // --- Step 2: Pass 1 — no-dep tables ---
-  await insert('unit',     withClient(tables.unit))
-  await insert('allergen', withClient(tables.allergen))
+  await insertRows('unit',     withClient(tables.unit))
+  await insertRows('allergen', withClient(tables.allergen))
 
   // --- Step 3: Pass 2 — ingredient with produced_by_recipe_id nulled out ---
   const ingredientsWithRecipeLink = tables.ingredient.filter(r => r.produced_by_recipe_id != null)
-  const ingredientsNulled = withClient(tables.ingredient.map(r => ({ ...r, produced_by_recipe_id: null })))
-  await insert('ingredient', ingredientsNulled)
+  await insertRows('ingredient', withClient(tables.ingredient.map(r => ({ ...r, produced_by_recipe_id: null }))))
 
   // --- Step 4: Pass 3 — recipe ---
-  await insert('recipe', withClient(tables.recipe))
+  await insertRows('recipe', withClient(tables.recipe))
 
   // --- Step 5: Pass 4 — join/child tables (no client_id column) ---
-  await insert('recipe_component', tables.recipe_component)
+  await insertRows('recipe_component', tables.recipe_component)
 
   // --- Step 6: Pass 5 — patch produced_by_recipe_id ---
   for (const row of ingredientsWithRecipeLink) {
@@ -112,7 +119,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return {
-    imported: Object.fromEntries(EXPECTED_TABLES.map(t => [t, tables[t].length])),
-  }
+  // --- Step 7: Pass 6 — i18n translation rows (optional, absent in older exports) ---
+  await insertRows('ingredient_i18n', tables.ingredient_i18n ?? [])
+  await insertRows('recipe_i18n',     tables.recipe_i18n     ?? [])
+
+  const counts: Record<string, number> = {}
+  for (const t of REQUIRED_TABLES) counts[t] = tables[t].length
+  for (const t of OPTIONAL_TABLES)  counts[t] = (tables[t] ?? []).length
+
+  return { imported: counts }
 })
