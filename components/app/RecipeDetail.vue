@@ -59,7 +59,7 @@ const emit = defineEmits<{
 const { t, locale }  = useI18n()
 const toast          = useToast()
 const auth           = useAuth()
-const { sourceLang, loadIfNeeded: loadSourceLang } = useClientSettings()
+const { sourceLang, reload: reloadSourceLang } = useClientSettings()
 
 // ─── editing locale ────────────────────────────────────────────────────────────
 const SUPPORTED_LOCALES = ['de', 'en', 'ja']
@@ -494,7 +494,7 @@ async function saveBasic() {
 }
 
 async function startEdit() {
-  await loadSourceLang()
+  await reloadSourceLang()
   editingLocale.value = sourceLang.value || 'de'
 
   // Re-fetch source data (no locale param) so draft always holds source values
