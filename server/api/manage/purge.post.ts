@@ -25,8 +25,9 @@ export default defineEventHandler(async (event) => {
     await admin.from('ingredient_i18n').delete().in('ingredient_id', ingredientIds)
     await admin.from('ingredient_allergen').delete().in('ingredient_id', ingredientIds)
   }
-  await admin.from('recipe').delete().eq('client_id', clientId)
+  // ingredient must be deleted before recipe: ingredient.produced_by_recipe_id → recipe
   await admin.from('ingredient').delete().eq('client_id', clientId)
+  await admin.from('recipe').delete().eq('client_id', clientId)
   await admin.from('allergen').delete().eq('client_id', clientId)
   await admin.from('unit').delete().eq('client_id', clientId)
 
