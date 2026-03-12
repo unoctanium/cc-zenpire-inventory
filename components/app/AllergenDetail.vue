@@ -57,11 +57,15 @@ async function translateItem() {
   if (!id) return
   translating.value = true
   try {
+    const body: Record<string, string> = { kind: 'allergen', id }
+    if (!isSourceEdit.value) body.fromLocale = editingLocale.value
     await $fetch('/api/admin/translations/item', {
       method: 'POST', credentials: 'include',
-      body: { kind: 'allergen', id },
+      body,
     })
     toast.add({ title: t('adminTranslations.translationDone') })
+    const store = useAllergensStore()
+    await Promise.all(Object.keys(store.byLocale).map(loc => store.load(loc)))
   } catch (e: any) {
     toast.add({ title: t('adminTranslations.translationFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'error' })
   } finally {

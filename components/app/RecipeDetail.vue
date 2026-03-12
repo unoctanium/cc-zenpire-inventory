@@ -72,16 +72,34 @@ const loadingI18n = ref(false)
 
 async function switchEditingLocale(loc: string) {
   editingLocale.value = loc
-  if (loc === sourceLang.value || !savedId.value) return
+  if (!savedId.value) return
+  if (loc === sourceLang.value) {
+    // Restore source-language component names
+    loadingI18n.value = true
+    try {
+      const res = await $fetch<any>(`/api/recipes/${savedId.value}`, { credentials: 'include' })
+      draftComps.value = (res.components ?? []).map((c: any) => ({ ...c, _localId: c.id }))
+    } catch { /* non-fatal */ } finally {
+      loadingI18n.value = false
+    }
+    return
+  }
   loadingI18n.value = true
   try {
-    const res = await $fetch<any>(
-      `/api/recipes/${savedId.value}/i18n/${loc}`,
-      { credentials: 'include' }
-    )
-    i18nDraft.name             = res.name             ?? ''
-    i18nDraft.description      = res.description      ?? ''
-    i18nDraft.production_notes = res.production_notes ?? ''
+    const [i18nRes, detailRes] = await Promise.all([
+      $fetch<any>(`/api/recipes/${savedId.value}/i18n/${loc}`, { credentials: 'include' }),
+      $fetch<any>(`/api/recipes/${savedId.value}?locale=${loc}`, { credentials: 'include' }),
+    ])
+    i18nDraft.name             = i18nRes.name             ?? ''
+    i18nDraft.description      = i18nRes.description      ?? ''
+    i18nDraft.production_notes = i18nRes.production_notes ?? ''
+    // Update draftComps with translated ingredient names
+    const translatedNames = new Map<string, string>()
+    for (const c of detailRes.components ?? []) translatedNames.set(c.id, c.name)
+    draftComps.value = draftComps.value.map(c => ({
+      ...c,
+      name: translatedNames.get(c._localId) ?? c.name,
+    }))
   } catch {
     i18nDraft.name             = ''
     i18nDraft.description      = ''
@@ -100,11 +118,22 @@ async function translateItem() {
   if (!id) return
   translating.value = true
   try {
+    const body: Record<string, string> = { kind: 'recipe', id }
+    if (!isSourceEdit.value) body.fromLocale = editingLocale.value
     await $fetch('/api/admin/translations/item', {
       method: 'POST', credentials: 'include',
-      body: { kind: 'recipe', id },
+      body,
     })
     toast.add({ title: t('adminTranslations.translationDone') })
+    await Promise.all(Object.keys(recipesStore.byLocale).map(loc => recipesStore.load(loc)))
+    if (savedId.value) {
+      await loadDetail(savedId.value)
+      const detail = recipesStore.detailByLocale[`${savedId.value}_${locale.value}`]
+      if (detail?.recipe) {
+        draft.name        = detail.recipe.name        ?? draft.name
+        draft.description = detail.recipe.description ?? ''
+      }
+    }
   } catch (e: any) {
     toast.add({ title: t('adminTranslations.translationFailed'), description: e?.data?.statusMessage ?? e?.message, color: 'error' })
   } finally {
@@ -362,6 +391,17 @@ function syncDraftCompsFromDb() {
   removedCompIds.value = []
 }
 
+// Reload localized content when UI language changes (view mode only)
+watch(locale, async () => {
+  if (editMode.value || !savedId.value) return
+  await loadDetail(savedId.value)
+  const detail = recipesStore.detailByLocale[`${savedId.value}_${locale.value}`]
+  if (detail?.recipe) {
+    draft.name        = detail.recipe.name        ?? draft.name
+    draft.description = detail.recipe.description ?? ''
+  }
+})
+
 // ─── image ────────────────────────────────────────────────────────────────────
 
 const imageUrl = computed(() =>
@@ -447,6 +487,12 @@ async function saveBasic() {
       toast.add({ title: t('recipes.updated') })
       editMode.value      = false
       showEditSheet.value = false
+      await loadDetail(savedId.value)
+      const detail = recipesStore.detailByLocale[`${savedId.value}_${locale.value}`]
+      if (detail?.recipe) {
+        draft.name        = detail.recipe.name        ?? draft.name
+        draft.description = detail.recipe.description ?? ''
+      }
       emit('saved', savedId.value)
       if (auth.value?.is_admin) showTranslatePrompt.value = true
     } catch (e: any) {
@@ -520,11 +566,16 @@ async function startEdit() {
       draft.production_notes   = res.recipe?.production_notes   ?? ''
       draft.name_translation_locked = res.recipe?.name_translation_locked ?? false
       loadedProductionNotes.value   = draft.production_notes
-    } catch { /* non-fatal */ }
+      // Populate draftComps from source-language data (not UI locale)
+      draftComps.value     = (res.components ?? []).map(c => ({ ...c, _localId: c.id }))
+      removedCompIds.value = []
+    } catch {
+      // non-fatal — fall back to UI-locale data
+      syncDraftCompsFromDb()
+    }
+  } else {
+    syncDraftCompsFromDb()
   }
-
-  // Sync draft comps from current DB state before opening edit sheet
-  syncDraftCompsFromDb()
   editMode.value      = true
   showEditSheet.value = true
 }
@@ -847,7 +898,7 @@ function onBannerFileChange(e: Event) {
             <UIcon name="i-heroicons-photo" class="w-14 h-14 text-gray-300 dark:text-gray-700" />
           </div>
           <button
-            v-if="canManage"
+            v-if="canManage && editMode"
             class="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-black/50 text-white backdrop-blur-sm active:bg-black/70"
             @click.stop="bannerFileInputRef?.click()"
           >
@@ -1306,6 +1357,46 @@ function onBannerFileChange(e: Event) {
             <label class="ios-label">{{ $t('recipes.productionNotes') }}</label>
             <div v-if="draft.production_notes" class="mb-1.5 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[13px] text-gray-400 dark:text-gray-500 italic whitespace-pre-wrap">{{ draft.production_notes }}</div>
             <textarea v-model="i18nDraft.production_notes" rows="3" class="ios-input resize-none" :placeholder="$t('recipes.productionNotesPlaceholder')" />
+          </div>
+
+          <!-- Components (editable) -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('recipes.componentsSection') }}</h3>
+            </div>
+            <div v-if="draftComps.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-2">
+              <div
+                v-for="comp in draftComps" :key="comp._localId"
+                class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+              >
+                <div
+                  class="flex items-center px-4 py-3 pr-[5.5rem] bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+                  :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
+                  @touchstart="onSwipeTouchStart($event, comp._localId)"
+                  @touchmove="onSwipeTouchMove($event, comp._localId)"
+                  @touchend="onSwipeTouchEnd($event, comp._localId)"
+                  @click="onRowClick(comp)"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ comp.name }}</div>
+                    <div class="text-xs text-gray-400">{{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
+                  </div>
+                  <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
+                    <span class="text-sm whitespace-nowrap">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                    <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                  </div>
+                </div>
+                <button class="absolute right-0 top-0 bottom-0 w-20 bg-red-500 text-white text-sm font-medium active:bg-red-600" @click.stop="swipeDeleteComp(comp)">{{ $t('common.delete') }}</button>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
+            <button
+              class="flex items-center gap-2 w-full px-4 py-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-sm text-[#007AFF] dark:text-blue-400 active:bg-gray-50 dark:active:bg-gray-800"
+              @click="openCompEditSheet(null)"
+            >
+              <UIcon name="i-heroicons-plus-circle" class="w-4 h-4" />
+              {{ $t('recipes.addComponent') }}
+            </button>
           </div>
 
           <p class="text-[11px] text-gray-400 dark:text-gray-500">{{ $t('adminTranslations.translatingLocale', { locale: LOCALE_LABELS[editingLocale] ?? editingLocale }) }}</p>

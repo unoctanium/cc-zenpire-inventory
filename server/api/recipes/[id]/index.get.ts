@@ -62,6 +62,9 @@ export default defineEventHandler(async (event) => {
 
   // Fetch translation if requested locale differs from source
   let i18nRow: { name: string | null; description: string | null; production_notes: string | null; is_machine: boolean } | null = null
+  const ingredientNameMap = new Map<string, string>()
+  const subRecipeNameMap  = new Map<string, string>()
+
   if (requestedLocale && requestedLocale !== sourceLang) {
     const { data: i18n } = await admin
       .from('recipe_i18n')
@@ -70,6 +73,33 @@ export default defineEventHandler(async (event) => {
       .eq('locale', requestedLocale)
       .single()
     if (i18n) i18nRow = i18n
+
+    // Translate component ingredient names
+    const compList      = (components ?? []) as any[]
+    const ingredientIds = compList.filter(c => c.ingredient_id).map(c => c.ingredient_id)
+    const subRecipeIds  = compList.filter(c => c.sub_recipe_id).map(c => c.sub_recipe_id)
+
+    if (ingredientIds.length) {
+      const { data: ingI18n } = await admin
+        .from('ingredient_i18n')
+        .select('ingredient_id, name')
+        .in('ingredient_id', ingredientIds)
+        .eq('locale', requestedLocale)
+      for (const row of ingI18n ?? []) {
+        if (row.name) ingredientNameMap.set(row.ingredient_id, row.name)
+      }
+    }
+
+    if (subRecipeIds.length) {
+      const { data: recI18n } = await admin
+        .from('recipe_i18n')
+        .select('recipe_id, name')
+        .in('recipe_id', subRecipeIds)
+        .eq('locale', requestedLocale)
+      for (const row of recI18n ?? []) {
+        if (row.name) subRecipeNameMap.set(row.recipe_id, row.name)
+      }
+    }
   }
 
   const r = recipe as any
@@ -96,7 +126,9 @@ export default defineEventHandler(async (event) => {
       unit_code:            c.unit?.code ?? '',
       sort_order:           c.sort_order,
       type:                 c.ingredient_id ? 'ingredient' : 'sub_recipe',
-      name:                 c.ingredient_id ? (c.ingredient?.name ?? '') : (c.sub_recipe?.name ?? ''),
+      name:                 c.ingredient_id
+                              ? (ingredientNameMap.get(c.ingredient_id) ?? c.ingredient?.name ?? '')
+                              : (subRecipeNameMap.get(c.sub_recipe_id)  ?? c.sub_recipe?.name  ?? ''),
       std_cost:             c.ingredient_id
                               ? (c.ingredient?.standard_unit_cost ?? null)
                               : (c.sub_recipe?.standard_unit_cost ?? null),

@@ -36,6 +36,8 @@ const ingredients = computed(() => ingredientsStore.forLocale(locale.value).valu
 const allergens   = computed(() => allergensStore.forLocale(locale.value).value as AllergenOption[])
 const refresh     = () => recipesStore.load(locale.value)
 
+watch(locale, () => recipesStore.load(locale.value))
+
 // ─── list + search ────────────────────────────────────────────────────────────
 
 const search = ref('')
