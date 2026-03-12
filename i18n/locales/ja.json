@@ -79,7 +79,9 @@
     "removeImage":  "画像を削除",
     "back":      "戻る",
     "change":    "変更",
-    "printedOn": "印刷"
+    "printedOn": "印刷",
+    "yes": "はい",
+    "no": "いいえ"
   },
   "dashboard": {
     "title": "ダッシュボード",
@@ -176,6 +178,8 @@
     "inactive": "無効",
     "status":   "ステータス",
     "preProduct": "中間製品",
+    "tabRecipe": "レシピ",
+    "tabCosts": "コスト",
     "components": "構成要素",
     "sortByName": "名前で並び替え",
     "sortByActive": "有効状態で並び替え",
@@ -401,6 +405,8 @@
     "noTargetLocales": "対象言語がありません。",
     "translateItem": "翻訳",
     "translateNow": "今すぐ翻訳",
+    "translatePromptTitle": "変更を翻訳しますか？",
+    "translatePromptDesc": "保存した変更を設定済みの全言語に自動翻訳します。",
     "translating": "翻訳中…",
     "translationDone": "翻訳完了",
     "translationFailed": "翻訳失敗",
@@ -408,5 +414,8 @@
     "nameLocked": "名前はロックされています — 翻訳は無効です",
     "translatingLocale": "翻訳を編集中: {locale}",
     "mtBadge": "MT"
+  },
+  "offline": {
+    "banner": "オフラインです — 変更は無効です"
   }
 }

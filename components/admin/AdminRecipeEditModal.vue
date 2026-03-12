@@ -718,7 +718,7 @@ function printRecipe() {
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
                   : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'"
               >
-                {{ draft.is_active ? $t('units.yes') : $t('units.no') }}
+                {{ draft.is_active ? $t('common.yes') : $t('common.no') }}
               </span>
             </div>
             <div>
@@ -730,7 +730,7 @@ function printRecipe() {
                 class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
                        bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
               >
-                {{ $t('units.yes') }}
+                {{ $t('common.yes') }}
               </span>
               <span v-else class="text-sm text-gray-400 dark:text-gray-600">–</span>
             </div>

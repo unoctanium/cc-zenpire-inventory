@@ -19,12 +19,12 @@ function costUnit(t: string)   { return t === 'mass' ? '100g' : t === 'volume' ?
 
 const { canRead } = useTablePermissions('recipe')
 
-const { data: recipeData, pending, refresh, error } = useFetch<{
-  ok: boolean; recipes: RecipeRow[]
-}>(() => `/api/recipes?locale=${locale.value}`, { credentials: 'include' })
+const recipesStore = useRecipesStore()
+const pending  = computed(() => recipesStore.loading)
+const refresh  = () => recipesStore.load(locale.value)
+const errorText = ref<string | null>(null)
 
-const rows = ref<RecipeRow[]>([])
-watchEffect(() => { rows.value = recipeData.value?.recipes ?? [] })
+const rows = computed(() => recipesStore.forLocale(locale.value).value as RecipeRow[])
 
 const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<RecipeRow>({
   rows,
@@ -32,10 +32,6 @@ const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable
   defaultSortKey: 'name',
   getSearchValue: (row) => row.name,
 })
-
-const errorText = computed(() =>
-  error.value ? `${t('recipes.loadError')}: ${error.value.message}` : null
-)
 
 const tableContainer = ref<HTMLElement | null>(null)
 
@@ -173,11 +169,11 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
               <td class="px-2 py-1.5 align-middle">
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                   :class="row.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'">
-                  {{ row.is_active ? $t('units.yes') : $t('units.no') }}
+                  {{ row.is_active ? $t('common.yes') : $t('common.no') }}
                 </span>
               </td>
               <td class="px-2 py-1.5 align-middle">
-                <span v-if="row.is_pre_product" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">{{ $t('units.yes') }}</span>
+                <span v-if="row.is_pre_product" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">{{ $t('common.yes') }}</span>
                 <span v-else class="text-gray-400 dark:text-gray-600">–</span>
               </td>
               <td class="px-2 py-1.5 align-middle"><span class="text-gray-800 dark:text-gray-200">{{ row.component_count }}</span></td>

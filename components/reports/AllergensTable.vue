@@ -10,12 +10,12 @@ type AllergenRow = { id: string; name: string; code: string | null; comment: str
 
 const { canRead } = useTablePermissions('recipe')
 
-const { data, pending, refresh, error } = useFetch<{ ok: boolean; allergens: AllergenRow[] }>(
-  () => `/api/allergens?locale=${locale.value}`, { credentials: 'include' }
-)
+const allergensStore = useAllergensStore()
+const pending   = computed(() => allergensStore.loading)
+const refresh   = () => allergensStore.load(locale.value)
+const errorText = ref<string | null>(null)
 
-const rows = ref<AllergenRow[]>([])
-watchEffect(() => { rows.value = data.value?.allergens ?? [] })
+const rows = computed(() => allergensStore.forLocale(locale.value).value as AllergenRow[])
 
 const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<AllergenRow>({
   rows,
@@ -23,10 +23,6 @@ const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable
   defaultSortKey: 'name',
   getSearchValue: (row) => row.name,
 })
-
-const errorText = computed(() =>
-  error.value ? `${t('allergens.loadError')}: ${error.value.message}` : null
-)
 
 const tableContainer = ref<HTMLElement | null>(null)
 

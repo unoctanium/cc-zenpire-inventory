@@ -92,14 +92,17 @@ async function switchEditingLocale(loc: string) {
 }
 
 // ─── translate ────────────────────────────────────────────────────────────────
-const translating = ref(false)
+const translating         = ref(false)
+const showTranslatePrompt = ref(false)
+
 async function translateItem() {
-  if (!props.recipe?.id) return
+  const id = savedId.value ?? props.recipe?.id
+  if (!id) return
   translating.value = true
   try {
     await $fetch('/api/admin/translations/item', {
       method: 'POST', credentials: 'include',
-      body: { kind: 'recipe', id: props.recipe.id },
+      body: { kind: 'recipe', id },
     })
     toast.add({ title: t('adminTranslations.translationDone') })
   } catch (e: any) {
@@ -109,11 +112,17 @@ async function translateItem() {
   }
 }
 
+async function confirmTranslate() {
+  showTranslatePrompt.value = false
+  await translateItem()
+}
+
 // ─── mode ─────────────────────────────────────────────────────────────────────
 
 const editMode         = ref(false)
 const showEditSheet    = ref(false)
 const confirmingDelete = ref(false)
+const activeTab = ref<'recipe' | 'costs'>('recipe')
 
 const isNew = computed(() => !props.recipe)
 
@@ -139,6 +148,8 @@ const imageUploading = ref(false)
 const imageVersion   = ref(0)
 
 // ─── sub-data ─────────────────────────────────────────────────────────────────
+
+const recipesStore = useRecipesStore()
 
 const components            = ref<ComponentRow[]>([])
 const detailLoading         = ref(false)
@@ -283,8 +294,10 @@ function swipeDeleteComp(comp: DraftComp) {
 // ─── reset when recipe prop changes ──────────────────────────────────────────
 
 watch(
-  () => props.recipe,
-  async (recipe) => {
+  () => props.recipe?.id,
+  async () => {
+    const recipe = props.recipe
+    activeTab.value        = 'recipe'
     confirmingDelete.value = false
     components.value       = []
     hasImage.value         = false
@@ -329,20 +342,16 @@ watch(
 async function loadDetail(id: string) {
   detailLoading.value = true
   try {
-    const res = await $fetch<{ ok: boolean; recipe: any; components: ComponentRow[] }>(
-      `/api/recipes/${id}?locale=${locale.value}`, { credentials: 'include' }
-    )
-    components.value = res.components
-    hasImage.value   = res.recipe?.has_image ?? false
-    draft.production_notes       = res.recipe?.production_notes ?? ''
-    loadedProductionNotes.value  = res.recipe?.production_notes ?? ''
-    allergenIds.value            = res.recipe?.allergen_ids ?? []
-    // Sync draft comps from fresh DB state (only when not mid-edit)
-    if (!showEditSheet.value) {
-      syncDraftCompsFromDb()
+    await recipesStore.loadDetail(id, locale.value)
+    const detail = recipesStore.detailByLocale[`${id}_${locale.value}`]
+    if (detail) {
+      components.value             = detail.components as ComponentRow[]
+      hasImage.value               = detail.recipe?.has_image ?? false
+      draft.production_notes       = detail.recipe?.production_notes ?? ''
+      loadedProductionNotes.value  = detail.recipe?.production_notes ?? ''
+      allergenIds.value            = detail.recipe?.allergen_ids ?? []
+      if (!showEditSheet.value) syncDraftCompsFromDb()
     }
-  } catch (e: any) {
-    toast.add({ title: t('recipes.loadError'), description: e?.data?.statusMessage ?? e?.message, color: 'red' })
   } finally {
     detailLoading.value = false
   }
@@ -439,6 +448,7 @@ async function saveBasic() {
       editMode.value      = false
       showEditSheet.value = false
       emit('saved', savedId.value)
+      if (auth.value?.is_admin) showTranslatePrompt.value = true
     } catch (e: any) {
       toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
     } finally {
@@ -471,14 +481,12 @@ async function saveBasic() {
     if (savedId.value) {
       await $fetch(`/api/recipes/${savedId.value}`, { method: 'PUT', credentials: 'include', body })
       await saveComponents(savedId.value)
-      toast.add({
-        title:   t('recipes.updated'),
-        actions: auth.is_admin ? [{ label: t('adminTranslations.translateNow'), onClick: translateItem }] : undefined,
-      })
+      toast.add({ title: t('recipes.updated') })
       editMode.value      = false
       showEditSheet.value = false
       await loadDetail(savedId.value)
       emit('saved', savedId.value)
+      if (auth.value?.is_admin) showTranslatePrompt.value = true
     } else {
       const res = await $fetch<{ ok: boolean; recipe: { id: string } }>(
         '/api/recipes', { method: 'POST', credentials: 'include', body }
@@ -488,6 +496,7 @@ async function saveBasic() {
       toast.add({ title: t('recipes.created') })
       await loadDetail(res.recipe.id)
       emit('saved', res.recipe.id)
+      if (auth.value?.is_admin) showTranslatePrompt.value = true
     }
   } catch (e: any) {
     toast.add({ title: t('common.saveFailed'), description: e?.data?.statusMessage ?? e?.message ?? String(e), color: 'red' })
@@ -622,42 +631,142 @@ function esc(s: string | null | undefined): string {
 
 function printRecipe() {
   if (!savedId.value) return
+  activeTab.value === 'recipe' ? printRecipeCard() : printCostSheet()
+}
+
+function printRecipeCard() {
   const imgSrc = imageUrl.value ? window.location.origin + imageUrl.value.split('?')[0] : null
   const imgTag = imgSrc
-    ? `<img src="${imgSrc}" style="width:140px;height:140px;object-fit:cover;border-radius:8px;float:right;margin:0 0 16px 20px">`
+    ? `<img src="${imgSrc}" style="width:160px;height:160px;object-fit:cover;border-radius:8px;float:right;margin:0 0 20px 24px">`
     : ''
 
   const compRows = components.value.map(c =>
     `<tr>
-      <td style="padding:5px 10px 5px 0;border-bottom:1px solid #f3f4f6">${esc(c.name)}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? t('recipes.typeIngredient') : t('recipes.typeSubRecipe')}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${c.quantity}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
-      <td style="padding:5px 0 5px 10px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(componentCost(c))}</td>
+      <td style="padding:8px 16px 8px 0;border-bottom:1px solid #f3f4f6;font-size:15px;font-weight:500">${esc(c.name)}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;text-align:right;font-size:17px;font-weight:700;white-space:nowrap">${c.quantity}&thinsp;${esc(c.unit_code)}</td>
     </tr>`
   ).join('')
 
-  printHtml(`<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8"><title>${esc(draft.name)} — Zenpire</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:24px}
-h1{font-size:24px;font-weight:700;margin-bottom:6px}h2{font-size:15px;font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:24px 0 10px}
-.desc{color:#4b5563;margin-bottom:16px;line-height:1.6}
-.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:24px;clear:both}
-.meta label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;display:block;margin-bottom:2px}
-table{width:100%;border-collapse:collapse;font-size:13px}thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:600;padding:4px 10px 8px 0;border-bottom:1px solid #e5e7eb}
-.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
-@media print{@page{margin:1.5cm}}</style></head>
+  const none = `<p style="color:#9ca3af;font-size:14px">—</p>`
+
+  printHtml(`<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8">
+<title>${esc(draft.name)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;font-size:14px;color:#111827;background:#fff;padding:28px 32px}
+h1{font-size:28px;font-weight:800;line-height:1.2;margin-bottom:4px}
+.rid{font-family:monospace;font-size:12px;color:#9ca3af;margin-bottom:18px}
+.desc{color:#374151;margin-bottom:20px;line-height:1.65;font-size:15px;white-space:pre-wrap;clear:both}
+.flags{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;clear:both}
+.flag{padding:3px 10px;border-radius:100px;font-size:12px;font-weight:600}
+.active{background:#dcfce7;color:#166534}.inactive{background:#f3f4f6;color:#6b7280}.pre{background:#dbeafe;color:#1e40af}
+.out{margin-bottom:24px}
+.out-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;font-weight:700;margin-bottom:3px}
+.out-val{font-size:20px;font-weight:700}
+h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin:24px 0 10px;clear:both}
+table{width:100%;border-collapse:collapse}
+.allergens{display:flex;gap:6px;flex-wrap:wrap}
+.al{padding:3px 10px;border-radius:100px;font-size:12px;font-weight:600;background:#fee2e2;color:#991b1b}
+.notes{font-size:14px;color:#374151;white-space:pre-wrap;line-height:1.7}
+.footer{margin-top:36px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+@media print{@page{margin:1.5cm}}
+</style></head>
 <body>
-${imgTag}<h1>${esc(draft.name)}</h1>
-${draft.description ? `<p class="desc">${esc(draft.description)}</p>` : ''}
-<div class="meta">
-  <div><label>${t('recipes.output')}</label><span>${draft.output_quantity} ${esc(outputUnitCode.value)}</span></div>
-  ${draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
-    ? `<div><label>${t('recipes.batchCostLabel')}</label><span>€ ${Number(draft.standard_unit_cost).toFixed(2)}</span></div>` : ''}
-  <div><label>${t('recipes.status')}</label><span>${draft.is_active ? t('recipes.active') : t('recipes.inactive')}${draft.is_pre_product ? ' · ' + t('recipes.preProduct') : ''}</span></div>
-  ${totalCost.value != null ? `<div><label>${t('recipes.totalCost')}</label><span>${formatCost(totalCost.value)}</span></div>` : ''}
+${imgTag}
+<h1>${esc(draft.name)}</h1>
+<h2>${t('recipes.recipeId')}</h2>
+<p class="rid">${draft.recipe_id ? esc(draft.recipe_id) : '—'}</p>
+<h2>${t('recipes.description')}</h2>
+<p class="desc">${draft.description ? esc(draft.description) : '—'}</p>
+<div class="flags">
+  <span class="flag ${draft.is_active ? 'active' : 'inactive'}">${draft.is_active ? t('recipes.active') : t('recipes.inactive')}</span>
+  ${draft.is_pre_product ? `<span class="flag pre">${t('recipes.preProduct')}</span>` : ''}
 </div>
-${components.value.length > 0 ? `<h2>${t('recipes.componentsSection')}</h2><table><thead><tr><th>${t('recipes.name')}</th><th>${t('recipes.type')}</th><th style="text-align:right">${t('recipes.qty')}</th><th>${t('recipes.unit')}</th><th style="text-align:right">${t('recipes.compCost')}</th></tr></thead><tbody>${compRows}</tbody></table>` : ''}
-${draft.production_notes ? `<h2>${t('recipes.productionNotes')}</h2><p style="white-space:pre-wrap;line-height:1.6;color:#374151">${esc(draft.production_notes)}</p>` : ''}
+<div class="out">
+  <div class="out-label">${t('recipes.output')}</div>
+  <div class="out-val">${draft.output_quantity} ${esc(outputUnitCode.value)}</div>
+</div>
+<h2>${t('recipes.componentsSection')}</h2>
+${components.value.length > 0 ? `<table><tbody>${compRows}</tbody></table>` : none}
+<h2>${t('recipes.productionNotes')}</h2>
+${draft.production_notes ? `<p class="notes">${esc(draft.production_notes)}</p>` : none}
+<h2>${t('recipes.allergens')}</h2>
+${effectiveAllergens.value.length > 0
+  ? `<div class="allergens">${effectiveAllergens.value.map(a => `<span class="al">${esc(a.name)}</span>`).join('')}</div>`
+  : none}
+<div class="footer">Zenpire Inventory — ${t('common.printedOn')} ${new Date().toLocaleString(locale.value)}</div>
+</body></html>`)
+}
+
+function printCostSheet() {
+  const compRows = components.value.map(c => {
+    const cost = componentCost(c)
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">${esc(c.name)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:11px">${c.type === 'ingredient' ? t('recipes.typeIngredient') : t('recipes.typeSubRecipe')}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right">${c.quantity}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">${esc(c.unit_code)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right">${formatCost(cost)}</td>
+    </tr>`
+  }).join('')
+
+  const totalRow = totalCost.value != null
+    ? `<tr style="background:#f9fafb">
+        <td colspan="4" style="padding:8px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:#6b7280">${t('recipes.totalCost')}</td>
+        <td style="padding:8px;text-align:right;font-weight:700;font-size:14px">${formatCost(totalCost.value)}</td>
+      </tr>`
+    : ''
+
+  printHtml(`<!DOCTYPE html><html lang="${locale.value}"><head><meta charset="UTF-8">
+<title>${esc(draft.name)} — ${t('recipes.tabCosts')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;font-size:13px;color:#111827;background:#fff;padding:28px 32px}
+h1{font-size:22px;font-weight:800;margin-bottom:2px}
+.rid{font-family:monospace;font-size:12px;color:#9ca3af;margin-bottom:20px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px;background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:28px}
+.kpi label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;font-weight:700;display:block;margin-bottom:3px}
+.kpi .val{font-size:18px;font-weight:700}
+.kpi .sub{font-size:11px;color:#9ca3af;margin-top:2px}
+h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-weight:700;padding:4px 8px 8px;border-bottom:2px solid #e5e7eb}
+thead th:last-child,thead th:nth-child(3){text-align:right}
+.footer{margin-top:32px;padding-top:10px;border-top:1px solid #f3f4f6;font-size:11px;color:#9ca3af}
+@media print{@page{margin:1.5cm}}
+</style></head>
+<body>
+<h1>${esc(draft.name)}</h1>
+<h2 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin:12px 0 6px">${t('recipes.recipeId')}</h2>
+<p class="rid">${draft.recipe_id ? esc(draft.recipe_id) : '—'}</p>
+<div class="kpis">
+  <div class="kpi">
+    <label>${t('recipes.output')}</label>
+    <div class="val">${draft.output_quantity} ${esc(outputUnitCode.value)}</div>
+  </div>
+  <div class="kpi">
+    <label>${t('recipes.batchCostLabel')}</label>
+    <div class="val">${draft.standard_unit_cost !== '' && draft.standard_unit_cost != null ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}` : '—'}</div>
+    ${perUnitCost.value != null ? `<div class="sub">€ ${perUnitCost.value.toFixed(4)} / ${esc(costDisplayLabel.value)}</div>` : ''}
+  </div>
+  ${totalCost.value != null
+    ? `<div class="kpi"><label>${t('recipes.totalCost')}</label><div class="val">${formatCost(totalCost.value)}</div></div>`
+    : '<div></div>'}
+</div>
+<h2>${t('recipes.componentsSection')}</h2>
+${components.value.length > 0
+  ? `<table>
+      <thead><tr>
+        <th>${t('recipes.name')}</th>
+        <th>${t('recipes.type')}</th>
+        <th style="text-align:right">${t('recipes.qty')}</th>
+        <th>${t('recipes.unit')}</th>
+        <th style="text-align:right">${t('recipes.compCost')}</th>
+      </tr></thead>
+      <tbody>${compRows}</tbody>
+      ${totalRow}
+    </table>`
+  : '<p style="color:#9ca3af">—</p>'}
 <div class="footer">Zenpire Inventory — ${t('common.printedOn')} ${new Date().toLocaleString(locale.value)}</div>
 </body></html>`)
 }
@@ -687,28 +796,33 @@ function onBannerFileChange(e: Event) {
       <button class="flex-none text-[15px] font-semibold text-[#007AFF] dark:text-blue-400 py-2 pl-4 disabled:opacity-40 active:opacity-50" :disabled="saving" @click="saveBasic">{{ $t('common.save') }}</button>
     </div>
 
-    <!-- ─── View mode: sticky iOS nav bar ───────────────────────────────────── -->
-    <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-2 min-h-[44px]">
-      <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ draft.name }}</h2>
-      <div class="relative z-10 flex items-center">
-        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
-          <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
-        </button>
+    <!-- ─── View mode: sticky iOS nav bar + tabs ────────────────────────────── -->
+    <div v-if="!isNew" class="sticky top-0 z-10 -mx-4 -mt-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="relative flex items-center justify-end px-2 min-h-[44px]">
+        <h2 class="absolute inset-x-0 text-center text-[15px] font-semibold text-gray-900 dark:text-gray-100 px-28 truncate pointer-events-none">{{ draft.name }}</h2>
+        <div class="relative z-10 flex items-center">
+          <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
+            <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
+          </button>
+          <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printRecipe">
+            <UIcon name="i-heroicons-printer" class="w-5 h-5" />
+          </button>
+          <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-red-500 active:opacity-50" @click="confirmingDelete = true">
+            <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+      <!-- Tab bar -->
+      <div class="flex">
         <button
-          v-if="auth.is_admin && !isNew"
-          class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50"
-          :class="{ 'opacity-50 pointer-events-none': translating }"
-          :title="$t('adminTranslations.translateItem')"
-          @click="translateItem"
+          v-for="tab in (['recipe', 'costs'] as const)" :key="tab"
+          class="flex-1 py-2 text-[13px] font-semibold transition-colors border-b-2"
+          :class="activeTab === tab
+            ? 'text-[#007AFF] dark:text-blue-400 border-[#007AFF] dark:border-blue-400'
+            : 'text-gray-500 dark:text-gray-400 border-transparent'"
+          @click="activeTab = tab"
         >
-          <UIcon v-if="translating" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
-          <UIcon v-else name="i-heroicons-language" class="w-5 h-5" />
-        </button>
-        <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printRecipe">
-          <UIcon name="i-heroicons-printer" class="w-5 h-5" />
-        </button>
-        <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-red-500 active:opacity-50" @click="confirmingDelete = true">
-          <UIcon name="i-heroicons-trash" class="w-5 h-5" />
+          {{ tab === 'recipe' ? $t('recipes.tabRecipe') : $t('recipes.tabCosts') }}
         </button>
       </div>
     </div>
@@ -718,133 +832,181 @@ function onBannerFileChange(e: Event) {
          ═══════════════════════════════════════════════════════════════════════ -->
     <template v-if="!isNew">
 
-      <!-- Banner image: full-bleed, 25vh -->
-      <div
-        class="-mx-4 overflow-hidden relative bg-gray-100 dark:bg-gray-800"
-        style="height: 25vh; min-height: 160px"
-        :class="imageUrl ? 'cursor-zoom-in' : ''"
-        @click="imageUrl && (bannerLightboxOpen = true)"
-      >
-        <img v-if="imageUrl" :src="imageUrl" class="w-full h-full object-cover" alt="" />
-        <div v-else class="w-full h-full flex items-center justify-center">
-          <UIcon name="i-heroicons-photo" class="w-14 h-14 text-gray-300 dark:text-gray-700" />
-        </div>
-        <button
-          v-if="canManage"
-          class="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-black/50 text-white backdrop-blur-sm active:bg-black/70"
-          @click.stop="bannerFileInputRef?.click()"
+      <!-- ── Recipe Tab ──────────────────────────────────────────────────────── -->
+      <template v-if="activeTab === 'recipe'">
+
+        <!-- Banner image: full-bleed, 25vh -->
+        <div
+          class="-mx-4 overflow-hidden relative bg-gray-100 dark:bg-gray-800"
+          style="height: 25vh; min-height: 160px"
+          :class="imageUrl ? 'cursor-zoom-in' : ''"
+          @click="imageUrl && (bannerLightboxOpen = true)"
         >
-          <UIcon name="i-heroicons-camera" class="w-3.5 h-3.5" />
-          {{ imageUrl ? $t('common.replaceImage') : $t('common.uploadImage') }}
-        </button>
-        <input ref="bannerFileInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onBannerFileChange" />
-      </div>
-
-      <!-- Name -->
-      <h1 class="text-[26px] font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ draft.name }}</h1>
-
-      <!-- Recipe ID -->
-      <p v-if="draft.recipe_id" class="text-[13px] text-gray-400 dark:text-gray-500 font-mono -mt-2">{{ draft.recipe_id }}</p>
-
-      <!-- Description -->
-      <p v-if="draft.description" class="text-[15px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{{ draft.description }}</p>
-
-      <!-- Flags row -->
-      <div class="flex items-center gap-2 flex-wrap">
-        <span
-          class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
-          :class="draft.is_active
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'"
-        >
-          {{ draft.is_active ? $t('recipes.active') : $t('units.no') }}
-        </span>
-        <span
-          v-if="draft.is_pre_product"
-          class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
-        >
-          {{ $t('recipes.preProduct') }}
-        </span>
-      </div>
-
-      <!-- Batch row: output tile + cost tile -->
-      <div class="flex gap-3">
-        <div class="flex-1 bg-gray-50 dark:bg-gray-800/60 rounded-2xl px-4 py-3">
-          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.output') }}</div>
-          <div class="text-[17px] font-semibold text-gray-900 dark:text-gray-100">{{ draft.output_quantity }} {{ outputUnitCode }}</div>
-        </div>
-        <div class="flex-1 bg-gray-50 dark:bg-gray-800/60 rounded-2xl px-4 py-3">
-          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.batchCostLabel') }}</div>
-          <div class="text-[17px] font-semibold text-gray-900 dark:text-gray-100">
-            {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
-               ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}` : '—' }}
+          <img v-if="imageUrl" :src="imageUrl" class="w-full h-full object-cover" alt="" />
+          <div v-else class="w-full h-full flex items-center justify-center">
+            <UIcon name="i-heroicons-photo" class="w-14 h-14 text-gray-300 dark:text-gray-700" />
           </div>
-          <div v-if="perUnitCost != null" class="text-[11px] text-gray-400 mt-0.5">
-            € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}
-          </div>
+          <button
+            v-if="canManage"
+            class="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-black/50 text-white backdrop-blur-sm active:bg-black/70"
+            @click.stop="bannerFileInputRef?.click()"
+          >
+            <UIcon name="i-heroicons-camera" class="w-3.5 h-3.5" />
+            {{ imageUrl ? $t('common.replaceImage') : $t('common.uploadImage') }}
+          </button>
+          <input ref="bannerFileInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onBannerFileChange" />
         </div>
-      </div>
 
-      <!-- Components section (read-only) -->
-      <div v-if="savedId" class="pt-1">
-        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-3 mb-2">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {{ $t('recipes.componentsSection') }}
-          </h3>
+        <!-- Name -->
+        <h1 class="text-[26px] font-bold text-gray-900 dark:text-gray-100 leading-tight">{{ draft.name }}</h1>
+
+        <!-- Recipe ID -->
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-3 -mt-1">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.recipeId') }}</div>
+          <p class="text-[13px] text-gray-700 dark:text-gray-300 font-mono">{{ draft.recipe_id || '—' }}</p>
         </div>
-        <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
-        <div v-else>
-          <div v-if="components.length > 0" class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2 text-xs">
-            <table class="w-full border-separate border-spacing-0">
-              <thead>
-                <tr class="bg-white dark:bg-gray-950 text-gray-500 dark:text-gray-400">
-                  <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.name') }}</th>
-                  <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
-                  <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
-                  <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in components" :key="row.id" class="border-b border-gray-100 dark:border-gray-900">
-                  <td class="px-2 py-1.5 text-gray-900 dark:text-gray-100">
-                    <div class="font-medium">{{ row.name }}</div>
-                    <div class="text-gray-400 text-[10px]">{{ row.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
-                  </td>
-                  <td class="px-2 py-1.5 text-right text-gray-800 dark:text-gray-200">{{ row.quantity }}</td>
-                  <td class="px-2 py-1.5 text-gray-800 dark:text-gray-200">{{ row.unit_code }}</td>
-                  <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
-                </tr>
-              </tbody>
-              <tfoot v-if="totalCost != null">
-                <tr>
-                  <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
-                  <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
+
+        <!-- Description -->
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-3">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.description') }}</div>
+          <p class="text-[15px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{{ draft.description || '—' }}</p>
         </div>
-      </div>
 
-      <!-- Production notes -->
-      <div v-if="draft.production_notes" class="pt-1">
-        <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ $t('recipes.productionNotes') }}</div>
-        <div class="text-[15px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{{ draft.production_notes }}</div>
-      </div>
-
-      <!-- Allergens (always shown, read-only) -->
-      <div class="pt-1">
-        <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ $t('recipes.allergens') }}</div>
-        <div v-if="detailLoading" class="text-xs text-gray-400">{{ $t('common.loading') }}</div>
-        <div v-else-if="effectiveAllergens.length === 0" class="text-sm text-gray-400">—</div>
-        <div v-else class="flex flex-wrap gap-1.5">
+        <!-- Flags row -->
+        <div class="flex items-center gap-2 flex-wrap">
           <span
-            v-for="al in effectiveAllergens" :key="al.id"
-            class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-          >{{ al.name }}</span>
+            class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+            :class="draft.is_active
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+              : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'"
+          >
+            {{ draft.is_active ? $t('recipes.active') : $t('common.no') }}
+          </span>
+          <span
+            v-if="draft.is_pre_product"
+            class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+          >
+            {{ $t('recipes.preProduct') }}
+          </span>
         </div>
-      </div>
+
+        <!-- Output tile (single, no cost) -->
+        <div class="inline-flex bg-gray-50 dark:bg-gray-800/60 rounded-2xl px-4 py-3 gap-2 items-baseline">
+          <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{{ $t('recipes.output') }}</span>
+          <span class="text-[17px] font-semibold text-gray-900 dark:text-gray-100">{{ draft.output_quantity }} {{ outputUnitCode }}</span>
+        </div>
+
+        <!-- Ingredients list (clean, no cost) -->
+        <div v-if="savedId" class="pt-1">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-100 dark:border-gray-800 pt-3 mb-1">
+            {{ $t('recipes.componentsSection') }}
+          </div>
+          <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
+          <div v-else-if="components.length === 0" class="text-sm text-gray-400 py-1">{{ $t('recipes.noComponents') }}</div>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="row in components" :key="row.id" class="flex items-center justify-between py-2.5">
+              <div class="flex-1 min-w-0">
+                <div class="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{{ row.name }}</div>
+                <div v-if="row.type === 'sub_recipe'" class="text-xs text-blue-500 dark:text-blue-400">{{ $t('recipes.typeSubRecipe') }}</div>
+              </div>
+              <div class="ml-4 text-[15px] font-semibold tabular-nums text-gray-700 dark:text-gray-300 flex-none">
+                {{ row.quantity }} {{ row.unit_code }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Production notes -->
+        <div class="pt-1">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-100 dark:border-gray-800 pt-3 mb-2">
+            {{ $t('recipes.productionNotes') }}
+          </div>
+          <div class="text-[15px] text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{{ draft.production_notes || '—' }}</div>
+        </div>
+
+        <!-- Allergens -->
+        <div class="pt-1 border-t border-gray-100 dark:border-gray-800">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider pt-3 mb-2">{{ $t('recipes.allergens') }}</div>
+          <div v-if="detailLoading" class="text-xs text-gray-400">{{ $t('common.loading') }}</div>
+          <div v-else-if="effectiveAllergens.length === 0" class="text-sm text-gray-400">—</div>
+          <div v-else class="flex flex-wrap gap-1.5">
+            <span
+              v-for="al in effectiveAllergens" :key="al.id"
+              class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+            >{{ al.name }}</span>
+          </div>
+        </div>
+
+      </template>
+
+      <!-- ── Costs Tab ───────────────────────────────────────────────────────── -->
+      <template v-else>
+
+        <!-- Recipe ID -->
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-3">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.recipeId') }}</div>
+          <p class="text-[13px] text-gray-700 dark:text-gray-300 font-mono">{{ draft.recipe_id || '—' }}</p>
+        </div>
+
+        <!-- Output + Batch cost tiles -->
+        <div class="flex gap-3 pt-1">
+          <div class="flex-1 bg-gray-50 dark:bg-gray-800/60 rounded-2xl px-4 py-3">
+            <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.output') }}</div>
+            <div class="text-[17px] font-semibold text-gray-900 dark:text-gray-100">{{ draft.output_quantity }} {{ outputUnitCode }}</div>
+          </div>
+          <div class="flex-1 bg-gray-50 dark:bg-gray-800/60 rounded-2xl px-4 py-3">
+            <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{{ $t('recipes.batchCostLabel') }}</div>
+            <div class="text-[17px] font-semibold text-gray-900 dark:text-gray-100">
+              {{ draft.standard_unit_cost !== '' && draft.standard_unit_cost != null
+                 ? `€ ${Number(draft.standard_unit_cost).toFixed(2)}` : '—' }}
+            </div>
+            <div v-if="perUnitCost != null" class="text-[11px] text-gray-400 mt-0.5">
+              € {{ perUnitCost.toFixed(4) }} / {{ costDisplayLabel }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost breakdown table -->
+        <div v-if="savedId" class="pt-1">
+          <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-100 dark:border-gray-800 pt-3 mb-2">
+            {{ $t('recipes.componentsSection') }}
+          </div>
+          <div v-if="detailLoading" class="text-xs text-gray-400 py-2">{{ $t('common.loading') }}</div>
+          <div v-else>
+            <div v-if="components.length > 0" class="overflow-x-auto rounded border border-gray-200 dark:border-gray-800 mb-2 text-xs">
+              <table class="w-full border-separate border-spacing-0">
+                <thead>
+                  <tr class="bg-white dark:bg-gray-950 text-gray-500 dark:text-gray-400">
+                    <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.name') }}</th>
+                    <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.qty') }}</th>
+                    <th class="text-left px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.unit') }}</th>
+                    <th class="text-right px-2 py-1 font-medium border-b border-gray-200 dark:border-gray-800">{{ $t('recipes.cost') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in components" :key="row.id" class="border-b border-gray-100 dark:border-gray-900">
+                    <td class="px-2 py-1.5 text-gray-900 dark:text-gray-100">
+                      <div class="font-medium">{{ row.name }}</div>
+                      <div class="text-gray-400 text-[10px]">{{ row.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
+                    </td>
+                    <td class="px-2 py-1.5 text-right text-gray-800 dark:text-gray-200">{{ row.quantity }}</td>
+                    <td class="px-2 py-1.5 text-gray-800 dark:text-gray-200">{{ row.unit_code }}</td>
+                    <td class="px-2 py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatCost(componentCost(row)) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot v-if="totalCost != null">
+                  <tr>
+                    <td colspan="3" class="px-2 py-1.5 text-right text-xs text-gray-400 uppercase tracking-wide font-semibold">{{ $t('recipes.totalCost') }}</td>
+                    <td class="px-2 py-1.5 text-right text-xs font-semibold text-gray-800 dark:text-gray-200">{{ formatCost(totalCost) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p v-else class="text-xs text-gray-400 py-1">{{ $t('recipes.noComponents') }}</p>
+          </div>
+        </div>
+
+      </template>
 
     </template>
 
@@ -917,7 +1079,7 @@ function onBannerFileChange(e: Event) {
             class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
           >
             <div
-              class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+              class="flex items-center px-4 py-3 pr-[5.5rem] bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
               :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
               @touchstart="onSwipeTouchStart($event, comp._localId)"
               @touchmove="onSwipeTouchMove($event, comp._localId)"
@@ -929,7 +1091,7 @@ function onBannerFileChange(e: Event) {
                 <div class="text-xs text-gray-400">{{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
               </div>
               <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
-                <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                <span class="text-sm whitespace-nowrap">{{ comp.quantity }} {{ comp.unit_code }}</span>
                 <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
               </div>
             </div>
@@ -1064,7 +1226,7 @@ function onBannerFileChange(e: Event) {
               class="relative overflow-hidden border-b border-gray-100 dark:border-gray-800 last:border-b-0"
             >
               <div
-                class="flex items-center px-4 py-3 bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
+                class="flex items-center px-4 py-3 pr-[5.5rem] bg-white dark:bg-gray-900 select-none cursor-pointer active:bg-gray-50 dark:active:bg-gray-800"
                 :style="{ transform: `translateX(${swipeOffsets[comp._localId] ?? 0}px)`, transition: swipingId === comp._localId ? 'none' : 'transform 0.2s ease' }"
                 @touchstart="onSwipeTouchStart($event, comp._localId)"
                 @touchmove="onSwipeTouchMove($event, comp._localId)"
@@ -1076,7 +1238,7 @@ function onBannerFileChange(e: Event) {
                   <div class="text-xs text-gray-400">{{ comp.type === 'ingredient' ? $t('recipes.typeIngredient') : $t('recipes.typeSubRecipe') }}</div>
                 </div>
                 <div class="flex-none flex items-center gap-1.5 ml-3 text-gray-500 dark:text-gray-400">
-                  <span class="text-sm">{{ comp.quantity }} {{ comp.unit_code }}</span>
+                  <span class="text-sm whitespace-nowrap">{{ comp.quantity }} {{ comp.unit_code }}</span>
                   <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-300 dark:text-gray-600" />
                 </div>
               </div>
@@ -1213,6 +1375,39 @@ function onBannerFileChange(e: Event) {
       </button>
       <img :src="imageUrl" class="max-w-[90vw] max-h-[90vh] rounded-lg object-contain shadow-2xl" alt="" @click.stop />
     </div>
+  </Teleport>
+
+  <!-- Translate prompt -->
+  <Teleport to="body">
+    <Transition name="ios-alert">
+      <div
+        v-if="showTranslatePrompt"
+        class="fixed inset-0 z-[200] flex items-center justify-center"
+        style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px)"
+      >
+        <div class="ios-alert-card w-[270px] rounded-[13px] bg-white dark:bg-[#1c1c1e] shadow-2xl overflow-hidden">
+          <div class="px-4 pt-5 pb-4 text-center">
+            <h3 class="text-[17px] font-semibold text-gray-900 dark:text-white leading-snug">{{ $t('adminTranslations.translatePromptTitle') }}</h3>
+            <p class="mt-1.5 text-[13px] text-gray-500 dark:text-gray-400 leading-snug">{{ $t('adminTranslations.translatePromptDesc') }}</p>
+          </div>
+          <div class="border-t border-gray-300/60 dark:border-gray-600/60 grid grid-cols-2 divide-x divide-gray-300/60 dark:divide-gray-600/60">
+            <button
+              class="py-[11px] text-[17px] text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              :disabled="translating"
+              @click="showTranslatePrompt = false"
+            >{{ $t('common.no') }}</button>
+            <button
+              class="py-[11px] text-[17px] font-semibold text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60 disabled:opacity-40"
+              :disabled="translating"
+              @click="confirmTranslate"
+            >
+              <span v-if="translating">{{ $t('adminTranslations.translating') }}</span>
+              <span v-else>{{ $t('common.yes') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 
 </template>

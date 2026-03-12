@@ -11,12 +11,12 @@ type UnitRow  = { id: string; code: string; name: string; unit_type: UnitType; f
 
 const { canRead } = useTablePermissions('unit')
 
-const { data, pending, refresh, error } = useFetch<{ ok: boolean; units: UnitRow[] }>(
-  '/api/units', { credentials: 'include' }
-)
+const unitsStore = useUnitsStore()
+const pending   = computed(() => unitsStore.loading)
+const refresh   = () => unitsStore.load()
+const errorText = ref<string | null>(null)
 
-const rows = ref<UnitRow[]>([])
-watchEffect(() => { rows.value = data.value?.units ?? [] })
+const rows = computed(() => unitsStore.items as UnitRow[])
 
 const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<UnitRow>({
   rows,
@@ -24,10 +24,6 @@ const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable
   defaultSortKey: 'code',
   getSearchValue: (row) => row.name,
 })
-
-const errorText = computed(() =>
-  error.value ? `${t('units.loadError')}: ${error.value.message}` : null
-)
 
 const tableContainer = ref<HTMLElement | null>(null)
 
@@ -60,7 +56,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
   </div>
 
   <div v-if="!canRead" class="p-6 text-red-600">
-    403 – {{ $t('units.noPermission') }}
+    403 – {{ $t('common.noPermission') }}
   </div>
 
   <div v-else class="p-4">

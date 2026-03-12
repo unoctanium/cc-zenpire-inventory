@@ -1,34 +1,33 @@
 <script setup lang="ts">
 import { useTablePermissions } from '~/composables/useTablePermissions'
 
-type RecipeRow = {
-  id: string; recipe_id: string | null; name: string; description: string
-  output_quantity: number; output_unit_id: string; output_unit_code: string
-  standard_unit_cost: number | null; comp_cost: number | null
-  is_active: boolean; is_pre_product: boolean
-  component_count: number; created_at: string; updated_at: string
-}
-type UnitOption       = { id: string; code: string; name: string }
-type IngredientOption = { id: string; name: string; kind: string; default_unit_id: string }
-
 const route = useRoute()
 const id    = computed(() => route.params.id as string)
 
 const { canManage } = useTablePermissions('recipe')
-const { contentLocaleParam } = useContentLocale()
+const { locale }   = useI18n()
 
-const { data: recipeData, refresh }    = await useFetch<{ ok: boolean; recipe: RecipeRow }>(() => `/api/recipes/${id.value}?${contentLocaleParam.value}`, { credentials: 'include' })
-const { data: unitData }               = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
-const { data: ingredientData }         = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
-const { data: allRecipeData }          = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>(() => `/api/recipes?${contentLocaleParam.value}`, { credentials: 'include' })
+const recipesStore     = useRecipesStore()
+const unitsStore       = useUnitsStore()
+const ingredientsStore = useIngredientsStore()
+const allergensStore   = useAllergensStore()
 
-const recipe      = computed(() => recipeData.value?.recipe ?? null)
-const units       = computed(() => unitData.value?.units ?? [])
-const ingredients = computed(() => (ingredientData.value?.ingredients ?? []).filter(i => i.kind === 'purchased'))
-const allRecipes  = computed(() => allRecipeData.value?.recipes ?? [])
+const units       = computed(() => unitsStore.items)
+const ingredients = computed(() => ingredientsStore.forLocale(locale.value).value.filter((i: any) => i.kind === 'purchased'))
+const allRecipes  = computed(() => recipesStore.forLocale(locale.value).value)
+const allergens   = computed(() => allergensStore.forLocale(locale.value).value)
+const recipe      = computed(() => recipesStore.detailByLocale[`${id.value}_${locale.value}`]?.recipe ?? null)
+
+async function loadDetail() {
+  await recipesStore.loadDetail(id.value, locale.value)
+}
+
+onMounted(loadDetail)
+watch([id, locale], loadDetail)
 
 function onSaved() {
-  refresh()
+  loadDetail()
+  recipesStore.load(locale.value)
 }
 
 function onDeleted() {
@@ -44,6 +43,7 @@ function onDeleted() {
       :units="units"
       :ingredients="ingredients"
       :all-recipes="allRecipes"
+      :allergens="allergens"
       :can-manage="canManage"
       @saved="onSaved"
       @deleted="onDeleted"

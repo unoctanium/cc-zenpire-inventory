@@ -12,9 +12,11 @@
  */
 
 import { useAuth } from '~/composables/useAuth'
+import { useOnlineStatus } from '~/composables/useOnlineStatus'
 
 export function useTablePermissions(resource: string) {
   const auth = useAuth()
+  const { isOnline } = useOnlineStatus()
 
   function has(permission: string): boolean {
     if (auth.value?.is_admin) return true
@@ -22,7 +24,7 @@ export function useTablePermissions(resource: string) {
   }
 
   const canRead   = computed(() => has(`${resource}.manage`) || has(`${resource}.read`))
-  const canManage = computed(() => has(`${resource}.manage`))
+  const canManage = computed(() => isOnline.value && has(`${resource}.manage`))
 
   return { canRead, canManage }
 }

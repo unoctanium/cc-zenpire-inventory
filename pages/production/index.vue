@@ -21,19 +21,20 @@ type AllergenOption   = { id: string; name: string; code: string | null }
 // ─── permissions ──────────────────────────────────────────────────────────────
 
 const { canRead, canManage } = useTablePermissions('recipe')
-const { contentLocaleParam } = useContentLocale()
 
-// ─── data fetch ───────────────────────────────────────────────────────────────
+// ─── data ─────────────────────────────────────────────────────────────────────
 
-const { data: recipeData, refresh }        = await useFetch<{ ok: boolean; recipes: RecipeRow[] }>(() => `/api/recipes?${contentLocaleParam.value}`, { credentials: 'include' })
-const { data: unitData }                   = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
-const { data: ingredientData }             = await useFetch<{ ok: boolean; ingredients: IngredientOption[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
-const { data: allergenData }               = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
+const { locale } = useI18n({ useScope: 'global' })
+const recipesStore     = useRecipesStore()
+const unitsStore       = useUnitsStore()
+const ingredientsStore = useIngredientsStore()
+const allergensStore   = useAllergensStore()
 
-const recipes     = computed(() => recipeData.value?.recipes ?? [])
-const units       = computed(() => unitData.value?.units ?? [])
-const ingredients = computed(() => ingredientData.value?.ingredients ?? [])
-const allergens   = computed(() => allergenData.value?.allergens ?? [])
+const recipes     = computed(() => recipesStore.forLocale(locale.value).value as RecipeRow[])
+const units       = computed(() => unitsStore.items as UnitOption[])
+const ingredients = computed(() => ingredientsStore.forLocale(locale.value).value as IngredientOption[])
+const allergens   = computed(() => allergensStore.forLocale(locale.value).value as AllergenOption[])
+const refresh     = () => recipesStore.load(locale.value)
 
 // ─── list + search ────────────────────────────────────────────────────────────
 
@@ -53,11 +54,11 @@ const selectedId = ref<string | null>(null)
 
 // Pre-select from ?recipe=<id> query param (e.g. coming from ingredient "View recipe" link)
 watch(
-  () => recipeData.value,
+  recipes,
   (data) => {
     if (!selectedId.value && route.query.recipe) {
       const id = String(route.query.recipe)
-      if (data?.recipes.find(r => r.id === id)) selectedId.value = id
+      if (data.find(r => r.id === id)) selectedId.value = id
     }
   },
   { immediate: true }
@@ -143,7 +144,7 @@ function handleMobileTap(id: string) {
             </div>
             <div v-if="r.recipe_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500 truncate">{{ r.recipe_id }}</div>
           </div>
-          <span v-if="!r.is_active" class="flex-none text-xs text-gray-400 dark:text-gray-600">{{ $t('units.no') }}</span>
+          <span v-if="!r.is_active" class="flex-none text-xs text-gray-400 dark:text-gray-600">{{ $t('common.no') }}</span>
           <span v-if="r.is_pre_product" class="flex-none rounded-full px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">pre</span>
         </button>
 
@@ -160,7 +161,7 @@ function handleMobileTap(id: string) {
             </div>
             <div v-if="r.recipe_id" class="text-[11px] font-mono text-gray-400 dark:text-gray-500">{{ r.recipe_id }}</div>
           </div>
-          <span v-if="!r.is_active" class="flex-none text-xs text-gray-400">{{ $t('units.no') }}</span>
+          <span v-if="!r.is_active" class="flex-none text-xs text-gray-400">{{ $t('common.no') }}</span>
           <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-300 flex-none" />
         </button>
       </div>

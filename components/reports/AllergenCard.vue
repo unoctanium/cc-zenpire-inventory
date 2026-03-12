@@ -9,14 +9,13 @@ type RecipeRow   = { id: string; name: string; allergen_ids: string[] }
 
 const { canRead } = useTablePermissions('recipe')
 
-const { data, pending, refresh, error } = useFetch<{
-  ok: boolean
-  allergens: AllergenRow[]
-  recipes: RecipeRow[]
-}>(() => `/api/allergen-card?locale=${locale.value}`, { credentials: 'include' })
+const allergenCardStore = useAllergenCardStore()
+const pending   = computed(() => allergenCardStore.loading)
+const refresh   = () => allergenCardStore.load(locale.value)
+const errorText = ref<string | null>(null)
 
-const allergens = computed<AllergenRow[]>(() => data.value?.allergens ?? [])
-const allRows   = computed<RecipeRow[]>(() => data.value?.recipes ?? [])
+const allergens = computed<AllergenRow[]>(() => (allergenCardStore.allergensByLocale[locale.value] ?? []) as AllergenRow[])
+const allRows   = computed<RecipeRow[]>(() => (allergenCardStore.recipesByLocale[locale.value]   ?? []) as RecipeRow[])
 
 const filterText = ref('')
 
@@ -26,9 +25,7 @@ const visibleRows = computed(() => {
   return allRows.value.filter(r => r.name.toLowerCase().includes(q))
 })
 
-const errorText = computed(() =>
-  error.value ? `${t('allergenCard.loadError')}: ${error.value.message}` : null
-)
+
 </script>
 
 <template>

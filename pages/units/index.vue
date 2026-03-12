@@ -12,9 +12,10 @@ const { canRead, canManage } = useTablePermissions('unit')
 
 // ─── data fetch ───────────────────────────────────────────────────────────────
 
-const { data, refresh } = await useFetch<{ ok: boolean; units: UnitRow[] }>('/api/units', { credentials: 'include' })
+const unitsStore = useUnitsStore()
 
-const units = computed(() => data.value?.units ?? [])
+const units   = computed(() => unitsStore.items as UnitRow[])
+const refresh = () => unitsStore.load()
 
 // ─── list + search ────────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ function handleMobileTap(id: string) {
 </script>
 
 <template>
-  <div v-if="!canRead" class="p-6 text-red-600">403 – {{ $t('units.noPermission') }}</div>
+  <div v-if="!canRead" class="p-6 text-red-600">403 – {{ $t('common.noPermission') }}</div>
 
   <AppSplitLayout v-else>
 

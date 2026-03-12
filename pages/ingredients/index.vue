@@ -18,17 +18,18 @@ type AllergenOption = { id: string; name: string; code: string | null; comment: 
 // ─── permissions ──────────────────────────────────────────────────────────────
 
 const { canRead, canManage } = useTablePermissions('recipe')
-const { contentLocaleParam } = useContentLocale()
 
-// ─── data fetch ───────────────────────────────────────────────────────────────
+// ─── data ─────────────────────────────────────────────────────────────────────
 
-const { data: ingredientData, refresh } = await useFetch<{ ok: boolean; ingredients: IngredientRow[] }>(() => `/api/ingredients?${contentLocaleParam.value}`, { credentials: 'include' })
-const { data: unitData }                = await useFetch<{ ok: boolean; units: UnitOption[] }>('/api/units', { credentials: 'include' })
-const { data: allergenData }            = await useFetch<{ ok: boolean; allergens: AllergenOption[] }>('/api/allergens', { credentials: 'include' })
+const { locale } = useI18n({ useScope: 'global' })
+const ingredientsStore = useIngredientsStore()
+const unitsStore       = useUnitsStore()
+const allergensStore   = useAllergensStore()
 
-const ingredients = computed(() => ingredientData.value?.ingredients ?? [])
-const units       = computed(() => unitData.value?.units ?? [])
-const allergens   = computed(() => allergenData.value?.allergens ?? [])
+const ingredients = computed(() => ingredientsStore.forLocale(locale.value).value as IngredientRow[])
+const units       = computed(() => unitsStore.items as UnitOption[])
+const allergens   = computed(() => allergensStore.forLocale(locale.value).value as AllergenOption[])
+const refresh     = () => ingredientsStore.load(locale.value)
 
 // ─── list + search ────────────────────────────────────────────────────────────
 

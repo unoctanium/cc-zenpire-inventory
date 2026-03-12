@@ -10,7 +10,6 @@ export default defineNuxtConfig({
         link: [
           { rel: 'icon', type: 'image/png', href: '/logo.png' },
           { rel: 'apple-touch-icon', href: '/logo.png' },
-          { rel: 'manifest', href: '/manifest.json' },
         ],
         meta: [
           { name: 'theme-color', content: '#0082c9' },
@@ -23,11 +22,71 @@ export default defineNuxtConfig({
         ],
       },
     },
-        
+
     modules: [
       '@nuxt/ui',
-      '@nuxtjs/i18n',  // add this
+      '@nuxtjs/i18n',
+      '@vite-pwa/nuxt',
+      '@pinia/nuxt',
     ],
+
+    pwa: {
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Zenpire Inventory',
+        short_name: 'Zenpire',
+        description: 'Restaurant inventory and recipe management',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#ffffff',
+        theme_color: '#0082c9',
+        icons: [
+          { src: '/logo.png', sizes: 'any', type: 'image/png', purpose: 'any maskable' },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          // Auth — NetworkFirst with fast timeout so offline boot falls to cache
+          {
+            urlPattern: /\/api\/auth\/(me|profile)/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-auth',
+              networkTimeoutSeconds: 3,
+              expiration: { maxAgeSeconds: 86400 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          // Read-only data — serve from cache instantly, revalidate in background
+          {
+            urlPattern: /\/api\/(ingredients|allergens|recipes|allergen-card|units|client\/content-locale|admin\/client-settings)/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-read',
+              expiration: { maxEntries: 500, maxAgeSeconds: 86400 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          // i18n locale JSON files (lazy-loaded by @nuxtjs/i18n)
+          {
+            urlPattern: /\/_nuxt\/.*\.json/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'i18n-json',
+              expiration: { maxEntries: 20, maxAgeSeconds: 604800 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        // Keep SW disabled in dev to avoid conflicts with hot reload
+        enabled: false,
+        type: 'module',
+      },
+    },
     css: ['~/assets/css/main.css'],
    
     i18n: {

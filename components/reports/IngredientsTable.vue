@@ -18,12 +18,12 @@ function costUnit(t: string)   { return t === 'mass' ? '100g' : t === 'volume' ?
 
 const { canRead } = useTablePermissions('recipe')
 
-const { data: ingredientData, pending, refresh, error } = useFetch<{
-  ok: boolean; ingredients: IngredientRow[]
-}>(() => `/api/ingredients?locale=${locale.value}`, { credentials: 'include' })
+const ingredientsStore = useIngredientsStore()
+const pending   = computed(() => ingredientsStore.loading)
+const refresh   = () => ingredientsStore.load(locale.value)
+const errorText = ref<string | null>(null)
 
-const rows = ref<IngredientRow[]>([])
-watchEffect(() => { rows.value = ingredientData.value?.ingredients ?? [] })
+const rows = computed(() => ingredientsStore.forLocale(locale.value).value as IngredientRow[])
 
 const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable<IngredientRow>({
   rows,
@@ -31,10 +31,6 @@ const { filterText, sortKey, sortDir, toggleSort, visibleRows } = useInlineTable
   defaultSortKey: 'name',
   getSearchValue: (row) => row.name,
 })
-
-const errorText = computed(() =>
-  error.value ? `${t('ingredients.loadError')}: ${error.value.message}` : null
-)
 
 const tableContainer = ref<HTMLElement | null>(null)
 
@@ -46,7 +42,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
       { header: t('ingredients.articleId'), candidates: rows.value.map(r => r.article_id ?? '') },
       { header: t('ingredients.kind'),      candidates: ['purchased', 'produced'] },
       { header: t('ingredients.unit'),     candidates: rows.value.map(r => r.default_unit_code) },
-      { header: t('ingredients.unitCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * costScale(r.default_unit_type)).toFixed(4)} / ${costUnit(r.default_unit_type)}` : '—') },
+      { header: t('ingredients.unitCost'), candidates: rows.value.map(r => r.standard_unit_cost != null ? `€ ${(r.standard_unit_cost * costScale(r.default_unit_type)).toFixed(2)} / ${costUnit(r.default_unit_type)}` : '—') },
     ],
   }))
 )
@@ -155,7 +151,7 @@ const { firstWidth, innerWidths, totalInnerWidth } = useTableWidths(
               <td class="px-2 py-1.5 align-middle">
                 <span class="text-gray-800 dark:text-gray-200">
                   {{ row.standard_unit_cost != null
-                      ? `€ ${(row.standard_unit_cost * costScale(row.default_unit_type)).toFixed(4)} / ${costUnit(row.default_unit_type)}`
+                      ? `€ ${(row.standard_unit_cost * costScale(row.default_unit_type)).toFixed(2)} / ${costUnit(row.default_unit_type)}`
                       : '–' }}
                 </span>
               </td>

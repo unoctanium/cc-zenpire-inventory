@@ -91,14 +91,18 @@ async function switchEditingLocale(loc: string) {
 }
 
 // ─── translate ────────────────────────────────────────────────────────────────
-const translating = ref(false)
+const translating         = ref(false)
+const showTranslatePrompt = ref(false)
+const pendingTranslateId  = ref<string | null>(null)
+
 async function translateItem() {
-  if (!props.ingredient?.id) return
+  const id = pendingTranslateId.value ?? props.ingredient?.id
+  if (!id) return
   translating.value = true
   try {
     await $fetch('/api/admin/translations/item', {
       method: 'POST', credentials: 'include',
-      body: { kind: 'ingredient', id: props.ingredient.id },
+      body: { kind: 'ingredient', id },
     })
     toast.add({ title: t('adminTranslations.translationDone') })
   } catch (e: any) {
@@ -106,6 +110,11 @@ async function translateItem() {
   } finally {
     translating.value = false
   }
+}
+
+async function confirmTranslate() {
+  showTranslatePrompt.value = false
+  await translateItem()
 }
 
 // ─── mode ─────────────────────────────────────────────────────────────────────
@@ -298,6 +307,7 @@ async function save() {
       editMode.value      = false
       showEditSheet.value = false
       emit('saved', props.ingredient.id)
+      if (auth.value?.is_admin) { pendingTranslateId.value = props.ingredient.id; showTranslatePrompt.value = true }
     } catch (e: any) {
       toast.add({
         title:       t('common.saveFailed'),
@@ -344,19 +354,18 @@ async function save() {
     }
     if (props.ingredient) {
       await $fetch(`/api/ingredients/${props.ingredient.id}`, { method: 'PUT', credentials: 'include', body })
-      toast.add({
-        title:   t('ingredients.updated'),
-        actions: auth.is_admin ? [{ label: t('adminTranslations.translateNow'), onClick: translateItem }] : undefined,
-      })
+      toast.add({ title: t('ingredients.updated') })
       editMode.value      = false
       showEditSheet.value = false
       emit('saved', props.ingredient.id)
+      if (auth.value?.is_admin) { pendingTranslateId.value = props.ingredient.id; showTranslatePrompt.value = true }
     } else {
       const res = await $fetch<{ ok: boolean; ingredient: { id: string } }>(
         '/api/ingredients', { method: 'POST', credentials: 'include', body }
       )
       toast.add({ title: t('ingredients.created') })
       emit('saved', res.ingredient.id)
+      if (auth.value?.is_admin) { pendingTranslateId.value = res.ingredient.id; showTranslatePrompt.value = true }
     }
   } catch (e: any) {
     toast.add({
@@ -506,16 +515,6 @@ async function doDelete() {
         <button v-if="canManage" class="w-9 h-9 flex items-center justify-center text-[#007AFF] dark:text-blue-400 active:opacity-50" @click="startEdit">
           <UIcon name="i-heroicons-pencil-square" class="w-5 h-5" />
         </button>
-        <button
-          v-if="auth.is_admin && !isNew"
-          class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50"
-          :class="{ 'opacity-50 pointer-events-none': translating }"
-          :title="$t('adminTranslations.translateItem')"
-          @click="translateItem"
-        >
-          <UIcon v-if="translating" name="i-heroicons-arrow-path" class="w-5 h-5 animate-spin" />
-          <UIcon v-else name="i-heroicons-language" class="w-5 h-5" />
-        </button>
         <button class="w-9 h-9 flex items-center justify-center text-gray-500 dark:text-gray-400 active:opacity-50" @click="printIngredient">
           <UIcon name="i-heroicons-printer" class="w-5 h-5" />
         </button>
@@ -573,12 +572,12 @@ async function doDelete() {
         </div>
         <div class="text-[17px] text-gray-700 dark:text-gray-300">
           {{ ingredient?.standard_unit_cost != null
-              ? `€ ${(ingredient.standard_unit_cost * costScale(ingredient.default_unit_type)).toFixed(4)}`
+              ? `€ ${(ingredient.standard_unit_cost * costScale(ingredient.default_unit_type)).toFixed(2)}`
               : '—' }}
           <template v-if="ingredient?.yield_pct != null && ingredient.yield_pct < 100 && ingredient.standard_unit_cost != null">
             <span class="text-gray-400 text-sm mx-1">→</span>
             <span class="text-orange-600 dark:text-orange-400">
-              € {{ (ingredient.standard_unit_cost / (ingredient.yield_pct / 100) * costScale(ingredient.default_unit_type)).toFixed(4) }}
+              € {{ (ingredient.standard_unit_cost / (ingredient.yield_pct / 100) * costScale(ingredient.default_unit_type)).toFixed(2) }}
             </span>
             <span class="text-[12px] text-gray-400 ml-1">{{ $t('ingredients.afterYield') }}</span>
           </template>
@@ -881,6 +880,39 @@ async function doDelete() {
               class="py-[11px] text-[17px] font-semibold text-red-500 active:bg-gray-200/60 dark:active:bg-gray-700/60"
               @click="doDelete"
             >{{ $t('common.delete') }}</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Translate prompt -->
+  <Teleport to="body">
+    <Transition name="ios-alert">
+      <div
+        v-if="showTranslatePrompt"
+        class="fixed inset-0 z-[200] flex items-center justify-center"
+        style="background: rgba(0,0,0,0.35); backdrop-filter: blur(4px)"
+      >
+        <div class="ios-alert-card w-[270px] rounded-[13px] bg-white dark:bg-[#1c1c1e] shadow-2xl overflow-hidden">
+          <div class="px-4 pt-5 pb-4 text-center">
+            <h3 class="text-[17px] font-semibold text-gray-900 dark:text-white leading-snug">{{ $t('adminTranslations.translatePromptTitle') }}</h3>
+            <p class="mt-1.5 text-[13px] text-gray-500 dark:text-gray-400 leading-snug">{{ $t('adminTranslations.translatePromptDesc') }}</p>
+          </div>
+          <div class="border-t border-gray-300/60 dark:border-gray-600/60 grid grid-cols-2 divide-x divide-gray-300/60 dark:divide-gray-600/60">
+            <button
+              class="py-[11px] text-[17px] text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60"
+              :disabled="translating"
+              @click="showTranslatePrompt = false"
+            >{{ $t('common.no') }}</button>
+            <button
+              class="py-[11px] text-[17px] font-semibold text-[#007AFF] dark:text-blue-400 active:bg-gray-200/60 dark:active:bg-gray-700/60 disabled:opacity-40"
+              :disabled="translating"
+              @click="confirmTranslate"
+            >
+              <span v-if="translating">{{ $t('adminTranslations.translating') }}</span>
+              <span v-else>{{ $t('common.yes') }}</span>
+            </button>
           </div>
         </div>
       </div>

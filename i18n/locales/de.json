@@ -79,7 +79,9 @@
     "removeImage":  "Bild entfernen",
     "back":      "Zurück",
     "change":    "Ändern",
-    "printedOn": "gedruckt"
+    "printedOn": "gedruckt",
+    "yes": "Ja",
+    "no": "Nein"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -176,6 +178,8 @@
     "inactive": "Inaktiv",
     "status":   "Status",
     "preProduct": "Vorprodukt",
+    "tabRecipe": "Rezept",
+    "tabCosts": "Kosten",
     "components": "Komponenten",
     "sortByName": "Nach Name sortieren",
     "sortByActive": "Nach Status sortieren",
@@ -401,6 +405,8 @@
     "noTargetLocales": "Keine Zielsprachen verfügbar.",
     "translateItem": "Übersetzen",
     "translateNow": "Jetzt übersetzen",
+    "translatePromptTitle": "Änderungen übersetzen?",
+    "translatePromptDesc": "Die gespeicherten Änderungen automatisch in alle konfigurierten Sprachen übersetzen.",
     "translating": "Wird übersetzt…",
     "translationDone": "Übersetzung fertig",
     "translationFailed": "Übersetzung fehlgeschlagen",
@@ -408,5 +414,8 @@
     "nameLocked": "Name ist gesperrt – Übersetzung deaktiviert",
     "translatingLocale": "Übersetzung bearbeiten für: {locale}",
     "mtBadge": "MÜ"
+  },
+  "offline": {
+    "banner": "Sie sind offline — Änderungen sind deaktiviert"
   }
 }

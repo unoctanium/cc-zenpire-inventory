@@ -81,7 +81,9 @@
     "removeImage":  "Remove image",
     "back":       "Back",
     "change":     "Change",
-    "printedOn":  "printed"
+    "printedOn":  "printed",
+    "yes": "Yes",
+    "no": "No"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -178,6 +180,8 @@
     "inactive": "Inactive",
     "status":   "Status",
     "preProduct": "Pre-product",
+    "tabRecipe": "Recipe",
+    "tabCosts": "Costs",
     "components": "Components",
     "sortByName": "Sort by name",
     "sortByActive": "Sort by active",
@@ -376,6 +380,8 @@
     "noTargetLocales": "No target locales available.",
     "translateItem": "Translate",
     "translateNow": "Translate now",
+    "translatePromptTitle": "Translate changes?",
+    "translatePromptDesc": "Auto-translate the saved changes to all configured languages.",
     "translating": "Translating…",
     "translationDone": "Translation done",
     "translationFailed": "Translation failed",
@@ -410,5 +416,8 @@
     "importConfirmDesc": "This will delete all current business data and replace it with the imported file. This cannot be undone.",
     "importConfirm": "Import",
     "importSummaryLabel": "The file contains:"
+  },
+  "offline": {
+    "banner": "You are offline — changes are disabled"
   }
 }

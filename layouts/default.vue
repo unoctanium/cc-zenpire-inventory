@@ -90,15 +90,18 @@ function openSubNavMore(event: MouseEvent) {
 
 <template>
   <UApp>
+    <div class="flex flex-col" style="height:100dvh">
+    <AppOfflineBanner />
+
     <!-- Auth guard: blue screen while auth is unresolved -->
-    <div v-if="!isAuthed" style="position:fixed;inset:0;background:#0082c9" />
+    <div v-if="!isAuthed" class="flex-1" style="background:#0082c9" />
 
     <template v-else>
 
       <!-- ══════════════════════════════════════════════════════════════════════
            TABLET / DESKTOP  (≥ sm · 640 px)
            ══════════════════════════════════════════════════════════════════════ -->
-      <div class="hidden sm:flex print:flex overflow-hidden print:overflow-visible print:!h-auto bg-white dark:bg-gray-900" style="height:100dvh">
+      <div class="hidden sm:flex print:flex overflow-hidden print:overflow-visible print:!h-auto bg-white dark:bg-gray-900 flex-1 min-h-0" style="height:100%">
 
         <!-- Vertical icon bar -->
         <div class="print:hidden w-20 flex-none flex flex-col items-center pt-4 pb-4 gap-2 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
@@ -156,7 +159,7 @@ function openSubNavMore(event: MouseEvent) {
       <!-- ══════════════════════════════════════════════════════════════════════
            MOBILE / PHONE  (< sm · 640 px)
            ══════════════════════════════════════════════════════════════════════ -->
-      <div class="flex sm:hidden print:hidden flex-col overflow-hidden bg-white dark:bg-gray-900" style="height:100dvh">
+      <div class="flex sm:hidden print:hidden flex-col overflow-hidden bg-white dark:bg-gray-900 flex-1 min-h-0" style="height:100%">
 
         <!-- Top bar -->
         <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-none min-h-[52px]">
@@ -246,6 +249,7 @@ function openSubNavMore(event: MouseEvent) {
       </div>
 
     </template>
+    </div>
 
     <!-- ══════════════════════════════════════════════════════════════════════
          SHARED: USER DRAWER
