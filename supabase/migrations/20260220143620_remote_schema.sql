@@ -1,1 +1,0 @@
--- baseline: schema already created in Supabase SQL editor before migrations were tracked locally

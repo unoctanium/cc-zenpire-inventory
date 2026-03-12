@@ -1,7 +1,14 @@
 # Zenpire Inventory
 ## Developer Handbook
 
-*Last updated: 2026-03-10*
+*Last updated: 2026-03-12*
+
+> **More detailed docs:**
+> - [architecture.md](./architecture.md) — System architecture, auth, RBAC, patterns
+> - [data-model.md](./data-model.md) — Full database schema, views, migration history
+> - [api.md](./api.md) — All API routes with request/response shapes
+> - [frontend.md](./frontend.md) — Stores, composables, components, i18n, PWA
+> - [translations.md](./translations.md) — Content translation system (DeepL)
 
 ---
 
@@ -350,7 +357,20 @@ You are now in a deterministic development state.
 
 ---
 
-# 14. Planned / Future Work
+# 14. Content Translation
+
+The app supports multilingual content (recipe names, ingredient names, allergen names) via DeepL.
+
+- Source language: configured per client (`client.content_locale`)
+- Translations stored in `ingredient_i18n`, `recipe_i18n`, `allergen_i18n`
+- Admin: **Admin → Translations** page for bulk translate / coverage stats
+- Per-item: a translate dialog appears after saving any detail record
+
+Requires `DEEPL_API_KEY` in `.env`. See [translations.md](./translations.md) for full details.
+
+---
+
+# 15. Planned / Future Work
 
 - **Refactor RBAC to role-based checks** — remove the permission table layer; check roles directly in server routes
 - **Stock app** — stock snapshot, adjustments, production batches
