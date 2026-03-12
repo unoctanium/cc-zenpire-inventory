@@ -89,7 +89,9 @@ Self-contained view + edit panels. Each handles its own edit sheet, save logic, 
 
 All three follow the same pattern:
 - View mode: show record; edit button opens `AppBottomSheet`
-- Edit sheet: locale pill selector (DE / EN / JA); source pill = full form; non-source pill = translation fields only
+- Edit sheet: locale pill selector (DE / EN / JA)
+  - **Source pill** → full form (name, description, flags, output qty, components, production notes)
+  - **Non-source pill** → translation fields (name, description, production notes in target language) + full editable component list with ingredient names translated to the selected pill language
 - On save: refresh store + update draft; if admin, show translate prompt
 - On translate confirm: call `/api/admin/translations/item`, reload all cached locales
 
@@ -262,14 +264,28 @@ When `requestedLocale === sourceLang`, the API returns content from the main tab
 
 ### Language pill editing
 
-In edit mode, all detail components (recipe, ingredient, allergen) show a language pill row:
+In edit mode, all detail components (recipe, ingredient, allergen) show a language pill row.
 
-- **Source language pill** → edits the main record (name, description, etc.)
-- **Non-source pill** → edits the `*_i18n` row for that locale; component lists (recipes) show translated ingredient names
+**Source language pill:**
+- Edits the main record (`ingredient.name`, `recipe.name`, etc.)
+- Full form: all fields + component list + flags
 
-After saving any pill, an iOS-style dialog asks: *"Shall I translate your changes?"*
-- **Yes** → calls `POST /api/admin/translations/item` with `fromLocale` set to the edited pill's locale
+**Non-source language pill:**
+- Edits the `*_i18n` row for that locale (name, description/comment, production notes)
+- Source-language values are shown read-only as reference above each field
+- For recipes: the full component list is also shown and editable (add/remove/edit quantities); ingredient names are displayed in the selected pill language
+
+**Component name display in edit mode:**
+- Source pill selected → component names in source language (from main table)
+- Non-source pill selected → component names in that pill's language (from `ingredient_i18n`); switching pill triggers a fresh detail fetch
+
+**View mode:**
+- Content (name, description, production notes, component ingredient names) is always shown in the current UI locale, reloaded automatically when the user switches language
+
+**After saving any pill**, an iOS-style dialog asks: *"Shall I translate your changes?"*
+- **Yes** → calls `POST /api/admin/translations/item` with `fromLocale` = the edited pill's locale; translates to all other languages; if the target is the source locale, writes back to the main table
 - **No** → skips translation
+- After translation completes, all cached locales in the store are reloaded immediately (no app restart needed)
 
 ---
 
